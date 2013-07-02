@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
 # Copyright (c) 2009-2012 VMware, Inc.
-version = File.read(File.expand_path('../../BOSH_VERSION', __FILE__)).strip
 
 Gem::Specification.new do |s|
   s.name         = "bosh_vcloud_cpi"
-  s.version      = version
+  s.version      = "0.4.9"
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud CPI"
   s.description  = "BOSH vCloud CPI\n#{`git rev-parse HEAD`[0, 6]}"
@@ -17,8 +16,8 @@ Gem::Specification.new do |s|
   s.files        = `git ls-files -- lib/*`.split("\n") + %w(README)
   s.require_path = "lib"
 
-  s.add_dependency "bosh_common", "~>#{version}"
-  s.add_dependency "bosh_cpi", "~>#{version}"
-  s.add_dependency "ruby_vcloud_sdk", "~>#{version}"
+  s.add_dependency "bosh_common"
+  s.add_dependency "bosh_cpi"
+  s.add_dependency "ruby_vcloud_sdk"
   s.add_dependency "yajl-ruby", ">=0.8.2"
 end

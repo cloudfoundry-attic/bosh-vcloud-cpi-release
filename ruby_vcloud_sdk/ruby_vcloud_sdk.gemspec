@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
 # Copyright (c) 2009-2012 VMware, Inc.
-version = File.read(File.expand_path('../../BOSH_VERSION', __FILE__)).strip
 
 Gem::Specification.new do |s|
   s.name         = "ruby_vcloud_sdk"
-  s.version      = version
+  s.version      = "0.4.8"
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud API client"
   s.description  = "BOSH vCloud API client\n#{`git rev-parse HEAD`[0, 6]}"
