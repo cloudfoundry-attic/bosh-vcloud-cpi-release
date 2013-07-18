@@ -60,6 +60,16 @@ module VCloudSdk
       end
     end
 
+    def get_disk(obj)
+      if obj.is_a?(Xml::Disk)
+        obj
+      elsif obj.is_a?(String)
+        resolve_entity(obj)
+      else
+        raise CloudError, "Expecting Xml::Disk or String, got #{obj.inspect}."
+      end
+    end
+
     def reload_vm(vm)
       current_vm = @connection.get(vm)
       unless current_vm
@@ -426,10 +436,6 @@ module VCloudSdk
                      "#{current_vm.name}.")
         t
       end
-    end
-
-    def get_disk(disk_id)
-      resolve_entity(disk_id)
     end
 
 
