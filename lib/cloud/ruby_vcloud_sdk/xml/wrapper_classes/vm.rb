@@ -77,6 +77,14 @@ module VCloudSdk
         get_nodes("Link", {"type" => MEDIA_TYPE[:METADATA]}, true).first
       end
 
+      def running_tasks
+        get_nodes("Task", {"status" => "running"})
+      end
+
+      def tasks
+        get_nodes("Task")
+      end
+
       def name
          @root["name"]
       end

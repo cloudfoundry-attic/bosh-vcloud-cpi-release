@@ -102,52 +102,6 @@ module VCloudCloud
       end
     end
 
-    def reconfigure_vm(vapp, resource_pool, networks, environment)
-      vm = get_vm(vapp)
-      ram_mb = Integer(resource_pool["ram"])
-      cpu = Integer(resource_pool["cpu"])
-      disk_mb = Integer(resource_pool["disk"])
-
-      disks = vm.hardware_section.hard_disks
-      @logger.debug("disks = #{disks.inspect}")
-      raise IndexError, "Invalid number of VM hard disks" unless disks.size == 1
-      system_disk = disks[0]
-      disks_previous = Array.new(disks)
-
-      add_vapp_networks(vapp, networks)
-
-      @logger.info("Reconfiguring VM hardware: #{ram_mb} MB RAM, #{cpu} CPU, " +
-                   "#{disk_mb} MB disk, #{networks}.")
-      @client.reconfigure_vm(vm) do |v|
-        v.name = vapp.name
-        v.description = @vcd["entities"]["description"]
-        v.change_cpu_count(cpu)
-        v.change_memory(ram_mb)
-        v.add_hard_disk(disk_mb)
-        v.delete_nic(*vm.hardware_section.nics)
-        add_vm_nics(v, networks)
-      end
-
-      delete_vapp_networks(vapp, networks)
-
-      vapp, vm = get_vapp_vm_by_vapp_id(vapp.urn)
-      ephemeral_disk = get_newly_added_disk(vm, disks_previous)
-
-      # prepare guest customization settings
-      network_env = generate_network_env(vm.hardware_section.nics, networks)
-      disk_env = generate_disk_env(system_disk, ephemeral_disk)
-      env = generate_agent_env(vapp.name, vm, vapp.name, network_env, disk_env)
-      env["env"] = environment
-      @logger.info("Setting VM env: #{vapp.urn} #{env.inspect}")
-      set_agent_env(vm, env)
-
-      @logger.info("Powering on vApp: #{vapp.urn}")
-      @client.power_on_vapp(vapp)
-    rescue VCloudSdk::CloudError
-      delete_vm(vapp.urn)
-      raise
-    end
-
     def reconfigure_vm_only(vm, vapp, agent_id, resource_pool, networks, environment)
       ram_mb = Integer(resource_pool["ram"])
       cpu = Integer(resource_pool["cpu"])
@@ -175,7 +129,9 @@ module VCloudCloud
 
       delete_vapp_networks(vapp, networks)
 
-      # vapp, vm = get_vapp_vm_by_vapp_id(vapp.urn)
+      # refresh after reconfiguring
+      vm = @client.reload_vm(vm)
+
       ephemeral_disk = get_newly_added_disk(vm, disks_previous)
 
       # prepare guest customization settings
@@ -205,28 +161,18 @@ module VCloudCloud
 
           locality = independent_disks(disk_locality)
 
-          recompose_required = false
-          temporary_vapp_name = agent_id # Use as vapp_name unless a specific vapp_name was specified
+          # Use agent_id as vapp_name unless a specific vapp_name was specified
+          temporary_vapp_name = requested_vapp_name.nil? ? agent_id  : "vapp-tmp-#{generate_unique_name}"
+          recompose_required = !requested_vapp_name.nil?
 
-          if !requested_vapp_name.nil?
-            temporary_vapp_name =  "vapp-tmp-#{generate_unique_name}"
-            recompose_required = true
-          end
-
-          vapp_temporary = @client.instantiate_vapp_template(
-            catalog_vapp_id, # stemcell cid
-            temporary_vapp_name,
-            @vcd["entities"]["description"],
-            locality)
+          vapp_temporary = @client.instantiate_vapp_template(catalog_vapp_id, # stemcell cid
+            temporary_vapp_name, @vcd["entities"]["description"], locality)
 
           @logger.debug("Instantiated vApp: name=#{vapp_temporary.name}, agent_id: #{agent_id} using stemcell(vapp) id: #{catalog_vapp_id}")
           vm_temporary = vapp_temporary.vms[0]
 
           newly_instantiated_vm = vm_temporary
           container_vapp = vapp_temporary
-
-          reconfigure_vm_only(newly_instantiated_vm, container_vapp, agent_id, resource_pool, networks, environment)
-          @logger.info("Created VM: #{newly_instantiated_vm.urn} for agent id: #{agent_id}")
 
           if recompose_required
             # Re-compose vapp - if we instantiated a new temporary vapp then we need to move the new vm into the
@@ -249,6 +195,7 @@ module VCloudCloud
                   @client.recompose_vapp(vapp_temporary, requested_vapp_name, nil, nil)
                 end
                 @logger.debug("Rename successful")
+                container_vapp = vapp_temporary
               else
                 @logger.debug("Adding vapp: #{vapp_temporary.name} to #{requested_vapp_name}")
                 Util.retry_operation("move vms from (#{vapp_temporary.name} -> #{requested_vapp_name})",
@@ -263,7 +210,7 @@ module VCloudCloud
 
                 container_vapp = @client.get_vapp_by_name(requested_vapp_name) # update
                 newly_instantiated_vm = container_vapp.vm(vm_temporary.name)
-                @logger.debug("Updated #{vm_temporary.name} to: #{newly_instantiated_vm}")
+                @logger.debug("Recomposed #{vm_temporary.name}")
 
                 @logger.debug("Delete source temporary vapp: #{vapp_temporary.name}")
                 Util.retry_operation("delete (#{vapp_temporary.name})",
@@ -275,17 +222,16 @@ module VCloudCloud
                 @logger.debug("Deleted temporary vapp: #{vapp_temporary.name}")
               end
 
-              @logger.debug("Sleeping a while to allow DB operations to complete!")
-              sleep(5)    # BAD BAD HACK
+              reconfigure_vm_only(newly_instantiated_vm, container_vapp, agent_id, resource_pool, networks, environment)
+              @logger.info("Created VM: #{newly_instantiated_vm.urn} for agent id: #{agent_id}")
+
+              Util.retry_operation("Power on vm: #{newly_instantiated_vm.urn}",
+                                   @retries["default"],
+                                   @control["backoff"]) do
+
+                @client.power_on_vm(newly_instantiated_vm)
+              end
             }
-          end
-
-          @logger.info("Powering on vm: #{newly_instantiated_vm.urn}")
-          Util.retry_operation("Power on vm: #{newly_instantiated_vm.urn}",
-                               @retries["default"],
-                               @control["backoff"]) do
-
-            @client.power_on_vm(newly_instantiated_vm)
           end
 
           newly_instantiated_vm.urn
@@ -345,87 +291,6 @@ module VCloudCloud
       end
     rescue VCloudSdk::CloudError => e
       log_exception("reboot vm #{vm_id}", e)
-      raise e
-    end
-
-    def create_vapp(agent_id, catalog_vapp_id, resource_pool, networks,
-        disk_locality = nil, environment = {})
-      @client = client
-
-      with_thread_name("create_vm(#{agent_id}, ...)") do
-        Util.retry_operation("create_vm(#{agent_id}, ...)", @retries["cpi"],
-                             @control["backoff"]) do
-          @logger.info("Creating VM: #{agent_id}")
-          @logger.debug("networks: #{networks.inspect}")
-
-          locality = independent_disks(disk_locality)
-
-          vapp = @client.instantiate_vapp_template(
-              catalog_vapp_id, agent_id, # vapp name
-              @vcd["entities"]["description"], locality)
-          @logger.debug("Instantiated vApp: id=#{vapp.urn} name=#{vapp.name}")
-
-          reconfigure_vm(vapp, resource_pool, networks, environment)
-
-          @logger.info("Created VM: #{agent_id} as #{vapp.urn}")
-          vapp.urn
-        end
-      end
-    rescue VCloudSdk::CloudError => e
-      log_exception("create vApp", e)
-      raise e
-    end
-
-    def delete_vapp(vapp_id)
-      @client = client
-
-      with_thread_name("delete_vm(#{vapp_id}, ...)") do
-        Util.retry_operation("delete_vm(#{vapp_id}, ...)", @retries["cpi"],
-            @control["backoff"]) do
-          @logger.info("Deleting vApp: #{vapp_id}")
-          vapp = @client.get_vapp(vapp_id)
-          vm = get_vm(vapp)
-          vm_name = vm.name
-
-          begin
-            @client.power_off_vapp(vapp)
-          rescue VCloudSdk::VappSuspendedError => e
-            @client.discard_suspended_state_vapp(vapp)
-            @client.power_off_vapp(vapp)
-          end
-          del_vapp = @vcd["debug"]["delete_vapp"]
-          @client.delete_vapp(vapp) if del_vapp
-          @logger.info("Deleting ISO #{vm_name}")
-          @client.delete_catalog_media(vm_name) if del_vapp
-          @logger.info("Deleted vApp: #{vapp_id}")
-        end
-      end
-    rescue VCloudSdk::CloudError => e
-      log_exception("delete vApp #{vapp_id}", e)
-      raise e
-    end
-
-    def reboot_vapp(vapp_id)
-      @client = client
-
-      with_thread_name("reboot_vm(#{vapp_id}, ...)") do
-        Util.retry_operation("reboot_vm(#{vapp_id}, ...)", @retries["cpi"],
-            @control["backoff"]) do
-          @logger.info("Rebooting vApp: #{vapp_id}")
-          vapp = @client.get_vapp(vapp_id)
-          begin
-            @client.reboot_vapp(vapp)
-          rescue VCloudSdk::VappPoweredOffError => e
-            @client.power_on_vapp(vapp)
-          rescue VCloudSdk::VappSuspendedError => e
-            @client.discard_suspended_state_vapp(vapp)
-            @client.power_on_vapp(vapp)
-          end
-          @logger.info("Rebooted vApp: #{vapp_id}")
-        end
-      end
-    rescue VCloudSdk::CloudError => e
-      log_exception("reboot vApp #{vapp_id}", e)
       raise e
     end
 
@@ -604,39 +469,33 @@ module VCloudCloud
       @vcd["control"] = {} unless @vcd["control"]
       @vcd["control"]["retries"] = {} unless @vcd["control"]["retries"]
       @vcd["control"]["retries"]["default"] ||= RETRIES_DEFAULT
-      @vcd["control"]["retries"]["upload_vapp_files"] ||=
-        RETRIES_UPLOAD_VAPP_FILES
+      @vcd["control"]["retries"]["upload_vapp_files"] ||= RETRIES_UPLOAD_VAPP_FILES
       @vcd["control"]["retries"]["cpi"] ||= RETRIES_CPI
       @vcd["control"]["delay"] ||= DELAY
-      @vcd["control"]["time_limit_sec"] = {} unless
-        @vcd["control"]["time_limit_sec"]
+
+      @vcd["control"]["time_limit_sec"] = {} unless @vcd["control"]["time_limit_sec"]
       @vcd["control"]["time_limit_sec"]["default"] ||= TIMELIMIT_DEFAULT
-      @vcd["control"]["time_limit_sec"]["delete_vapp_template"] ||=
-        TIMELIMIT_DELETE_VAPP_TEMPLATE
+      @vcd["control"]["time_limit_sec"]["delete_vapp_template"] ||= TIMELIMIT_DELETE_VAPP_TEMPLATE
       @vcd["control"]["time_limit_sec"]["delete_vapp"] ||= TIMELIMIT_DELETE_VAPP
-      @vcd["control"]["time_limit_sec"]["delete_media"] ||=
-        TIMELIMIT_DELETE_MEDIA
-      @vcd["control"]["time_limit_sec"]["instantiate_vapp_template"] ||=
-        TIMELIMIT_INSTANTIATE_VAPP_TEMPLATE
-      @vcd["control"]["time_limit_sec"]["recompose_vapp_template"] ||=
-          TIMELIMIT_RECOMPOSE_VAPP_TEMPLATE
+      @vcd["control"]["time_limit_sec"]["delete_media"] ||= TIMELIMIT_DELETE_MEDIA
+      @vcd["control"]["time_limit_sec"]["instantiate_vapp_template"] ||= TIMELIMIT_INSTANTIATE_VAPP_TEMPLATE
+      @vcd["control"]["time_limit_sec"]["recompose_vapp_template"] ||= TIMELIMIT_RECOMPOSE_VAPP_TEMPLATE
       @vcd["control"]["time_limit_sec"]["power_on"] ||= TIMELIMIT_POWER_ON
       @vcd["control"]["time_limit_sec"]["power_off"] ||= TIMELIMIT_POWER_OFF
       @vcd["control"]["time_limit_sec"]["undeploy"] ||= TIMELIMIT_UNDEPLOY
-      @vcd["control"]["time_limit_sec"]["process_descriptor_vapp_template"] ||=
-        TIMELIMIT_PROCESS_DESCRIPTOR_VAPP_TEMPLATE
-      @vcd["control"]["time_limit_sec"]["http_request"] ||=
-        TIMELIMIT_HTTP_REQUEST
+      @vcd["control"]["time_limit_sec"]["process_descriptor_vapp_template"] ||= TIMELIMIT_PROCESS_DESCRIPTOR_VAPP_TEMPLATE
+      @vcd["control"]["time_limit_sec"]["http_request"] ||= TIMELIMIT_HTTP_REQUEST
+
       @vcd["control"]["backoff"] ||= BACKOFF
-      @vcd["control"]["rest_throttle"] = {} unless
-        @vcd["control"]["rest_throttle"]
+
+      @vcd["control"]["rest_throttle"] = {} unless @vcd["control"]["rest_throttle"]
       @vcd["control"]["rest_throttle"]["min"] ||= REST_THROTTLE_MIN
       @vcd["control"]["rest_throttle"]["max"] ||= REST_THROTTLE_MAX
+
       @vcd["debug"] = {} unless @vcd["debug"]
-      @vcd["debug"]["delete_vapp"] = DEBUG_DELETE_VAPP unless
-        @vcd["debug"]["delete_vapp"]
-      @vcd["debug"]["delete_vm"] = DEBUG_DELETE_VM unless
-          @vcd["debug"]["delete_vm"]    end
+      @vcd["debug"]["delete_vapp"] = DEBUG_DELETE_VAPP unless @vcd["debug"]["delete_vapp"]
+      @vcd["debug"]["delete_vm"] = DEBUG_DELETE_VM unless @vcd["debug"]["delete_vm"]
+    end
 
     def create_client
       url = @vcd["url"]
