@@ -77,6 +77,10 @@ module VCloudSdk
         get_nodes("Link", {"type" => MEDIA_TYPE[:METADATA]}, true).first
       end
 
+      def container_vapp_link
+        get_nodes("Link", {"type" => MEDIA_TYPE[:VAPP]}, true).first
+      end
+
       def running_tasks
         get_nodes("Task", {"status" => "running"})
       end

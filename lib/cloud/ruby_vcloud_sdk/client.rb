@@ -70,6 +70,14 @@ module VCloudSdk
       end
     end
 
+    def reload_vapp(vapp)
+      current_vapp = @connection.get(vapp)
+      unless current_vapp
+        raise ObjectNotFoundError, "vm #{vapp.name} no longer exists."
+      end
+      current_vapp
+    end
+
     def reload_vm(vm)
       current_vm = @connection.get(vm)
       unless current_vm

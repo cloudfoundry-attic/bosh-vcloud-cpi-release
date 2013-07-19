@@ -263,6 +263,9 @@ module VCloudCloud
           vm = @client.get_vm(vm_id)
           vm_name = vm.name
 
+          # Store the container vapp
+          container_vapp_link = vm.container_vapp_link
+
           begin
             @client.power_off_vm(vm)
           rescue VCloudSdk::VmSuspendedError => e
@@ -272,9 +275,32 @@ module VCloudCloud
           del_vm = @vcd["debug"]["delete_vm"]
           @client.delete_vm(vm) if del_vm
           @logger.info("#{del_vm ? "Deleted" : "Powered off"} vm: #{vm_id}")
-        end
 
-        # TODO: Delete vapp if this is the last vm in the vapp
+
+          # Delete vapp if this is the last vm in the vapp
+          # TODO: Enable this by setting DELETE_EMPTY_VAPP = true in const.rb
+          # Disabled because vapp doesn't expose the required links although the operations are valid
+          # Needs more investigation
+          delete_empty_vapp = @vcd["debug"]["delete_empty_vapp"]
+          if delete_empty_vapp
+            @vapp_lock.synchronize {
+              container_vapp = @client.reload_vapp(container_vapp_link)
+              @logger.info("Container vApp: #{container_vapp.name} contains #{container_vapp.vms.size} VMs")
+              if container_vapp.vms.size == 0
+                begin
+                  @client.power_off_vapp(container_vapp)
+                rescue VCloudSdk::VappSuspendedError => e
+                  @client.discard_suspended_state_vapp(container_vapp)
+                  @client.power_off_vapp(container_vapp)
+                end
+
+                @client.delete_vapp(container_vapp)
+              end
+            }
+          else
+            @logger.info("Skipping checking for empty vapp")
+          end
+        end
       end
     rescue VCloudSdk::CloudError => e
       log_exception("delete vm #{vm_id}", e)
@@ -504,8 +530,9 @@ module VCloudCloud
       @vcd["control"]["rest_throttle"]["max"] ||= REST_THROTTLE_MAX
 
       @vcd["debug"] = {} unless @vcd["debug"]
-      @vcd["debug"]["delete_vapp"] = DEBUG_DELETE_VAPP unless @vcd["debug"]["delete_vapp"]
-      @vcd["debug"]["delete_vm"] = DEBUG_DELETE_VM unless @vcd["debug"]["delete_vm"]
+      @vcd["debug"]["delete_vapp"]       ||= DEBUG_DELETE_VAPP
+      @vcd["debug"]["delete_vm"]         ||= DEBUG_DELETE_VM
+      @vcd["debug"]["delete_empty_vapp"] ||= DELETE_EMPTY_VAPP
     end
 
     def create_client
