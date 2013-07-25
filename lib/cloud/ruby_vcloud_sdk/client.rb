@@ -28,11 +28,10 @@ module VCloudSdk
           @time_limit["http_request"])
       end
       @root = @connection.connect(username, password)
-      @admin_root = @connection.get(@root.admin_root)
       @entity_resolver_link = @root.entity_resolver.href
-      # We assume the organization does not change often so we can get it at
-      # login and cache it
-      @admin_org = @connection.get(@admin_root.organization(@organization))
+
+      # We assume the organization does not change often so we can get it at login and cache it
+      @org = @connection.get(@root.org_link(@organization))
       @logger.info("Successfully connected.")
     end
 
@@ -740,13 +739,13 @@ module VCloudSdk
     end
 
     def get_ovdc
-      vdc = @admin_org.vdc(@ovdc_name)
-      raise ObjectNotFoundError, "VDC #{@ovdc_name} not found." unless vdc
-      @connection.get(vdc)
+      vdc_link = @org.vdc_link(@ovdc_name)
+      raise ObjectNotFoundError, "VDC #{@ovdc_name} not found." unless vdc_link
+      @connection.get(vdc_link)
     end
 
     def get_catalog(name)
-      catalog = @connection.get(@admin_org.catalog(name))
+      catalog = @connection.get(@org.catalog_link(name))
     end
 
 
@@ -957,12 +956,12 @@ module VCloudSdk
     # The catalog item is not the uderlying object itself, i.e. vApp template.
     def get_catalog_item(name, item_type, catalog_name)
       raise ObjectNotFoundError, "Catalog item name cannot be nil" unless name
-      unless @admin_org.catalog(catalog_name)
+      unless @org.catalog_link(catalog_name)
         raise ObjectNotFoundError, "Catalog #{catalog_name} not found."
       end
       # For some reason, if the catalog no longer exists,
       # VCD throws a Forbidden exception when getting
-      catalog = @connection.get(@admin_org.catalog(catalog_name))
+      catalog = @connection.get(@org.catalog_link(catalog_name))
       items = catalog.catalog_items(name)
       if items.nil? || items.empty?
         @logger.debug("Item #{name} does not exist in catalog #{catalog_name}")
@@ -1078,19 +1077,18 @@ module VCloudSdk
     end
 
     def add_catalog_item(item, catalog_name)
-      unless @admin_org.catalog(catalog_name)
+      unless @org.catalog_link(catalog_name)
         raise ArgumentError,
           "Error adding #{item.name}, catalog #{catalog_name} not found."
       end
-      catalog = @connection.get(@admin_org.catalog(catalog_name))
+      catalog = @connection.get(@org.catalog_link(catalog_name))
       raise ObjectNotFoundError, "Error adding #{item.name}, catalog " +
           "#{catalog_name} not available." unless catalog
       catalog_item = Xml::WrapperFactory.create_instance("CatalogItem")
       catalog_item.name = item.name
       catalog_item.entity = item
       @logger.info("Adding #{catalog_item.name} to catalog #{catalog_name}")
-      @connection.post(catalog.add_item_link, catalog_item,
-        Xml::ADMIN_MEDIA_TYPE[:CATALOG_ITEM])
+      @connection.post(catalog.add_item_link, catalog_item, VCloudSdk::Xml::MEDIA_TYPE[:CATALOG_ITEM])
     end
 
     def generate_metadata_href(entity, key)
