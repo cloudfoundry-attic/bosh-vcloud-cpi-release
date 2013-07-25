@@ -25,5 +25,5 @@ module VCloudCloud
   # debug option
   DEBUG_DELETE_VAPP = true
   DEBUG_DELETE_VM   = true
-  DELETE_EMPTY_VAPP = false
+  DELETE_EMPTY_VAPP = true
 end

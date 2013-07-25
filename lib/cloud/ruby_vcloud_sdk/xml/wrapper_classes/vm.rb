@@ -49,7 +49,7 @@ module VCloudSdk
         get_nodes("Link", {"rel" => "undeploy"}, true).first
       end
 
-      def remove_link
+      def remove_link(force = false)
         get_nodes("Link", {"rel" => "remove"}, true).first
       end
 

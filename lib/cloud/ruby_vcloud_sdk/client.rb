@@ -197,6 +197,7 @@ module VCloudSdk
     end
 
     def delete_vapp(vapp)
+      check_and_wait_for_running_tasks(vapp, "vapp")
       @logger.info("Deleting vApp #{vapp.name}.")
       current_vapp = @connection.get(vapp)
       if is_vapp_status(current_vapp, :POWERED_ON)
@@ -204,7 +205,7 @@ module VCloudSdk
           "vApp #{vapp.name} is powered on, power-off before deleting."
       end
       delete_vm_vapp_or_template(current_vapp, @retries["default"],
-        @time_limit["delete_vapp"], "vApp")
+        @time_limit["delete_vapp"], "vApp", true)
     end
 
     def instantiate_vapp_template(source_template_id, vapp_name,
@@ -603,6 +604,7 @@ module VCloudSdk
     end
 
     def power_off_vapp(vapp, undeploy = true)
+      check_and_wait_for_running_tasks(vapp, "vapp")
       @logger.info("Powering off vApp #{vapp.name} .")
       @logger.info("Undeploying vApp #{vapp.name} .") if undeploy
       current_vapp = @connection.get(vapp)
@@ -622,7 +624,7 @@ module VCloudSdk
         # undeployed in our status, we should check if the undeploy link is
         # available first.  If undeploy is not available and status is
         # powered_off then it is undeployed.
-        unless current_vapp.undeploy_link
+        unless current_vapp.undeploy_link(true)
           if is_vapp_status(current_vapp, :POWERED_OFF)
             @logger.info("vApp #{vapp.name} already powered-off, undeployed.")
             return
@@ -631,7 +633,7 @@ module VCloudSdk
             "powered-off, undeployed."
         end
         params = Xml::WrapperFactory.create_instance("UndeployVAppParams")
-        task = @connection.post(current_vapp.undeploy_link, params)
+        task = @connection.post(current_vapp.undeploy_link(true), params)
         monitor_task(task, @time_limit["undeploy"])
         @logger.info("vApp #{current_vapp.name} powered-off, undeployed.")
         task
@@ -687,23 +689,8 @@ module VCloudSdk
         items_to_delete_hrefs.each { |item_href| recompose_vapp_params.add_delete_items(item_href) }
       end
 
-      # HACK: Workaround. recomposeLink is not available when vapp is running (so manually construct the link)
-      recompose_vapp_link = nil
-      begin
-        recompose_vapp_link = destination_vapp.recompose_vapp_link
-        @logger.debug("Got recomposeLink from destination_vapp: #{recompose_vapp_link}")
-      rescue => e
-        recompose_vapp_link = nil
-      end
-
-      if recompose_vapp_link.nil? || recompose_vapp_link.href.to_s.nil?
-        @logger.debug("Manually constructing RecomposeLink as its unavailable: #{e}")
-        recompose_vapp_link = Xml::WrapperFactory.create_instance("Link")
-        recompose_vapp_link.rel  = "recompose"
-        recompose_vapp_link.type = "application/vnd.vmware.vcloud.recomposeVAppParams+xml"
-        recompose_vapp_link.href = "#{destination_vapp.href}/action/recomposeVApp"
-      end
-
+      # HACK: Workaround. recomposeLink is not available when vapp is running (so force construct the link)
+      recompose_vapp_link = destination_vapp.recompose_vapp_link(true)
       @logger.debug("recompose_vapp_params = #{recompose_vapp_params}\nrecomposeLink = #{recompose_vapp_link}")
 
       task = @connection.post(recompose_vapp_link, recompose_vapp_params)
@@ -814,9 +801,9 @@ module VCloudSdk
         @time_limit["delete_vapp_template"], "vApp Template")
     end
 
-    def check_entity_for_remove_link(entity, type_name)
+    def check_entity_for_remove_link(entity, type_name, force = false)
       current_entity = @connection.get(entity)
-      unless current_entity.remove_link
+      unless current_entity.remove_link(force)
         raise ObjectNotFoundError, "No link available to delete #{type_name}"
       end
       return current_entity
@@ -840,7 +827,7 @@ module VCloudSdk
       raise "#{type_name}: #{entity.name} still has tasks running after #{retries} retries"
     end
 
-    def delete_vm_vapp_or_template(entity_to_delete, retries, time_limit, type_name)
+    def delete_vm_vapp_or_template(entity_to_delete, retries, time_limit, type_name, force = false)
       check_and_wait_for_running_tasks(entity_to_delete, type_name, retries)
 
       @logger.info("Deleting #{type_name} #{entity_to_delete.name}")
@@ -848,11 +835,11 @@ module VCloudSdk
       current_entity_to_delete = @connection.get(entity_to_delete)
 
       Util.retry_operation(current_entity_to_delete, @retries["default"], @control["backoff"]) do
-        current_entity_to_delete = check_entity_for_remove_link(current_entity_to_delete, type_name)
+        current_entity_to_delete = check_entity_for_remove_link(current_entity_to_delete, type_name, force)
       end
 
-      Util.retry_operation(current_entity_to_delete.remove_link, @retries["default"], @control["backoff"]) do
-        monitor_task(@connection.delete(current_entity_to_delete.remove_link), time_limit) do |task|
+      Util.retry_operation(current_entity_to_delete.remove_link(force), @retries["default"], @control["backoff"]) do
+        monitor_task(@connection.delete(current_entity_to_delete.remove_link(force)), time_limit) do |task|
           @logger.info("#{type_name} #{current_entity_to_delete.name} deleted.")
           return task
         end

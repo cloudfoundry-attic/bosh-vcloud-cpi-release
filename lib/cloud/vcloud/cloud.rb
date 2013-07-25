@@ -284,17 +284,29 @@ module VCloudCloud
           delete_empty_vapp = @vcd["debug"]["delete_empty_vapp"]
           if delete_empty_vapp
             @vapp_lock.synchronize {
-              container_vapp = @client.reload_vapp(container_vapp_link)
-              @logger.info("Container vApp: #{container_vapp.name} contains #{container_vapp.vms.size} VMs")
-              if container_vapp.vms.size == 0
-                begin
-                  @client.power_off_vapp(container_vapp)
-                rescue VCloudSdk::VappSuspendedError => e
-                  @client.discard_suspended_state_vapp(container_vapp)
-                  @client.power_off_vapp(container_vapp)
-                end
+              container_vapp = nil
+              begin
+                container_vapp = @client.reload_vapp(container_vapp_link)
+              rescue => e
+                # if the vapp was already deleted, then we return gracefully rather than throwing error
+                @logger.info("Failed to reload container vapp due to: #{e}")
+              end
 
-                @client.delete_vapp(container_vapp)
+              if ! container_vapp.nil?
+                @logger.info("Container vApp: #{container_vapp.name} contains #{container_vapp.vms.size} VMs")
+                if container_vapp.vms.size == 0
+                  begin
+                    @client.power_off_vapp(container_vapp)
+                  rescue VCloudSdk::VappSuspendedError => e
+                    @client.discard_suspended_state_vapp(container_vapp)
+                    @client.power_off_vapp(container_vapp)
+                  end
+
+                  @client.delete_vapp(container_vapp)
+                end
+              else
+                # Container vapp was probably already deleted
+                @logger.info("Container vapp details could not be loaded, skipping...")
               end
             }
           else
