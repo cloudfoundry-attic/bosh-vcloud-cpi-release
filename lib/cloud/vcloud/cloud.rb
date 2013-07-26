@@ -110,9 +110,16 @@ module VCloudCloud
         
         # power on
         s.next Steps::PowerOnVApp
-      end)[:vapp].urn
+      end)[:vm].urn
     end
     
+    def has_vm?(vm_cid)
+      client.resolve_entity vm_cid
+      true
+    rescue RestClient::Exception  # TODO unify exceptions
+      false
+    end
+        
     def reconfigure_vm(vapp, resource_pool, networks, environment)
       vm = get_vm(vapp)
       ram_mb = Integer(resource_pool["ram"])
