@@ -76,16 +76,45 @@ module VCloudCloud
 
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
       (steps "create_vm(#{agent_id}, ...)" do |s|
+        # request name available for recomposing vApps
+        requested_name = environment && environment['vapp']
+        vapp_name = requested_name.nil? ? agent_id : "vapp-tmp-#{SecureRandom.uuid}"
+
         # disk_locality should be an array of disk ids
         disk_locality = independent_disks disk_locality
+        
         # agent_id is used as vm name
         description = @vcd['entities']['description']
-        s.next Steps::Instantiate, catalog_vapp_id, agent_id, description, disk_locality
+        
+        # if requested_name is present, we need to recompose vApp
+        container_vapp = nil
+        unless requested_name.nil?
+          begin
+            container_vapp = client.vapp_by_name requested_name
+          rescue CloudError # TODO unify exceptions
+            # ignored, keep container_vapp nil
+            vapp_name = agent_id
+          end
+        end
+
+        s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
         s.next Steps::WaitTasks, s.state[:vapp]
+        vapp = s.state[:vapp] = client.reload s.state[:vapp]
+        vm = s.state[:vm] = vapp.vms[0]
+        
+        # perform recomposing
+        if container_vapp
+          s.next Steps::WaitTasks, container_vapp
+          s.next Steps::Recompose, container_vapp
+          vapp = s.state[:vapp] = client.reload vapp
+          s.next Steps::WaitTasks, vapp
+          s.next Steps::DeleteVApp, vapp, true
+          vapp = s.state[:vapp] = container_vapp
+        end
         
         # save original disk configuration
-        s.state[:vapp] = client.reload s.state[:vapp]
-        vm = s.state[:vm] = s.state[:vapp].vms[0]
+        vapp = s.state[:vapp] = client.reload vapp
+        vm = s.state[:vm] = client.reload vm
         s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
         
         # reconfigure
@@ -109,61 +138,31 @@ module VCloudCloud
         s.next Steps::InsertCatalogMedia, vm.name
         
         # power on
-        s.next Steps::PowerOnVApp
+        s.next Steps::PowerOnVM
       end)[:vm].urn
     end
     
+    def reboot_vm(vm_id)
+      steps "reboot_vm(#{vm_id})" do |s|
+        vm = s.state[:vm] = client.resolve_link client.resolve_entity(vm_id)
+        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+          s.next Steps::DiscardSuspendedState
+          vm = s.state[:vm] = client.reload vm
+          s.next WaitTasks vm
+          s.next Steps::PowerOnVM
+        elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
+          s.next Steps::PowerOnVM
+        else
+          s.next Steps::RebootVM
+        end
+      end
+    end
+
     def has_vm?(vm_cid)
       client.resolve_entity vm_cid
       true
     rescue RestClient::Exception  # TODO unify exceptions
       false
-    end
-        
-    def reconfigure_vm(vapp, resource_pool, networks, environment)
-      vm = get_vm(vapp)
-      ram_mb = Integer(resource_pool["ram"])
-      cpu = Integer(resource_pool["cpu"])
-      disk_mb = Integer(resource_pool["disk"])
-
-      disks = vm.hardware_section.hard_disks
-      @logger.debug("disks = #{disks.inspect}")
-      raise IndexError, "Invalid number of VM hard disks" unless disks.size == 1
-      system_disk = disks[0]
-      disks_previous = Array.new(disks)
-
-      add_vapp_networks(vapp, networks)
-
-      @logger.info("Reconfiguring VM hardware: #{ram_mb} MB RAM, #{cpu} CPU, " +
-                   "#{disk_mb} MB disk, #{networks}.")
-      @client.reconfigure_vm(vm) do |v|
-        v.name = vapp.name
-        v.description = @vcd["entities"]["description"]
-        v.change_cpu_count(cpu)
-        v.change_memory(ram_mb)
-        v.add_hard_disk(disk_mb)
-        v.delete_nic(*vm.hardware_section.nics)
-        add_vm_nics(v, networks)
-      end
-
-      delete_vapp_networks(vapp, networks)
-
-      vapp, vm = get_vapp_vm_by_vapp_id(vapp.urn)
-      ephemeral_disk = get_newly_added_disk(vm, disks_previous)
-
-      # prepare guest customization settings
-      network_env = generate_network_env(vm.hardware_section.nics, networks)
-      disk_env = generate_disk_env(system_disk, ephemeral_disk)
-      env = generate_agent_env(vapp.name, vm, vapp.name, network_env, disk_env)
-      env["env"] = environment
-      @logger.info("Setting VM env: #{vapp.urn} #{env.inspect}")
-      set_agent_env(vm, env)
-
-      @logger.info("Powering on vApp: #{vapp.urn}")
-      @client.power_on_vapp(vapp)
-    rescue VCloudSdk::CloudError
-      delete_vm(vapp.urn)
-      raise
     end
 
     def delete_vm(vapp_id)
@@ -192,30 +191,6 @@ module VCloudCloud
       end
     rescue VCloudSdk::CloudError => e
       log_exception("delete vApp #{vapp_id}", e)
-      raise e
-    end
-
-    def reboot_vm(vapp_id)
-      @client = client
-
-      with_thread_name("reboot_vm(#{vapp_id}, ...)") do
-        Util.retry_operation("reboot_vm(#{vapp_id}, ...)", @retries["cpi"],
-            @control["backoff"]) do
-          @logger.info("Rebooting vApp: #{vapp_id}")
-          vapp = @client.get_vapp(vapp_id)
-          begin
-            @client.reboot_vapp(vapp)
-          rescue VCloudSdk::VappPoweredOffError => e
-            @client.power_on_vapp(vapp)
-          rescue VCloudSdk::VappSuspendedError => e
-            @client.discard_suspended_state_vapp(vapp)
-            @client.power_on_vapp(vapp)
-          end
-          @logger.info("Rebooted vApp: #{vapp_id}")
-        end
-      end
-    rescue VCloudSdk::CloudError => e
-      log_exception("reboot vApp #{vapp_id}", e)
       raise e
     end
 

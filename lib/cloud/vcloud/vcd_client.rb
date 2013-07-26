@@ -75,6 +75,12 @@ module VCloudCloud
       [media, catalog_media]
     end
     
+    def vapp_by_name(name)
+      node = vdc.get_vapp name
+      raise CloudError, "vApp #{name} does not exist" unless node
+      resolve_link node.href
+    end
+    
     def resolve_link(link)
       invoke :get, link
     end
@@ -111,7 +117,7 @@ module VCloudCloud
       params[:cookies] = @cookie if !options[:login] && cookie_available?
       params[:payload] = options[:payload].to_s if options[:payload]
       params[:headers].merge! options[:headers] if options[:headers]
-      @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect}"
+      @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
       response = RestClient::Request.execute params do |response, request, result, &block|
         @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
         response.return! request, result, &block
