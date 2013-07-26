@@ -49,12 +49,32 @@ module VCloudCloud
       end
     end
     
-    def vapp_catalog
-      catalog_link = org.catalog_link vapp_catalog_name
-      raise CloudError, "Invalid vApp catalog name: #{vapp_catalog_name}" unless catalog_link
+    # catalog should be either :vapp or :media
+    def catalog(catalog_type)
+      catalog_link = org.catalog_link @entities["#{catalog_type.to_s}_catalog"]
+      raise CloudError, "Invalid catalog type: #{catalog_type}" unless catalog_link      
       resolve_link catalog_link
     end
 
+    def catalog_item(catalog_type, name, type)
+      cat = catalog catalog_type
+      items = cat.catalog_items name
+      result = nil
+      items.any? do |item|
+        object = resolve_link item
+        result = object if object.entity['type'] == type
+        result
+      end if items
+      result
+    end
+    
+    def media(name)
+      catalog_media = catalog_item :media, name, VCloudSdk::Xml::MEDIA_TYPE[:MEDIA]
+      raise CloudError, "Invalid catalog media: #{name}" unless catalog_media
+      media = resolve_link catalog_media.entity
+      [media, catalog_media]
+    end
+    
     def resolve_link(link)
       invoke :get, link
     end
@@ -93,7 +113,7 @@ module VCloudCloud
       params[:headers].merge! options[:headers] if options[:headers]
       @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect}"
       response = RestClient::Request.execute params do |response, request, result, &block|
-        @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body.inspect}"
+        @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
         response.return! request, result, &block
       end
       if options[:login]
@@ -107,6 +127,11 @@ module VCloudCloud
     def upload_stream(url, size, stream, options = {})
       session
       FileUploader.upload url, size, stream, @cookie, options
+    end
+    
+    def invoke_and_wait(*args)
+      task = invoke *args
+      Steps::WaitTasks.wait_task task, self
     end
     
     private

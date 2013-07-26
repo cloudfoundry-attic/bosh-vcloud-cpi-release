@@ -25,8 +25,7 @@ module VCloudCloud
             template = client.reload template
           end
           if template.remove_link
-            task = client.invoke :delete, template.remove_link
-            WaitTasks.wait_task task, client
+            client.invoke_and_wait :delete, template.remove_link
           end
         end
       end

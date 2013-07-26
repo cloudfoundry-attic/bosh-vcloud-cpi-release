@@ -1,8 +1,8 @@
 module VCloudCloud
   module Steps
     class AddCatalogItem < Step
-      def perform(item, &block)
-        catalog = client.vapp_catalog
+      def perform(catalog_type, item, &block)
+        catalog = client.catalog catalog_type
         catalog_item = VCloudSdk::Xml::WrapperFactory.create_instance 'CatalogItem'
         catalog_item.name = item.name
         catalog_item.entity = item

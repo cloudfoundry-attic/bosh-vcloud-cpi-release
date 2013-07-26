@@ -26,8 +26,8 @@ module VCloudCloud
       @client
     end
     
-    def steps(name, &block)
-      Transaction.perform name, client(), &block
+    def steps(name, options = {}, &block)
+      Transaction.perform name, client(), options, &block
     end
     
     public
@@ -59,7 +59,7 @@ module VCloudCloud
         s.next Steps::CreateTemplate
         s.next Steps::UploadTemplateFiles
         s.next Steps::WaitTasks, s.state[:vapp_template]
-        s.next Steps::AddCatalogItem, s.state[:vapp_template]
+        s.next Steps::AddCatalogItem, :vapp, s.state[:vapp_template]
       end)[:catalog_item].urn
     end
 
@@ -74,6 +74,45 @@ module VCloudCloud
       end
     end
 
+    def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
+      (steps "create_vm(#{agent_id}, ...)" do |s|
+        # disk_locality should be an array of disk ids
+        disk_locality = independent_disks disk_locality
+        # agent_id is used as vm name
+        description = @vcd['entities']['description']
+        s.next Steps::Instantiate, catalog_vapp_id, agent_id, description, disk_locality
+        s.next Steps::WaitTasks, s.state[:vapp]
+        
+        # save original disk configuration
+        s.state[:vapp] = client.reload s.state[:vapp]
+        vm = s.state[:vm] = s.state[:vapp].vms[0]
+        s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
+        
+        # reconfigure
+        s.next Steps::AddNetworks, network_names(networks)
+        s.next Steps::ReconfigureVM, agent_id, description, resource_pool, networks
+        s.next Steps::DeleteUnusedNetworks, network_names(networks)
+        
+        # save env and generate env ISO image
+        s.next Steps::SaveAgentEnv, @vcd['entities']['vm_metadata_key'], networks, environment
+        
+        vm = s.state[:vm] = client.reload vm
+        # eject and delete old env ISO
+        s.next Steps::EjectCatalogMedia, vm.name
+        s.next Steps::DeleteCatalogMedia, vm.name
+        
+        # attach new env ISO
+        storage_profiles = client.vdc.storage_profiles || []
+        media_storage_profile = storage_profiles.find { |sp| sp['name'] == @vcd['entities']['media_storage_profile'] }
+        s.next Steps::UploadCatalogMedia, vm.name, s.state[:iso], 'iso', media_storage_profile
+        s.next Steps::AddCatalogItem, :media, s.state[:media]
+        s.next Steps::InsertCatalogMedia, vm.name
+        
+        # power on
+        s.next Steps::PowerOnVApp
+      end)[:vapp].urn
+    end
+    
     def reconfigure_vm(vapp, resource_pool, networks, environment)
       vm = get_vm(vapp)
       ram_mb = Integer(resource_pool["ram"])
@@ -118,34 +157,6 @@ module VCloudCloud
     rescue VCloudSdk::CloudError
       delete_vm(vapp.urn)
       raise
-    end
-
-    def create_vm(agent_id, catalog_vapp_id, resource_pool, networks,
-        disk_locality = nil, environment = {})
-      @client = client
-
-      with_thread_name("create_vm(#{agent_id}, ...)") do
-        Util.retry_operation("create_vm(#{agent_id}, ...)", @retries["cpi"],
-            @control["backoff"]) do
-          @logger.info("Creating VM: #{agent_id}")
-          @logger.debug("networks: #{networks.inspect}")
-
-          locality = independent_disks(disk_locality)
-
-          vapp = @client.instantiate_vapp_template(
-            catalog_vapp_id, agent_id, # vapp name
-            @vcd["entities"]["description"], locality)
-          @logger.debug("Instantiated vApp: id=#{vapp.urn} name=#{vapp.name}")
-
-          reconfigure_vm(vapp, resource_pool, networks, environment)
-
-          @logger.info("Created VM: #{agent_id} as #{vapp.urn}")
-          vapp.urn
-        end
-      end
-    rescue VCloudSdk::CloudError => e
-      log_exception("create vApp", e)
-      raise e
     end
 
     def delete_vm(vapp_id)
@@ -603,15 +614,15 @@ module VCloudCloud
 
     def independent_disks(disk_locality)
       disk_locality ||= []
-      @logger.info("Instantiate vApp accessible to disks: " +
-                   "#{disk_locality.join(",")}")
-      disks = []
-      disk_locality.each do |disk_id|
-        disks << @client.get_disk(disk_id)
+      @logger.info "Instantiate vApp accessible to disks: #{disk_locality.join(',')}"
+      disk_locality.map do |disk_id|
+        client.resolve_entity disk_id
       end
-      disks
     end
 
+    def network_names(networks)
+      networks.map { |k,v| v['cloud_properties']['name'] }.uniq
+    end
   end
 
 end

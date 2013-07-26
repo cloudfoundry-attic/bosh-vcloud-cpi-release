@@ -37,15 +37,16 @@ module VCloudCloud
       step.perform *args, &block
     end
     
-    def perform(&block)
+    def perform(options = {}, &block)
       with_thread_name @name do
         # Perform all steps guarded by exception handler
         begin
           block.call self
         rescue => ex
-          @logger.error "FAIL #{@name}"
+          @logger.error "FAIL #{@name} #{ex}"
           reverse_steps :rollback
-          raise ex
+          raise ex unless options[:no_throws]
+          @state[:error] = ex
         ensure
           reverse_steps :cleanup
         end
@@ -53,8 +54,8 @@ module VCloudCloud
       @state
     end
     
-    def self.perform(name, client = nil, &block)
-      new(name, client).perform &block
+    def self.perform(name, client = nil, options = {}, &block)
+      new(name, client).perform options, &block
     end
     
     private
@@ -76,4 +77,14 @@ require_relative 'steps/stemcell_info'
 require_relative 'steps/create_template'
 require_relative 'steps/upload_template_files'
 require_relative 'steps/add_catalog_item'
+require_relative 'steps/instantiate'
+require_relative 'steps/add_networks'
+require_relative 'steps/delete_unused_networks'
+require_relative 'steps/reconfigure_vm'
+require_relative 'steps/save_agent_env'
+require_relative 'steps/eject_catalog_media'
+require_relative 'steps/delete_catalog_media'
+require_relative 'steps/upload_catalog_media'
+require_relative 'steps/insert_catalog_media'
+require_relative 'steps/poweron_vapp'
 require_relative 'steps/wait_tasks'
