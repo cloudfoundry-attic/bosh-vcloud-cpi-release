@@ -1,18 +1,33 @@
 module VCloudCloud
   module Steps
     class SaveAgentEnv < Step
-      def perform(metadata_key, networks, environment, &block)
+      def perform(metadata_key, action, networks, environment, &block)
         vapp = state[:vapp] = client.reload state[:vapp]
-        vm = state[:vapp].vms[0]
-      
-        system_disk = state[:disks][0]
-        ephemeral_disk = get_newly_added_disk vm
+        vm = state[:vm] = client.reload state[:vm]
+        metadata_link = "#{vm.metadata_link.href}/#{metadata_key}"
+        
+        env = if action == :update
+          metadata = client.invoke :get, metadata_link
+          Yajl.load(metadata.value || '{}')
+        else
+          system_disk = state[:disks][0]
+          ephemeral_disk = get_newly_added_disk vm          
+          {
+            'vm' => { 'name' => vm.name, 'id' => vm.urn },
+            'agent_id' => vm.name,
+            'disks' => {
+              'system' => system_disk.disk_id,
+              'ephemeral' => ephemeral_disk.disk_id,
+              'persistent' => {}              
+            },
+            'env' => environment || {}
+          }
+          # TODO env.merge!(@agent_properties)
+        end
 
-        # prepare guest customization settings
-        network_env = generate_network_env vm.hardware_section.nics, networks
-        disk_env = generate_disk_env system_disk, ephemeral_disk
-        env = generate_agent_env vapp.name, vm, vapp.name, network_env, disk_env, environment
-        @logger.debug "AGENT_ENV #{vapp.urn} #{env.inspect}"
+        env['networks'] = generate_network_env(vm.hardware_section.nics, networks) if networks
+
+        @logger.debug "AGENT_ENV #{vm.urn} #{env.inspect}"
         
         env_json = Yajl::Encoder.encode env
         @logger.debug "ENV.ISO Content: #{env_json}"
@@ -26,7 +41,7 @@ module VCloudCloud
         
         metadata = VCloudSdk::Xml::WrapperFactory.create_instance 'MetadataValue'
         metadata.value = env_json
-        client.invoke_and_wait :put, "#{vm.metadata_link.href}/#{metadata_key}",
+        client.invoke_and_wait :put, metadata_link,
                   :payload => metadata,
                   :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:METADATA_ITEM_VALUE] }
                   
@@ -73,25 +88,6 @@ module VCloudCloud
           network_env[network_name] = network_entry
         end
         network_env
-      end
-  
-      def generate_disk_env(system_disk, ephemeral_disk)
-        {
-          'system' => system_disk.disk_id,
-          'ephemeral' => ephemeral_disk.disk_id,
-          'persistent' => {}
-        }
-      end
-  
-      def generate_agent_env(name, vm, agent_id, networking_env, disk_env, environment)
-        env = {
-          'vm' => { 'name' => name, 'id' => vm.urn },
-          'agent_id' => agent_id,
-          'networks' => networking_env,
-          'disks' => disk_env,
-          'env' => environment || {}
-        }
-        # TODO env.merge!(@agent_properties)
       end
     end
   end

@@ -108,7 +108,7 @@ module VCloudCloud
           s.next Steps::Recompose, container_vapp
           vapp = s.state[:vapp] = client.reload vapp
           s.next Steps::WaitTasks, vapp
-          s.next Steps::DeleteVApp, vapp, true
+          s.next Steps::Delete, vapp, true
           vapp = s.state[:vapp] = container_vapp
         end
         
@@ -123,7 +123,7 @@ module VCloudCloud
         s.next Steps::DeleteUnusedNetworks, network_names(networks)
         
         # save env and generate env ISO image
-        s.next Steps::SaveAgentEnv, @vcd['entities']['vm_metadata_key'], networks, environment
+        s.next Steps::SaveAgentEnv, @vcd['entities']['vm_metadata_key'], :create, networks, environment
         
         vm = s.state[:vm] = client.reload vm
         # eject and delete old env ISO
@@ -138,7 +138,7 @@ module VCloudCloud
         s.next Steps::InsertCatalogMedia, vm.name
         
         # power on
-        s.next Steps::PowerOnVM
+        s.next Steps::PowerOn, :vm
       end)[:vm].urn
     end
     
@@ -146,92 +146,93 @@ module VCloudCloud
       steps "reboot_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_link client.resolve_entity(vm_id)
         if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-          s.next Steps::DiscardSuspendedState
-          vm = s.state[:vm] = client.reload vm
-          s.next WaitTasks vm
-          s.next Steps::PowerOnVM
+          s.next Steps::DiscardSuspendedState, :vm
+          s.next Steps::PowerOn, :vm
         elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
-          s.next Steps::PowerOnVM
+          s.next Steps::PowerOn, :vm
         else
-          s.next Steps::RebootVM
+          s.next Steps::Reboot, :vm
         end
       end
     end
 
-    def has_vm?(vm_cid)
-      client.resolve_entity vm_cid
+    def has_vm?(vm_id)
+      client.resolve_entity vm_id
       true
     rescue RestClient::Exception  # TODO unify exceptions
       false
     end
 
-    def delete_vm(vapp_id)
-      @client = client
+    def delete_vm(vm_id)
+      steps "delete_vm(#{vm_id})" do |s|
+        vm = s.state[:vm] = client.resolve_link client.resolve_entity(vm_id)
+        
+        # power off vm first
+        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+          s.next Steps::DiscardSuspendedState, :vm
+        end
+        s.next Steps::PowerOff, :vm
 
-      with_thread_name("delete_vm(#{vapp_id}, ...)") do
-        Util.retry_operation("delete_vm(#{vapp_id}, ...)", @retries["cpi"],
-            @control["backoff"]) do
-          @logger.info("Deleting vApp: #{vapp_id}")
-          vapp = @client.get_vapp(vapp_id)
-          vm = get_vm(vapp)
-          vm_name = vm.name
-
-          begin
-            @client.power_off_vapp(vapp)
-          rescue VCloudSdk::VappSuspendedError => e
-            @client.discard_suspended_state_vapp(vapp)
-            @client.power_off_vapp(vapp)
+        vapp_link = vm.container_vapp_link
+        
+        if @vcd['debug']['delete_vm']
+          s.next Steps::Delete, s.state[:vm], true
+        end
+        
+        if @vcd['debug']['delete_empty_vapp']
+          vapp = s.state[:vapp] = client.resolve_link vapp_link
+          if vapp.vms.size == 0
+            if vapp['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+              s.next Steps::DiscardSuspendedState, :vapp
+            end
+            vapp = s.state[:vapp]
+            if vapp['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
+              s.next Steps::PowerOff, :vapp
+            end
+            s.next Steps::Delete, s.state[:vapp], true
           end
-          del_vapp = @vcd["debug"]["delete_vapp"]
-          @client.delete_vapp(vapp) if del_vapp
-          @logger.info("Deleting ISO #{vm_name}")
-          @client.delete_catalog_media(vm_name) if del_vapp
-          @logger.info("Deleted vApp: #{vapp_id}")
         end
       end
-    rescue VCloudSdk::CloudError => e
-      log_exception("delete vApp #{vapp_id}", e)
-      raise e
     end
 
-    def configure_networks(vapp_id, networks)
-      @client = client
+    def configure_networks(vm_id, networks)
+      steps "configure_networks(#{vm_id}, #{networks})" do |s|
+        vm = s.state[:vm] = client.resolve_link client.resolve_entity(vm_id)
 
-      with_thread_name("configure_networks(#{vapp_id}, ...)") do
-        Util.retry_operation("configure_networks(#{vapp_id}, ...)",
-            @retries["cpi"], @control["backoff"]) do
-          @logger.info("Reconfiguring vApp networks: #{vapp_id}")
-          vapp, vm = get_vapp_vm_by_vapp_id(vapp_id)
-          @logger.debug("Powering off #{vapp.name}.")
-          begin
-            @client.power_off_vapp(vapp)
-          rescue VCloudSdk::VappSuspendedError => e
-            @client.discard_suspended_state_vapp(vapp)
-            @client.power_off_vapp(vapp)
-          end
-
-          add_vapp_networks(vapp, networks)
-          @client.reconfigure_vm(vm) do |v|
-            v.delete_nic(*vm.hardware_section.nics)
-            add_vm_nics(v, networks)
-          end
-          delete_vapp_networks(vapp, networks)
-
-          vapp, vm = get_vapp_vm_by_vapp_id(vapp_id)
-          env = get_current_agent_env(vm)
-          env["networks"] = generate_network_env(vm.hardware_section.nics,
-            networks)
-          @logger.debug("Updating agent env to: #{env.inspect}")
-          set_agent_env(vm, env)
-
-          @logger.debug("Powering #{vapp.name} back on.")
-          @client.power_on_vapp(vapp)
-          @logger.info("Configured vApp networks: #{vapp}")
+        # power off vm first
+        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+          s.next Steps::DiscardSuspendedState, :vm
         end
+        s.next Steps::PowerOff, :vm
+
+        # load container vApp
+        vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
+        
+        # reconfigure
+        s.next Steps::AddNetworks, network_names(networks)
+        s.next Steps::ReconfigureVM, nil, nil, nil, networks
+        s.next Steps::DeleteUnusedNetworks, network_names(networks)
+        
+        vm = s.state[:vm] = client.reload vm
+        
+        # update environment
+        s.next Steps::SaveAgentEnv, @vcd['entities']['vm_metadata_key'], :update, networks, nil
+        
+        vm = s.state[:vm] = client.reload vm
+        # eject and delete old env ISO
+        s.next Steps::EjectCatalogMedia, vm.name
+        s.next Steps::DeleteCatalogMedia, vm.name
+        
+        # attach new env ISO
+        storage_profiles = client.vdc.storage_profiles || []
+        media_storage_profile = storage_profiles.find { |sp| sp['name'] == @vcd['entities']['media_storage_profile'] }
+        s.next Steps::UploadCatalogMedia, vm.name, s.state[:iso], 'iso', media_storage_profile
+        s.next Steps::AddCatalogItem, :media, s.state[:media]
+        s.next Steps::InsertCatalogMedia, vm.name
+        
+        # power on
+        s.next Steps::PowerOn, :vm
       end
-    rescue VCloudSdk::CloudError => e
-      log_exception("configure vApp networks: #{vapp}", e)
-      raise e
     end
 
     def attach_disk(vapp_id, disk_id)
