@@ -17,6 +17,7 @@ module VCloudCloud
                   :payload => vapp.network_config_section,
                   :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:NETWORK_CONFIG_SECTION] }
         end
+        state[:vapp] = client.reload vapp
       end
       
       private

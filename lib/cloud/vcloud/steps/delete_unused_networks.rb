@@ -12,6 +12,7 @@ module VCloudCloud
           client.invoke_and_wait :put, vapp.network_config_section,
                     :payload => vapp.network_config_section,
                     :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:NETWORK_CONFIG_SECTION] }
+          state[:vapp] = client.reload vapp
         end
       end
     end

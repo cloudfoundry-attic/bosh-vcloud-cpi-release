@@ -1,0 +1,65 @@
+module VCloudCloud
+  module Steps
+    class CreateAgentEnv < Step
+      def perform(networks, environment, &block)
+        vm = state[:vm] = client.reload state[:vm]
+        
+        system_disk = state[:disks][0]
+        ephemeral_disk = get_newly_added_disk vm          
+        state[:env] = {
+          'vm' => { 'name' => vm.name, 'id' => vm.urn },
+          'agent_id' => vm.name,
+          'disks' => {
+            'system' => system_disk.disk_id,
+            'ephemeral' => ephemeral_disk.disk_id,
+            'persistent' => {}              
+          },
+          'networks' => generate_network_env(vm.hardware_section.nics, networks),
+          'env' => environment || {}
+        }
+        # TODO env.merge!(@agent_properties)
+      end
+            
+      private
+
+      def get_newly_added_disk(vm)
+        disks = vm.hardware_section.hard_disks
+        newly_added = disks - state[:disks]
+        if newly_added.size != 1
+          #@logger.debug "Previous disks in #{vapp_id}: #{disks_previous.inspect}")
+          #@logger.debug("Current disks in #{vapp_id}:  #{disks_current.inspect}")
+          raise CloudError, "Expecting #{state[:disks].size + 1} disks, found #{disks.size}"
+        end  
+        newly_added[0]
+      end
+      
+      def generate_network_env(nics, networks)
+        nic_net = {}
+        nics.each do |nic|
+          nic_net[nic.network] = nic
+        end
+  
+        network_env = {}
+        networks.each do |network_name, network|
+          network_entry = network.dup
+          v_network_name = network['cloud_properties']['name']
+          nic = nic_net[v_network_name]
+          if nic.nil? then
+            @logger.warn("Not generating network env for #{v_network_name}")
+            next
+          end
+          network_entry['mac'] = nic.mac_address
+          network_env[network_name] = network_entry
+        end
+        network_env
+      end
+      
+      public
+      
+      def self.update_network_env(networks)
+        vm = state[:vm] = client.reload state[:vm]
+        state[:env]['networks'] = generate_network_env vm.hardware_section.nics, networks
+      end
+    end
+  end
+end

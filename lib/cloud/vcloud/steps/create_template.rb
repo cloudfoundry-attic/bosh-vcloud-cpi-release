@@ -1,19 +1,13 @@
-require 'securerandom'
-
 module VCloudCloud
   module Steps
     class CreateTemplate < Step
-      def perform(&block)
-        # generate vApp name
-        vapp_name = "sc-#{SecureRandom.uuid}"
-        
+      def perform(name, &block)
         # POST UploadVAppTemplateParams
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
-        params.name = vapp_name
+        params.name = name
         template = client.invoke :post, client.vdc.upload_link, :payload => params
         
         # commit states
-        state[:vapp_name] = vapp_name
         state[:vapp_template] = template
       end
       
