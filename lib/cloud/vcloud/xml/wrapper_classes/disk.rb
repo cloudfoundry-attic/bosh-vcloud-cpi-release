@@ -10,7 +10,7 @@ module VCloudSdk
         @root["busSubType"] = value.to_s
       end
 
-      def delete_link
+      def remove_link(force = false)
         get_nodes("Link", {"rel" => "remove"}, true).first
       end
 

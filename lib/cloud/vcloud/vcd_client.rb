@@ -1,4 +1,5 @@
 require 'base64'
+require 'uri'
 require 'rest_client'
 require_relative 'cache'
 require_relative 'file_uploader'
@@ -127,17 +128,16 @@ module VCloudCloud
         @cookie = response.cookies
         @cookie_expiration = Time.now + COOKIE_TIMEOUT  # TODO COOKIE_TIMEOUT should be from configuration
       end
-      response.code == 204 ? nil : wrap_response(response)
+      (options[:no_wrap] || response.code == 204) ? nil : wrap_response(response)
     end
 
     def upload_stream(url, size, stream, options = {})
       session
-      FileUploader.upload url, size, stream, @cookie, options
+      FileUploader.upload url, size, stream, options.merge({ :cookie => @cookie, :authorization => @auth_token })
     end
     
     def invoke_and_wait(*args)
-      task = invoke *args
-      Steps::WaitTasks.wait_task task, self
+      wait_task invoke(*args)
     end
     
     def wait_task(task, accept_failure = false)
@@ -190,7 +190,8 @@ module VCloudCloud
         auth = "#{@user}@#{@entities['organization']}:#{@pass}"
         auth_header = "Basic #{Base64.encode64(auth)}"
         @session = invoke :post, '/api/sessions',
-                    :headers => { :Authorization => auth_header },
+                    :headers => { :Authorization => auth_header, :content_type => 'application/x-www-form-urlencoded' },
+                    :payload => URI.encode_www_form({ :Authorization => auth_header, :Accept => 'application/*+xml;version=5.1' }),
                     :login => true,
                     :with_response => true
         @cache.clear

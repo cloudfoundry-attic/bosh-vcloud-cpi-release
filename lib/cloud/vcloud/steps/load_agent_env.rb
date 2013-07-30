@@ -6,6 +6,7 @@ module VCloudCloud
         metadata_link = "#{vm.metadata_link.href}/#{state[:env_metadata_key]}"
         metadata = client.invoke :get, metadata_link
         state[:env] = Yajl.load(metadata.value || '{}')
+      end
     end
   end
 end

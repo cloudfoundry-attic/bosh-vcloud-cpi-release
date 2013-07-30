@@ -1,8 +1,8 @@
 module VCloudCloud
   class FileUploader
     class << self
-      def upload(href, size, stream, cookies = nil, options = {})
-        request = create_request(href, size, stream, cookies, options)
+      def upload(href, size, stream, options = {})
+        request = create_request(href, size, stream, options)
         net = create_connection(href)
         net.start do |http|
           response = http.request(request) { |http_response| http_response.read_body }
@@ -13,11 +13,12 @@ module VCloudCloud
 
       private
 
-      def create_request(href, size, stream, cookies = nil, options = {})
+      def create_request(href, size, stream, options = {})
         http_method = options[:method] || :Put
         headers = {}
         headers['Content-Type'] = options[:content_type] if options[:content_type]
-        headers['Cookie'] = cookies.map { |k, v| "#{k.to_s}=#{CGI::unescape(v)}" }.sort.join(';') if cookies
+        headers['X-VCloud-Authorization'] = options[:authorization] if options[:authorization]
+        headers['Cookie'] = options[:cookie].map { |k, v| "#{k.to_s}=#{CGI::unescape(v)}" }.sort.join(';') if options[:cookie]
         headers['Content-Length'] = size.to_s
         headers['Transfer-Encoding'] = 'chunked'
         request_type = Net::HTTP.const_get(http_method)

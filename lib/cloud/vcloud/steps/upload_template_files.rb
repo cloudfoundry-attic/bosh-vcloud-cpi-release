@@ -7,26 +7,22 @@ module VCloudCloud
         # until all files are uploaded.
         while template.files && !template.files.empty?
           template.incomplete_files.each do |file|
-            options = {}
-            # .ovf is always named "descriptor.ovf" not the file in stemcell
-            # so process specially, and with special content-type
-            f = if file.name.end_with?('.ovf')
-              options[:content_type] = VCloudSdk::Xml::MEDIA_TYPE[:OVF]
-              state[:stemcell_ovf]
+            if file.name.end_with?('.ovf')
+              content = File.new(File.join(state[:stemcell_dir], state[:stemcell_ovf])).read
+              client.invoke :put, file.upload_link.href,
+                      :payload => content,
+                      :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:OVF] },
+                      :no_wrap => true
             else
-              index = state[:stemcell_files].index { |f| f[:name] == file.name }
-              raise CloudError, "File not found in stemcell image: #{file.name}" if index.nil?
-              state[:stemcell_files][index]
+              f = File.new File.join(state[:stemcell_dir], file.name)
+              @logger.debug "UPLOAD #{f.path}: #{f.size}"
+              client.upload_stream file.upload_link.href, f.size, f
             end
-            @logger.debug "UPLOAD #{file.name}"
-            client.upload_stream file.upload_link.href,
-                                 f[:size],
-                                 IO.popen("tar zxfO #{state[:stemcell_image]} #{f[:name]}"),
-                                 options
           end
           
-          state[:vapp_template] = client.wait_entity template
+          template = client.reload template
         end
+        state[:vapp_template] = client.wait_entity template
       end      
     end
   end

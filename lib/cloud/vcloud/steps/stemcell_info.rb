@@ -2,29 +2,18 @@ module VCloudCloud
   module Steps
     class StemcellInfo < Step
       def perform(image, &block)
+        tmpdir = state[:stemcell_dir] = Dir.mktmpdir
         # examine files in the tarball
-        output = `tar tvzf #{image}`
+        `tar -C #{tmpdir} -xzf #{File.absolute_path(image)}`
         raise CloudError, 'Invalid stemcell image' unless $?.success?
-        files = output.split("\n").map do |line|
-          fields = line.split ' '
-          {
-            name: fields[-1],
-            size: fields[2].to_i
-          }
-        end
-        
-        # find .ovf files
-        ovfs = files.select do |file|
-          file[:name].end_with? '.ovf'
-        end
-        
+        files = Dir.glob File.join(tmpdir, '*.ovf')
         # stemcell should only include one .ovf file
-        raise CloudError, "Invalid stemcell image: having #{ovfs.length} .ovf files" if ovfs.length != 1
-        
-        # commit states
-        state[:stemcell_image] = image
-        state[:stemcell_files] = files
-        state[:stemcell_ovf] = ovfs[0]        
+        raise CloudError, "Invalid stemcell image: having #{files.length} .ovf files" if files.length != 1
+        state[:stemcell_ovf] = File.basename files[0]
+      end
+      
+      def cleanup
+        FileUtils.remove_entry_secure state[:stemcell_dir] if state[:stemcell_dir]
       end
     end
   end

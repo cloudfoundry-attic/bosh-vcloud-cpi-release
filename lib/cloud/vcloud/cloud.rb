@@ -20,17 +20,14 @@ module VCloudCloud
       @logger = Bosh::Clouds::Config.logger
       @logger.debug("Input cloud options: #{options.inspect}")
 
-      @agent_properties = options["agent"]
+      @agent_properties = options["agent"] || {}
       vcds = options["vcds"]
       raise ArgumentError, "Invalid number of VCDs" unless vcds.size == 1
       @vcd = vcds[0]
 
-      finalize_options
-      
       @entities = @vcd['entities']
       @debug = @vcd['debug'] || {}
-      #@control = @vcd["control"]
-      #@retries = @control["retries"]
+
       @logger.info("VCD cloud options: #{options.inspect}")
 
       @client_lock = Mutex.new
@@ -102,7 +99,7 @@ module VCloudCloud
         
         # create env and generate env ISO image
         s.state[:env_metadata_key] = @entities['vm_metadata_key'] 
-        s.next Steps::CreateAgentEnv, networks, environments
+        s.next Steps::CreateAgentEnv, networks, environment, @agent_properties
 
         save_agent_env s
 
@@ -182,7 +179,8 @@ module VCloudCloud
         # update environment
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
-        Steps::CreateAgentEnv.update_network_env networks
+        vm = s.state[:vm] = client.reload vm
+        Steps::CreateAgentEnv.update_network_env s.state[:env], vm, networks
         
         save_agent_env s
         
@@ -206,18 +204,17 @@ module VCloudCloud
         s.next Steps::AttachDetachDisk, :attach
         
         # update environment
-        disk = s.state[:disk]
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
         s.state[:env]['disks'] ||= {}
         s.state[:env]['disks']['persistent'] ||= {}
-        s.state[:env]['disks']['persistent'][disk.id] = disk.id
+        s.state[:env]['disks']['persistent'][disk_id] = disk_id
         
         save_agent_env s
       end
     end
 
-    def detach_disk(vapp_id, disk_id)
+    def detach_disk(vm_id, disk_id)
       steps "detach_disk(#{vm_id}, #{disk_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
         s.state[:disk] = client.resolve_entity disk_id
@@ -227,12 +224,11 @@ module VCloudCloud
         s.next Steps::AttachDetachDisk, :detach
 
         # update environment
-        disk = s.state[:disk]
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
         env = s.state[:env]
         if env['disks'] && env['disks']['persistent'].is_a?(Hash)
-          env['disks']['persistent'].delete disk.id
+          env['disks']['persistent'].delete disk_id
         end
         
         save_agent_env s
@@ -266,41 +262,6 @@ module VCloudCloud
     
     def steps(name, options = {}, &block)
       Transaction.perform name, client(), options, &block
-    end
-  
-    def finalize_options
-      @vcd["control"] ||= {}
-      @vcd["control"]["retries"] ||= {}
-      @vcd["control"]["retries"]["default"] ||= RETRIES_DEFAULT
-      @vcd["control"]["retries"]["upload_vapp_files"] ||=
-        RETRIES_UPLOAD_VAPP_FILES
-      @vcd["control"]["retries"]["cpi"] ||= RETRIES_CPI
-      @vcd["control"]["delay"] ||= DELAY
-      @vcd["control"]["time_limit_sec"] = {} unless
-        @vcd["control"]["time_limit_sec"]
-      @vcd["control"]["time_limit_sec"]["default"] ||= TIMELIMIT_DEFAULT
-      @vcd["control"]["time_limit_sec"]["delete_vapp_template"] ||=
-        TIMELIMIT_DELETE_VAPP_TEMPLATE
-      @vcd["control"]["time_limit_sec"]["delete_vapp"] ||= TIMELIMIT_DELETE_VAPP
-      @vcd["control"]["time_limit_sec"]["delete_media"] ||=
-        TIMELIMIT_DELETE_MEDIA
-      @vcd["control"]["time_limit_sec"]["instantiate_vapp_template"] ||=
-        TIMELIMIT_INSTANTIATE_VAPP_TEMPLATE
-      @vcd["control"]["time_limit_sec"]["power_on"] ||= TIMELIMIT_POWER_ON
-      @vcd["control"]["time_limit_sec"]["power_off"] ||= TIMELIMIT_POWER_OFF
-      @vcd["control"]["time_limit_sec"]["undeploy"] ||= TIMELIMIT_UNDEPLOY
-      @vcd["control"]["time_limit_sec"]["process_descriptor_vapp_template"] ||=
-        TIMELIMIT_PROCESS_DESCRIPTOR_VAPP_TEMPLATE
-      @vcd["control"]["time_limit_sec"]["http_request"] ||=
-        TIMELIMIT_HTTP_REQUEST
-      @vcd["control"]["backoff"] ||= BACKOFF
-      @vcd["control"]["rest_throttle"] = {} unless
-        @vcd["control"]["rest_throttle"]
-      @vcd["control"]["rest_throttle"]["min"] ||= REST_THROTTLE_MIN
-      @vcd["control"]["rest_throttle"]["max"] ||= REST_THROTTLE_MAX
-      @vcd["debug"] = {} unless @vcd["debug"]
-      @vcd["debug"]["delete_vapp"] = DEBUG_DELETE_VAPP unless
-        @vcd["debug"]["delete_vapp"]
     end
 
     def unique_name

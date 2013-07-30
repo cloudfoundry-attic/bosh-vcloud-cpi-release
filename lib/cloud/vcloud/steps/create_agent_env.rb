@@ -1,7 +1,7 @@
 module VCloudCloud
   module Steps
     class CreateAgentEnv < Step
-      def perform(networks, environment, &block)
+      def perform(networks, environment, agent_properies, &block)
         vm = state[:vm] = client.reload state[:vm]
         
         system_disk = state[:disks][0]
@@ -16,8 +16,7 @@ module VCloudCloud
           },
           'networks' => generate_network_env(vm.hardware_section.nics, networks),
           'env' => environment || {}
-        }
-        # TODO env.merge!(@agent_properties)
+        }.merge! agent_properties
       end
             
       private
@@ -33,7 +32,7 @@ module VCloudCloud
         newly_added[0]
       end
       
-      def generate_network_env(nics, networks)
+      def self.generate_network_env(nics, networks)
         nic_net = {}
         nics.each do |nic|
           nic_net[nic.network] = nic
@@ -44,10 +43,7 @@ module VCloudCloud
           network_entry = network.dup
           v_network_name = network['cloud_properties']['name']
           nic = nic_net[v_network_name]
-          if nic.nil? then
-            @logger.warn("Not generating network env for #{v_network_name}")
-            next
-          end
+          next if nic.nil?
           network_entry['mac'] = nic.mac_address
           network_env[network_name] = network_entry
         end
@@ -56,9 +52,8 @@ module VCloudCloud
       
       public
       
-      def self.update_network_env(networks)
-        vm = state[:vm] = client.reload state[:vm]
-        state[:env]['networks'] = generate_network_env vm.hardware_section.nics, networks
+      def self.update_network_env(env, vm, networks)
+        env['networks'] = generate_network_env vm.hardware_section.nics, networks
       end
     end
   end
