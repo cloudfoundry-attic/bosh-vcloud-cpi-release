@@ -140,6 +140,43 @@ module VCloudCloud
       Steps::WaitTasks.wait_task task, self
     end
     
+    def wait_task(task, accept_failure = false)
+      # TODO timeout wait instead of infinite wait
+      while true
+        status = task.status.downcase
+        @logger.debug "WAIT TASK #{task.urn} #{task.operation} #{status}"
+        break if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
+        if [:ABORTED, :ERROR, :CANCELED].any? { |s| status == VCloudSdk::Xml::TASK_STATUS[s] }
+          return if accept_failure
+          raise CloudError, "Task #{task.urn} #{task.operation} completed unsuccessfully"
+        end
+        sleep WAIT_DELAY  # TODO WAIT_DELAY from configuration
+        task = reload task
+      end
+      
+      task
+    end
+    
+    def wait_entity(entity, accept_failure = false)
+      return if !entity.running_tasks || entity.running_tasks.empty?
+      entity.running_tasks.each do |task|
+          wait_task task, accept_failure
+      end
+        
+      entity = reload entity
+      
+      # verify all tasks succeeded
+      unless accept_failure
+        failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
+        unless failed_tasks.empty?
+          @logger.error "Failed tasks: #{failed_tasks}"
+          raise CloudError, "Some tasks failed"
+        end
+      end
+      
+      entity
+    end
+    
     private
     
     COOKIE_TIMEOUT = 1500

@@ -16,7 +16,7 @@ module VCloudCloud
         
         vapp = client.invoke :post, client.vdc.instantiate_vapp_template_link, :payload => params
         
-        state[:vapp] = vapp
+        state[:vapp] = client.wait_entity vapp
       end
       
       private

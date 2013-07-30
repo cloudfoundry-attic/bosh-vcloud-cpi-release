@@ -9,7 +9,6 @@ require "thread"
 
 require_relative 'errors'
 require_relative 'const'
-require_relative 'util'
 require_relative 'vcd_client'
 require_relative 'steps'
 
@@ -42,7 +41,6 @@ module VCloudCloud
         s.next Steps::StemcellInfo, image
         s.next Steps::CreateTemplate, "sc-#{unique_name}"
         s.next Steps::UploadTemplateFiles
-        s.next Steps::WaitTasks, s.state[:vapp_template]
         s.next Steps::AddCatalogItem, :vapp, s.state[:vapp_template]
       end)[:catalog_item].urn
     end
@@ -52,7 +50,7 @@ module VCloudCloud
         catalog_vapp = client.resolve_entity catalog_vapp_id
         raise CloudError, "Catalog vApp #{id} not found" unless catalog_vapp
         vapp = client.resolve_link catalog_vapp.entity
-        s.next Steps::WaitTasks, vapp, :accept_failures => true
+        client.wait_entity vapp, true
         client.invoke :delete, vapp.remove_link
         client.invoke :delete, catalog_vapp.href
       end
@@ -82,16 +80,15 @@ module VCloudCloud
         end
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
-        s.next Steps::WaitTasks, s.state[:vapp]
-        vapp = s.state[:vapp] = client.reload s.state[:vapp]
+        vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
         
         # perform recomposing
         if container_vapp
-          s.next Steps::WaitTasks, container_vapp
+          container_vapp = client.wait_entity container_vapp
           s.next Steps::Recompose, container_vapp
           vapp = s.state[:vapp] = client.reload vapp
-          s.next Steps::WaitTasks, vapp
+          client.wait_entity vapp
           s.next Steps::Delete, vapp, true
           vapp = s.state[:vapp] = container_vapp
         end
@@ -199,7 +196,6 @@ module VCloudCloud
         # vm_locality is used as vm_id
         vm = vm_locality.nil? ? nil : client.resolve_entity(vm_locality)
         s.next Steps::CreateDisk, unique_name, size_mb, vm
-        s.next WaitTasks, s.state[:disk]
       end)[:disk].urn
     end
 

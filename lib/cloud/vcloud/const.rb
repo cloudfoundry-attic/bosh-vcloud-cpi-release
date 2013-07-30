@@ -24,4 +24,5 @@ module VCloudCloud
   # debug option
   DEBUG_DELETE_VAPP = true
 
+  WAIT_DELAY = 5
 end

@@ -11,7 +11,7 @@ module VCloudCloud
         disk = client.invoke :post, client.vdc.add_disk_link,
                   :payload => params,
                   :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:DISK_CREATE_PARAMS] }
-        state[:disk] = disk
+        state[:disk] = client.wait_entity disk
       end
     end
   end

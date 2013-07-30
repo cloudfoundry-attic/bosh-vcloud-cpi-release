@@ -24,7 +24,8 @@ module VCloudCloud
                                  IO.popen("tar zxfO #{state[:stemcell_image]} #{f[:name]}"),
                                  options
           end
-          template = client.reload template
+          
+          state[:vapp_template] = client.wait_entity template
         end
       end      
     end
