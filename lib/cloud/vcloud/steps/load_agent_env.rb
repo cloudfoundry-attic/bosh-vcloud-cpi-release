@@ -1,3 +1,5 @@
+require 'yajl'
+
 module VCloudCloud
   module Steps
     class LoadAgentEnv < Step

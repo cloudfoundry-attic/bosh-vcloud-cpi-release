@@ -8,7 +8,7 @@ module VCloudCloud
           return
         end
         poweron_link = entity.power_on_link
-        raise CloudError, "#{entity.name} unable to power on" unless poweron_link
+        raise "#{entity.name} unable to power on" unless poweron_link
         client.invoke_and_wait :post, poweron_link
         state[ref] = client.reload entity
       end

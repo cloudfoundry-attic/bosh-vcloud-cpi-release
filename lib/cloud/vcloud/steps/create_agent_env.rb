@@ -1,7 +1,7 @@
 module VCloudCloud
   module Steps
     class CreateAgentEnv < Step
-      def perform(networks, environment, agent_properies, &block)
+      def perform(networks, environment, agent_properties, &block)
         vm = state[:vm] = client.reload state[:vm]
         
         system_disk = state[:disks][0]
@@ -14,7 +14,7 @@ module VCloudCloud
             'ephemeral' => ephemeral_disk.disk_id,
             'persistent' => {}              
           },
-          'networks' => generate_network_env(vm.hardware_section.nics, networks),
+          'networks' => CreateAgentEnv.generate_network_env(vm.hardware_section.nics, networks),
           'env' => environment || {}
         }.merge! agent_properties
       end
@@ -25,9 +25,7 @@ module VCloudCloud
         disks = vm.hardware_section.hard_disks
         newly_added = disks - state[:disks]
         if newly_added.size != 1
-          #@logger.debug "Previous disks in #{vapp_id}: #{disks_previous.inspect}")
-          #@logger.debug("Current disks in #{vapp_id}:  #{disks_current.inspect}")
-          raise CloudError, "Expecting #{state[:disks].size + 1} disks, found #{disks.size}"
+          raise "Expecting #{state[:disks].size + 1} disks, found #{disks.size}"
         end  
         newly_added[0]
       end

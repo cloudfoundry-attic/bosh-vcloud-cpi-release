@@ -6,7 +6,7 @@ module VCloudCloud
         net = create_connection(href)
         net.start do |http|
           response = http.request(request) { |http_response| http_response.read_body }
-          raise CloudError, "Error Response: #{response.code} #{response.body}" if response.code.to_i >= 400
+          raise "Error Response: #{response.code} #{response.body}" if response.code.to_i >= 400
           response
         end
       end

@@ -3,7 +3,7 @@ module VCloudCloud
     class Instantiate < Step
       def perform(template_id, vapp_name, description, disk_locality, &block)
         catalog_item = client.resolve_entity template_id
-        raise CloudError, "Invalid vApp template Id: #{template_id}" unless catalog_item
+        raise ObjectNotFoundError, "Invalid vApp template Id: #{template_id}" unless catalog_item
         template = client.resolve_link catalog_item.entity
         
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'InstantiateVAppTemplateParams'

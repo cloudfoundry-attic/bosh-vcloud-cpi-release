@@ -8,7 +8,7 @@ module VCloudCloud
           return
         end
         poweroff_link = entity.power_off_link
-        raise CloudError, "#{entity.name} unable to power off" unless poweroff_link
+        raise "#{entity.name} unable to power off" unless poweroff_link
         client.invoke_and_wait :post, poweroff_link
         state[ref] = client.reload entity
       end

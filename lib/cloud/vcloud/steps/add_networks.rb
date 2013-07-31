@@ -8,7 +8,7 @@ module VCloudCloud
           @logger.debug "NETWORK ADD #{name}"
           # find the corresponding accessible network object in org
           org_net = org_networks.find { |n| n.name == name }
-          raise CloudError, "Network #{name} not accesible to VDC #{client.vdc.name}" unless org_net
+          raise "Network #{name} not accesible to VDC #{client.vdc.name}" unless org_net
           # clone the configuration
           config = VCloudSdk::Xml::WrapperFactory.create_instance 'NetworkConfig'
           copy_network_settings client.reload(org_net), config, org_net.name, VCloudSdk::Xml::FENCE_MODES[:BRIDGED]

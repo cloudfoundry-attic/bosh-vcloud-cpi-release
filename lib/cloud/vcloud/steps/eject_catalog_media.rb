@@ -21,7 +21,7 @@ module VCloudCloud
             break
           else
             Transaction.perform 'EjectingCatalogMedia', client() do |s|
-              s.next WaitTasks media
+              media = client.wait_entity media
             end
             # TODO delay
           end

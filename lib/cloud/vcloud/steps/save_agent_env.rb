@@ -1,3 +1,6 @@
+require 'common/common'
+require 'yajl'
+
 module VCloudCloud
   module Steps
     class SaveAgentEnv < Step
@@ -15,7 +18,7 @@ module VCloudCloud
         File.open(env_path, 'w') { |f| f.write env_json }
         output = `#{genisoimage} -o #{iso_path} #{env_path} 2>&1`
         @logger.debug "GENISOIMAGE #{output}"
-        raise CloudError, "genisoimage: #{$?.exitstatus}: #{output}" unless $?.success?
+        raise "genisoimage: #{$?.exitstatus}: #{output}" unless $?.success?
         
         metadata = VCloudSdk::Xml::WrapperFactory.create_instance 'MetadataValue'
         metadata.value = env_json

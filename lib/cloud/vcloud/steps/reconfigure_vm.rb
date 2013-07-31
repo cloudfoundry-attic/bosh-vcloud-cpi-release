@@ -18,11 +18,10 @@ module VCloudCloud
           vm.delete_nic *vm.hardware_section.nics
         
           networks.values.each_with_index do |network, nic_index|
-            # TODO VM_NIC_LIMIT
-            #if nic_index + 1 >= VM_NIC_LIMIT then
-            #  @logger.warn("Max number of NICs reached")
-            #  break
-            #end
+            if nic_index + 1 >= VM_NIC_LIMIT then
+              @logger.warn("Max number of NICs reached")
+              break
+            end
             name = network['cloud_properties']['name']
             vm.add_nic nic_index, name, VCloudSdk::Xml::IP_ADDRESSING_MODE[:MANUAL], network['ip']
             vm.connect_nic nic_index, name, VCloudSdk::Xml::IP_ADDRESSING_MODE[:MANUAL], network['ip']

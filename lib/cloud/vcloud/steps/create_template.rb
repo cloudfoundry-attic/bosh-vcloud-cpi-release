@@ -2,7 +2,6 @@ module VCloudCloud
   module Steps
     class CreateTemplate < Step
       def perform(name, &block)
-        # POST UploadVAppTemplateParams
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
         params.name = name
         template = client.invoke :post, client.vdc.upload_link, :payload => params

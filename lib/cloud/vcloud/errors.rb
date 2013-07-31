@@ -1,6 +1,6 @@
 require 'cloud/errors'
 
 module VCloudCloud
-  class CloudError < Bosh::Clouds::CloudError
+  class ObjectNotFoundError < StandardError
   end
 end

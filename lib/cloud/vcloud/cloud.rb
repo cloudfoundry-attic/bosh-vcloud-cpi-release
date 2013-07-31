@@ -1,11 +1,4 @@
-require "common/common"
-
-require "digest/sha1"
-require "fileutils"
-require "logger"
-require "securerandom"
-require "yajl"
-require "thread"
+require 'securerandom'
 
 require_relative 'errors'
 require_relative 'const'
@@ -18,17 +11,16 @@ module VCloudCloud
 
     def initialize(options)
       @logger = Bosh::Clouds::Config.logger
-      @logger.debug("Input cloud options: #{options.inspect}")
+      @logger.debug "Input cloud options: #{options.inspect}"
 
-      @agent_properties = options["agent"] || {}
-      vcds = options["vcds"]
-      raise ArgumentError, "Invalid number of VCDs" unless vcds.size == 1
+      @agent_properties = options['agent'] || {}
+      
+      vcds = options['vcds']
+      raise ArgumentError, 'Invalid number of VCDs' unless vcds.size == 1
       @vcd = vcds[0]
 
       @entities = @vcd['entities']
       @debug = @vcd['debug'] || {}
-
-      @logger.info("VCD cloud options: #{options.inspect}")
 
       @client_lock = Mutex.new
     end
@@ -45,7 +37,7 @@ module VCloudCloud
     def delete_stemcell(catalog_vapp_id)
       steps "delete_stemcell(#{catalog_vapp_id})" do |s|
         catalog_vapp = client.resolve_entity catalog_vapp_id
-        raise CloudError, "Catalog vApp #{id} not found" unless catalog_vapp
+        raise "Catalog vApp #{id} not found" unless catalog_vapp
         vapp = client.resolve_link catalog_vapp.entity
         client.wait_entity vapp, true
         client.invoke :delete, vapp.remove_link
@@ -70,7 +62,7 @@ module VCloudCloud
         unless requested_name.nil?
           begin
             container_vapp = client.vapp_by_name requested_name
-          rescue CloudError # TODO unify exceptions
+          rescue ObjectNotFoundError
             # ignored, keep container_vapp nil
             vapp_name = agent_id
           end
@@ -125,7 +117,9 @@ module VCloudCloud
     def has_vm?(vm_id)
       client.resolve_entity vm_id
       true
-    rescue RestClient::Exception  # TODO unify exceptions
+    rescue RestClient::Exception  # invalid ID will get 403
+      false
+    rescue ObjectNotFoundError
       false
     end
 
@@ -142,6 +136,7 @@ module VCloudCloud
         vapp_link = vm.container_vapp_link
         
         if @debug['delete_vm']
+          s.next Steps::Undeploy, s.state[:vm]
           s.next Steps::Delete, s.state[:vm], true
         end
         
@@ -247,8 +242,6 @@ module VCloudCloud
     end
 
     def validate_deployment(old_manifest, new_manifest)
-      # There is TODO in vSphere CPI that questions the necessity of this method
-      raise NotImplementedError, "validate_deployment"
     end
 
     private

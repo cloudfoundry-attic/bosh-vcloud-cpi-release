@@ -1,6 +1,7 @@
 require 'base64'
 require 'uri'
 require 'rest_client'
+
 require_relative 'cache'
 require_relative 'file_uploader'
 require_relative 'xml/constants'
@@ -45,7 +46,7 @@ module VCloudCloud
     def vdc
       @cache.get :vdc do
         vdc_link = org.vdc_link vdc_name
-        raise CloudError, "Invalid virtual datacenter name: #{vdc_name}" unless vdc_link
+        raise ObjectNotFoundError, "Invalid virtual datacenter name: #{vdc_name}" unless vdc_link
         resolve_link vdc_link
       end
     end
@@ -53,7 +54,7 @@ module VCloudCloud
     # catalog should be either :vapp or :media
     def catalog(catalog_type)
       catalog_link = org.catalog_link @entities["#{catalog_type.to_s}_catalog"]
-      raise CloudError, "Invalid catalog type: #{catalog_type}" unless catalog_link      
+      raise ObjectNotFoundError, "Invalid catalog type: #{catalog_type}" unless catalog_link      
       resolve_link catalog_link
     end
 
@@ -71,14 +72,14 @@ module VCloudCloud
     
     def media(name)
       catalog_media = catalog_item :media, name, VCloudSdk::Xml::MEDIA_TYPE[:MEDIA]
-      raise CloudError, "Invalid catalog media: #{name}" unless catalog_media
+      raise ObjectNotFoundError, "Invalid catalog media: #{name}" unless catalog_media
       media = resolve_link catalog_media.entity
       [media, catalog_media]
     end
     
     def vapp_by_name(name)
       node = vdc.get_vapp name
-      raise CloudError, "vApp #{name} does not exist" unless node
+      raise ObjectNotFoundError, "vApp #{name} does not exist" unless node
       resolve_link node.href
     end
     
@@ -89,7 +90,7 @@ module VCloudCloud
     def resolve_entity(id)
       session
       entity = invoke :get, "#{@entity_resolver_link.href}#{id}"
-      raise CloudError, "Invalid entity urn: #{id}" unless entity
+      raise ObjectNotFoundError, "Invalid entity urn: #{id}" unless entity
       resolve_link entity.link
     end
     
@@ -148,7 +149,7 @@ module VCloudCloud
         break if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
         if [:ABORTED, :ERROR, :CANCELED].any? { |s| status == VCloudSdk::Xml::TASK_STATUS[s] }
           return if accept_failure
-          raise CloudError, "Task #{task.urn} #{task.operation} completed unsuccessfully"
+          raise "Task #{task.urn} #{task.operation} completed unsuccessfully"
         end
         sleep WAIT_DELAY  # TODO WAIT_DELAY from configuration
         task = reload task
@@ -170,7 +171,7 @@ module VCloudCloud
         failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
         unless failed_tasks.empty?
           @logger.error "Failed tasks: #{failed_tasks}"
-          raise CloudError, "Some tasks failed"
+          raise "Some tasks failed"
         end
       end
       
