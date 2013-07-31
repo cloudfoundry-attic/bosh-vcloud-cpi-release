@@ -1,7 +1,6 @@
 require 'securerandom'
 
 require_relative 'errors'
-require_relative 'const'
 require_relative 'vcd_client'
 require_relative 'steps'
 
@@ -20,6 +19,8 @@ module VCloudCloud
       @vcd = vcds[0]
 
       @entities = @vcd['entities']
+      raise ArgumentError, 'Invalid entities in VCD settings' unless @entities.is_a?(Hash)
+      
       @debug = @vcd['debug'] || {}
 
       @client_lock = Mutex.new
@@ -115,8 +116,8 @@ module VCloudCloud
     end
 
     def has_vm?(vm_id)
-      client.resolve_entity vm_id
-      true
+      vm = client.resolve_entity vm_id
+      vm.type == VCloudSdk::Xml::MEDIA_TYPE[:VM]
     rescue RestClient::Exception  # invalid ID will get 403
       false
     rescue ObjectNotFoundError

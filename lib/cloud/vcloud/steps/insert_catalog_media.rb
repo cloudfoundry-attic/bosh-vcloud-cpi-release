@@ -6,9 +6,8 @@ module VCloudCloud
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'MediaInsertOrEjectParams'
         params.media_href = media.href
         vm = state[:vm]
-        # TODO limited retries
-        while true
-          @logger.debug "INSERTMEDIA #{media.name} into VM #{vm.name}"
+        @logger.debug "INSERTMEDIA #{media.name} into VM #{vm.name}"
+        client.timed_loop do
           media = client.reload media
           vm = client.reload vm
           if media.running_tasks.empty?
@@ -17,13 +16,9 @@ module VCloudCloud
                     :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:MEDIA_INSERT_EJECT_PARAMS] }
             break
           else
-            Transaction.perform 'InsertingCatalogMedia', client() do |s|
-              media = client.wait_entity media
-            end
-            # TODO delay
+            media = client.wait_entity media
           end
         end
-        
         state[:vm] = client.reload vm
       end
     end

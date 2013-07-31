@@ -17,6 +17,12 @@ module VCloudCloud
       @user = vcd_settings['user']
       @pass = vcd_settings['password']
       @entities = vcd_settings['entities']
+      
+      control = @entities['control'] || {}
+      @wait_max       = control['wait_max'] || WAIT_MAX
+      @wait_delay     = control['wait_delay'] || WAIT_DELAY
+      @cookie_timeout = control['cookie_timeout'] || COOKIE_TIMEOUT
+      
       @cache = Cache.new
     end
     
@@ -142,19 +148,16 @@ module VCloudCloud
     end
     
     def wait_task(task, accept_failure = false)
-      # TODO timeout wait instead of infinite wait
-      while true
+      timed_loop do
+        task = reload task
         status = task.status.downcase
         @logger.debug "WAIT TASK #{task.urn} #{task.operation} #{status}"
-        break if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
+        return task if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
         if [:ABORTED, :ERROR, :CANCELED].any? { |s| status == VCloudSdk::Xml::TASK_STATUS[s] }
-          return if accept_failure
+          return task if accept_failure
           raise "Task #{task.urn} #{task.operation} completed unsuccessfully"
         end
-        sleep WAIT_DELAY  # TODO WAIT_DELAY from configuration
-        task = reload task
       end
-      
       task
     end
     
@@ -178,9 +181,20 @@ module VCloudCloud
       entity
     end
     
+    def timed_loop(raise_exception = true)
+      start_time = Time.now
+      while Time.now - start_time < @wait_max
+        yield
+        sleep @wait_delay
+      end
+      raise TimeoutError if raise_exception
+    end
+    
     private
     
-    COOKIE_TIMEOUT = 1500
+    WAIT_MAX       = 300    # maximum wait seconds for a single task
+    WAIT_DELAY     = 5      # delay in seconds for pooling next task status
+    COOKIE_TIMEOUT = 1500   # timeout in seconds after which session must be re-created
     
     def cookie_available?
       @cookie && Time.now < @cookie_expiration

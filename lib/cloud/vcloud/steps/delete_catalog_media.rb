@@ -6,19 +6,15 @@ module VCloudCloud
         # return if doesn't exist
         return unless catalog_media
         media = client.resolve_link catalog_media.entity
-        # TODO limit the number of retries
-        while true
-          @logger.info "DELETEMEDIA #{media.name}"
+        @logger.info "DELETEMEDIA #{media.name}"
+        client.timed_loop do
           media = client.reload media
           if media.running_tasks.empty?
             client.invoke_and_wait :delete, media.delete_link
             client.invoke :delete, catalog_media
-            break
+            return
           else
-            Transaction.perform 'DeletingCatalogMedia', client() do |s|
-              media = client.wait_entity media
-            end
-            # TODO delay
+            media = client.wait_entity media
           end
         end
       end
