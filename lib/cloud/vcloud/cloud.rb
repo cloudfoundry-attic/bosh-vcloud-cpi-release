@@ -75,17 +75,19 @@ module VCloudCloud
         
         # perform recomposing
         if container_vapp
-          container_vapp = client.wait_entity container_vapp
+          existing_vm_hrefs = container_vapp.vms.map { |vm| vm.href }
+          client.wait_entity container_vapp
           s.next Steps::Recompose, container_vapp
           vapp = s.state[:vapp] = client.reload vapp
           client.wait_entity vapp
           s.next Steps::Delete, vapp, true
-          vapp = s.state[:vapp] = container_vapp
+          vapp = s.state[:vapp] = client.reload container_vapp
+          vm_href = vapp.vms.map { |vm| vm.href } - existing_vm_hrefs
+          raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
+          vm = s.state[:vm] = client.resolve_link vm_href[0]
         end
         
         # save original disk configuration
-        vapp = s.state[:vapp] = client.reload vapp
-        vm = s.state[:vm] = client.reload vm
         s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
         
         reconfigure_vm s, agent_id, description, resource_pool, networks
