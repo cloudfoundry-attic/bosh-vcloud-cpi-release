@@ -190,6 +190,10 @@ module VCloudCloud
       raise TimeoutError if raise_exception
     end
     
+    def flush_cache
+      @cache.clear
+    end
+
     private
     
     WAIT_MAX       = 300    # maximum wait seconds for a single task
@@ -209,7 +213,7 @@ module VCloudCloud
                     :payload => URI.encode_www_form({ :Authorization => auth_header, :Accept => 'application/*+xml;version=5.1' }),
                     :login => true,
                     :with_response => true
-        @cache.clear
+        flush_cache
         @entity_resolver_link = @session.entity_resolver
         @org_link = @session.org_link @entities['organization']
       end

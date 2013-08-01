@@ -62,14 +62,17 @@ module VCloudCloud
         container_vapp = nil
         unless requested_name.nil?
           begin
+            @logger.debug "Requesting container vApp: #{requested_name}"
             container_vapp = client.vapp_by_name requested_name
           rescue ObjectNotFoundError
             # ignored, keep container_vapp nil
+            @logger.debug "Invalid container vApp: #{requested_name}"
             vapp_name = agent_id
           end
         end
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
+        client.flush_cache  # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
         
@@ -78,9 +81,11 @@ module VCloudCloud
           existing_vm_hrefs = container_vapp.vms.map { |vm| vm.href }
           client.wait_entity container_vapp
           s.next Steps::Recompose, container_vapp
+          client.flush_cache
           vapp = s.state[:vapp] = client.reload vapp
           client.wait_entity vapp
           s.next Steps::Delete, vapp, true
+          client.flush_cache          
           vapp = s.state[:vapp] = client.reload container_vapp
           vm_href = vapp.vms.map { |vm| vm.href } - existing_vm_hrefs
           raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
@@ -154,6 +159,7 @@ module VCloudCloud
               s.next Steps::PowerOff, :vapp
             end
             s.next Steps::Delete, s.state[:vapp], true
+            client.flush_cache
           end
         end
       end
