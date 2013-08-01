@@ -21,8 +21,6 @@ module VCloudCloud
       @entities = @vcd['entities']
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities.is_a?(Hash)
       
-      @debug = @vcd['debug'] || {}
-
       @client_lock = Mutex.new
     end
 
@@ -135,34 +133,22 @@ module VCloudCloud
       steps "delete_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
         
-        # power off vm first
-        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-          s.next Steps::DiscardSuspendedState, :vm
-        end
-        s.next Steps::PowerOff, :vm
-
+        s.next Steps::PowerOff, :vm, true
+        
         vapp_link = vm.container_vapp_link
-        
-        if @debug['delete_vm']
-          s.next Steps::Undeploy, s.state[:vm]
+        vapp = s.state[:vapp] = client.resolve_link vapp_link
+
+        if vapp.vms.size == 1
+          # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
+          # even from dashboard. So if there's only one VM, just stop and delete the vApp
+          s.next Steps::PowerOff, :vapp, true
+          s.next Steps::Undeploy, :vapp
+          s.next Steps::Delete, s.state[:vapp], true
+        else
+          s.next Steps::Undeploy, :vm
           s.next Steps::Delete, s.state[:vm], true
-          s.next Steps::DeleteCatalogMedia, vm.name
         end
-        
-        if @debug['delete_empty_vapp']
-          vapp = s.state[:vapp] = client.resolve_link vapp_link
-          if vapp.vms.size == 0
-            if vapp['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-              s.next Steps::DiscardSuspendedState, :vapp
-            end
-            vapp = s.state[:vapp]
-            if vapp['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
-              s.next Steps::PowerOff, :vapp
-            end
-            s.next Steps::Delete, s.state[:vapp], true
-            client.flush_cache
-          end
-        end
+        s.next Steps::DeleteCatalogMedia, vm.name        
       end
     end
 
@@ -171,10 +157,7 @@ module VCloudCloud
         vm = s.state[:vm] = client.resolve_entity vm_id
 
         # power off vm first
-        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-          s.next Steps::DiscardSuspendedState, :vm
-        end
-        s.next Steps::PowerOff, :vm
+        s.next Steps::PowerOff, :vm, true
 
         # load container vApp
         vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
