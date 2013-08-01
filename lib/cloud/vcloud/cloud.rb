@@ -146,6 +146,7 @@ module VCloudCloud
         if @debug['delete_vm']
           s.next Steps::Undeploy, s.state[:vm]
           s.next Steps::Delete, s.state[:vm], true
+          s.next Steps::DeleteCatalogMedia, vm.name
         end
         
         if @debug['delete_empty_vapp']
