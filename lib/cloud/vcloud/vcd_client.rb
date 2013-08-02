@@ -21,6 +21,8 @@ module VCloudCloud
       control = @entities['control'] || {}
       @wait_max       = control['wait_max'] || WAIT_MAX
       @wait_delay     = control['wait_delay'] || WAIT_DELAY
+      @retry_max      = control['retry_max'] || RETRY_MAX
+      @retry_delay    = control['retry_delay'] || RETRY_DELAY
       @cookie_timeout = control['cookie_timeout'] || COOKIE_TIMEOUT
       
       @cache = Cache.new
@@ -149,7 +151,7 @@ module VCloudCloud
     
     def wait_task(task, accept_failure = false)
       timed_loop do
-        task = reload task
+        task = retry_for_network_issue { reload task }
         status = task.status.downcase
         @logger.debug "WAIT TASK #{task.urn} #{task.operation} #{status}"
         return task if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
@@ -199,7 +201,9 @@ module VCloudCloud
     WAIT_MAX       = 300    # maximum wait seconds for a single task
     WAIT_DELAY     = 5      # delay in seconds for pooling next task status
     COOKIE_TIMEOUT = 1500   # timeout in seconds after which session must be re-created
-    
+    RETRY_MAX      = 3      # maximum attempts
+    RETRY_DELAY    = 100    # delay of first retry, the next is * 2
+
     def cookie_available?
       @cookie && Time.now < @cookie_expiration
     end
@@ -222,6 +226,25 @@ module VCloudCloud
 
     def wrap_response(response)
       VCloudSdk::Xml::WrapperFactory.wrap_document response
+    end
+    
+    def retry_for_network_issue
+      retries = 0
+      delay = @retry_delay
+      result = nil
+      loop do
+        begin
+          result = yield
+          break
+        rescue RestClient::Exception => ex
+          raise ex if retries >= @retry_max
+          @logger.error "RestClient exception (retry after #{delay}ms): #{ex}"
+          sleep(delay / 1000)
+          delay *= 2
+          retries += 1
+        end
+      end
+      result
     end
   end
 end

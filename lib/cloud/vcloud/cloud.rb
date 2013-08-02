@@ -48,7 +48,7 @@ module VCloudCloud
       (steps "create_vm(#{agent_id}, #{catalog_vapp_id}, #{resource_pool}, ...)" do |s|
         # request name available for recomposing vApps
         requested_name = environment && environment['vapp']
-        vapp_name = requested_name.nil? ? agent_id : "vapp-tmp-#{unique_name}"
+        vapp_name = requested_name || agent_id
 
         # disk_locality should be an array of disk ids
         disk_locality = independent_disks disk_locality
@@ -65,10 +65,13 @@ module VCloudCloud
           rescue ObjectNotFoundError
             # ignored, keep container_vapp nil
             @logger.debug "Invalid container vApp: #{requested_name}"
-            vapp_name = agent_id
           end
         end
 
+        # if container vApp exists, use a temp name for new vApp as it will
+        # be recomposed later
+        vapp_name = "vapp-tmp-#{unique_name}" if container_vapp
+        
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
         client.flush_cache  # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
