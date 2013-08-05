@@ -104,6 +104,10 @@ module VCloudSdk
         @root["type"]
       end
 
+      def attribute_with_ns(attr, ns)
+        @root.attribute_with_ns(attr, ns)
+      end
+
       def create_xpath_query(type_name, attrs = nil, only_immediate = false,
           namespace = VCLOUD_NAMESPACE)
         qualified_name = create_qualified_name(type_name, namespace)

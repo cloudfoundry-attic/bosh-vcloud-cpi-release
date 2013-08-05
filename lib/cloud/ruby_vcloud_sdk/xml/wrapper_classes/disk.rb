@@ -2,6 +2,7 @@ module VCloudSdk
   module Xml
 
     class Disk < Wrapper
+
       def bus_type=(value)
         @root["busType"] = value.to_s
       end
@@ -10,8 +11,11 @@ module VCloudSdk
         @root["busSubType"] = value.to_s
       end
 
-      def delete_link
-        get_nodes("Link", {"rel" => "remove"}, true).first
+      def delete_link(force = false)
+        link = get_nodes("Link", {"rel" => "remove"}, true).first
+        return link if !force
+
+        fix_if_invalid(link, "remove", MEDIA_TYPE[:DISK], "#{href}")
       end
 
       def name=(name)

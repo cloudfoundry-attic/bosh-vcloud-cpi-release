@@ -727,8 +727,8 @@ module VCloudCloud
       newly_added = disks_current - disks_previous
 
       if newly_added.size != 1
-        @logger.debug("Previous disks in #{vapp_id}: #{disks_previous.inspect}")
-        @logger.debug("Current disks in #{vapp_id}:  #{disks_current.inspect}")
+        @logger.debug("Previous disks in #{vm.name}: #{disks_previous.inspect}")
+        @logger.debug("Current disks in #{vm.name}:  #{disks_current.inspect}")
         raise IndexError, "Expecting #{disks_previous.size + 1} disks, found " +
               "#{disks_current.size}"
       end

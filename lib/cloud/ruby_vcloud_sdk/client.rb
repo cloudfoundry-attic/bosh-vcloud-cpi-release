@@ -384,7 +384,7 @@ module VCloudSdk
         @logger.warn("Disk #{disk.name} #{disk.urn} no longer exists.")
         return
       end
-      task = @connection.delete(current_disk.delete_link)
+      task = @connection.delete(current_disk.delete_link(true))
       monitor_task(task) do |t|
         @logger.info("Deleted disk #{current_disk.name} #{current_disk.urn}")
         t
@@ -761,12 +761,16 @@ module VCloudSdk
 
     def get_disk_id(vm, disk_href)
       hardware_section = vm.hardware_section
+      @logger.debug("get_disk_id(#{disk_href}) - hw contains: #{hardware_section.hard_disks}")
       disk = hardware_section.hard_disks.find do |d|
-        d.host_resource["disk"] == disk_href
+        hard_disk = d.disk_href
+        next if hard_disk.nil?
+        hard_disk == disk_href
       end
+      @logger.debug("disk found: #{disk}")
       unless disk
         raise DiskNotFoundError, "Disk with href #{disk_href} not attached " +
-                               "to VM #{vm.name}."
+            "to VM #{vm.name}."
       end
       disk.disk_id
     end
