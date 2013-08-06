@@ -28,10 +28,11 @@ module VCloudSdk
           @time_limit["http_request"])
       end
       @root = @connection.connect(username, password)
+      @admin_root = @connection.get(@root.admin_root)
       @entity_resolver_link = @root.entity_resolver.href
-
-      # We assume the organization does not change often so we can get it at login and cache it
-      @org = @connection.get(@root.org_link(@organization))
+      # We assume the organization does not change often so we can get it at
+      # login and cache it
+      @admin_org = @connection.get(@admin_root.organization(@organization))
       @logger.info("Successfully connected.")
     end
 
@@ -57,32 +58,6 @@ module VCloudSdk
       else
         raise CloudError, "Expecting Xml::Vm or String, got #{obj.inspect}."
       end
-    end
-
-    def get_disk(obj)
-      if obj.is_a?(Xml::Disk)
-        obj
-      elsif obj.is_a?(String)
-        resolve_entity(obj)
-      else
-        raise CloudError, "Expecting Xml::Disk or String, got #{obj.inspect}."
-      end
-    end
-
-    def reload_vapp(vapp)
-      current_vapp = @connection.get(vapp)
-      unless current_vapp
-        raise ObjectNotFoundError, "vm #{vapp.name} no longer exists."
-      end
-      current_vapp
-    end
-
-    def reload_vm(vm)
-      current_vm = @connection.get(vm)
-      unless current_vm
-        raise ObjectNotFoundError, "vm #{vm.name} no longer exists."
-      end
-      current_vm
     end
 
     def upload_vapp_template(vapp_name, directory)
@@ -197,7 +172,6 @@ module VCloudSdk
     end
 
     def delete_vapp(vapp)
-      check_and_wait_for_running_tasks(vapp, "vapp")
       @logger.info("Deleting vApp #{vapp.name}.")
       current_vapp = @connection.get(vapp)
       if is_vapp_status(current_vapp, :POWERED_ON)
@@ -205,7 +179,7 @@ module VCloudSdk
           "vApp #{vapp.name} is powered on, power-off before deleting."
       end
       delete_vm_vapp_or_template(current_vapp, @retries["default"],
-        @time_limit["delete_vapp"], "vApp", true)
+        @time_limit["delete_vapp"], "vApp")
     end
 
     def instantiate_vapp_template(source_template_id, vapp_name,
@@ -446,11 +420,13 @@ module VCloudSdk
       end
     end
 
+    def get_disk(disk_id)
+      resolve_entity(disk_id)
+    end
+
 
     def power_on_vm(vm)
-      check_and_wait_for_running_tasks(vm, "vm")
-
-      @logger.info("Powering on vm #{vm.name} .")
+      @logger.info("Powering on vm #{vm} .")
       current_vm = @connection.get(vm)
       unless current_vm
         raise ObjectNotFoundError, "vm #{vm.name} not found."
@@ -471,8 +447,6 @@ module VCloudSdk
     end
 
     def power_off_vm(vm, undeploy = true)
-      check_and_wait_for_running_tasks(vm, "vm")
-
       @logger.info("Powering off vm #{vm.name} .")
       @logger.info("Undeploying vm #{vm.name} .") if undeploy
       current_vm = @connection.get(vm)
@@ -566,8 +540,6 @@ module VCloudSdk
     end
 
     def delete_vm(vm)
-      check_and_wait_for_running_tasks(vm, "vm")
-
       @logger.info("Deleting vm #{vm.name}.")
       current_vm = @connection.get(vm)
       if is_vm_status(current_vm, :POWERED_ON)
@@ -604,7 +576,6 @@ module VCloudSdk
     end
 
     def power_off_vapp(vapp, undeploy = true)
-      check_and_wait_for_running_tasks(vapp, "vapp")
       @logger.info("Powering off vApp #{vapp.name} .")
       @logger.info("Undeploying vApp #{vapp.name} .") if undeploy
       current_vapp = @connection.get(vapp)
@@ -624,7 +595,7 @@ module VCloudSdk
         # undeployed in our status, we should check if the undeploy link is
         # available first.  If undeploy is not available and status is
         # powered_off then it is undeployed.
-        unless current_vapp.undeploy_link(true)
+        unless current_vapp.undeploy_link
           if is_vapp_status(current_vapp, :POWERED_OFF)
             @logger.info("vApp #{vapp.name} already powered-off, undeployed.")
             return
@@ -633,7 +604,7 @@ module VCloudSdk
             "powered-off, undeployed."
         end
         params = Xml::WrapperFactory.create_instance("UndeployVAppParams")
-        task = @connection.post(current_vapp.undeploy_link(true), params)
+        task = @connection.post(current_vapp.undeploy_link, params)
         monitor_task(task, @time_limit["undeploy"])
         @logger.info("vApp #{current_vapp.name} powered-off, undeployed.")
         task
@@ -671,8 +642,6 @@ module VCloudSdk
     end
 
     def recompose_vapp(destination_vapp, destination_vapp_name, source_vapps_to_add_hrefs, items_to_delete_hrefs)
-      check_and_wait_for_running_tasks(destination_vapp, "vApp", @retries["default"])
-
       @logger.info("Recompose_vapp(#{destination_vapp.name}) - Renaming #{destination_vapp.name} to: #{destination_vapp_name}")  if destination_vapp.name != destination_vapp_name
       @logger.info("Recompose_vapp(#{destination_vapp_name}) - Adding #{source_vapps_to_add_hrefs.size}")  if !source_vapps_to_add_hrefs.nil?
       @logger.info("Recompose_vapp(#{destination_vapp_name}) - Deleting #{items_to_delete_hrefs.size}")  if !items_to_delete_hrefs.nil?
@@ -689,8 +658,18 @@ module VCloudSdk
         items_to_delete_hrefs.each { |item_href| recompose_vapp_params.add_delete_items(item_href) }
       end
 
-      # HACK: Workaround. recomposeLink is not available when vapp is running (so force construct the link)
-      recompose_vapp_link = destination_vapp.recompose_vapp_link(true)
+      # HACK: Workaround. recomposeLink is not available when vapp is running (so manually construct the link)
+      recompose_vapp_link = nil
+      begin
+        recompose_vapp_link = destination_vapp.recompose_vapp_link
+      rescue => e
+        @logger.debug("Manually constructing RecomposeLink as its unavailable: #{e}")
+        recompose_vapp_link = Xml::WrapperFactory.create_instance("Link")
+        recompose_vapp_link.rel  = "recompose"
+        recompose_vapp_link.type = "application/vnd.vmware.vcloud.recomposeVAppParams+xml"
+        recompose_vapp_link.href = "#{destination_vapp.href}/action/recomposeVApp"
+      end
+
       @logger.debug("recompose_vapp_params = #{recompose_vapp_params}\nrecomposeLink = #{recompose_vapp_link}")
 
       task = @connection.post(recompose_vapp_link, recompose_vapp_params)
@@ -726,13 +705,13 @@ module VCloudSdk
     end
 
     def get_ovdc
-      vdc_link = @org.vdc_link(@ovdc_name)
-      raise ObjectNotFoundError, "VDC #{@ovdc_name} not found." unless vdc_link
-      @connection.get(vdc_link)
+      vdc = @admin_org.vdc(@ovdc_name)
+      raise ObjectNotFoundError, "VDC #{@ovdc_name} not found." unless vdc
+      @connection.get(vdc)
     end
 
     def get_catalog(name)
-      catalog = @connection.get(@org.catalog_link(name))
+      catalog = @connection.get(@admin_org.catalog(name))
     end
 
 
@@ -801,50 +780,41 @@ module VCloudSdk
         @time_limit["delete_vapp_template"], "vApp Template")
     end
 
-    def check_entity_for_remove_link(entity, type_name, force = false)
+    def check_entity_for_remove_link(entity, type_name)
       current_entity = @connection.get(entity)
-      unless current_entity.remove_link(force)
+      unless current_vapp.remove_link
         raise ObjectNotFoundError, "No link available to delete #{type_name}"
       end
       return current_entity
     end
 
-    def check_and_wait_for_running_tasks(entity, type_name, retries = @retries["default"])
+    def delete_vm_vapp_or_template(entity_to_delete, retries, time_limit, type_name)
       retries.times do |try|
-        @logger.info("Checking for running tasks in #{type_name} #{entity.name}")
-        current_entity = @connection.get(entity)
+        @logger.info("Deleting #{type_name} #{entity_to_delete.name}")
+        current_entity_to_delete = @connection.get(entity_to_delete)
+        if (current_entity_to_delete.running_tasks.empty?)
+          Util.retry_operation(current_entity_to_delete,
+                               @retries["default"], @control["backoff"]) do
+            current_entity_to_delete = check_entity_for_remove_link(current_entity_to_delete, type_name)
+          end
 
-        return if current_entity.running_tasks.empty?
+          Util.retry_operation(current_entity_to_delete.remove_link,
+                               @retries["default"], @control["backoff"]) do
 
-        @logger.info("#{current_entity.name} has tasks in progress, wait until done.")
-        current_entity.running_tasks.each do |task|
-          monitor_task(task)
-        end
+            monitor_task(@connection.delete(current_entity_to_delete.remove_link), time_limit) do |task|
+              @logger.info("#{type_name} #{current_entity_to_delete.name} deleted.")
+              return task
+            end
 
-        sleep (@control["backoff"] ** try)
-      end
-
-      raise "#{type_name}: #{entity.name} still has tasks running after #{retries} retries"
-    end
-
-    def delete_vm_vapp_or_template(entity_to_delete, retries, time_limit, type_name, force = false)
-      check_and_wait_for_running_tasks(entity_to_delete, type_name, retries)
-
-      @logger.info("Deleting #{type_name} #{entity_to_delete.name}")
-
-      current_entity_to_delete = @connection.get(entity_to_delete)
-
-      Util.retry_operation(current_entity_to_delete, @retries["default"], @control["backoff"]) do
-        current_entity_to_delete = check_entity_for_remove_link(current_entity_to_delete, type_name, force)
-      end
-
-      Util.retry_operation(current_entity_to_delete.remove_link(force), @retries["default"], @control["backoff"]) do
-        monitor_task(@connection.delete(current_entity_to_delete.remove_link(force)), time_limit) do |task|
-          @logger.info("#{type_name} #{current_entity_to_delete.name} deleted.")
-          return task
+          end
+        else
+          @logger.info("#{entity_to_delete.name} has tasks in progress, wait until done.")
+          current_entity_to_delete.running_tasks.each do |task|
+            monitor_task(task)
+          end
+          sleep (@control["backoff"] ** try)
         end
       end
-
       raise ApiRequestError,
         "Unable to delete #{type_name} after #{retries} attempts"
     end
@@ -943,12 +913,12 @@ module VCloudSdk
     # The catalog item is not the uderlying object itself, i.e. vApp template.
     def get_catalog_item(name, item_type, catalog_name)
       raise ObjectNotFoundError, "Catalog item name cannot be nil" unless name
-      unless @org.catalog_link(catalog_name)
+      unless @admin_org.catalog(catalog_name)
         raise ObjectNotFoundError, "Catalog #{catalog_name} not found."
       end
       # For some reason, if the catalog no longer exists,
       # VCD throws a Forbidden exception when getting
-      catalog = @connection.get(@org.catalog_link(catalog_name))
+      catalog = @connection.get(@admin_org.catalog(catalog_name))
       items = catalog.catalog_items(name)
       if items.nil? || items.empty?
         @logger.debug("Item #{name} does not exist in catalog #{catalog_name}")
@@ -1064,18 +1034,19 @@ module VCloudSdk
     end
 
     def add_catalog_item(item, catalog_name)
-      unless @org.catalog_link(catalog_name)
+      unless @admin_org.catalog(catalog_name)
         raise ArgumentError,
           "Error adding #{item.name}, catalog #{catalog_name} not found."
       end
-      catalog = @connection.get(@org.catalog_link(catalog_name))
+      catalog = @connection.get(@admin_org.catalog(catalog_name))
       raise ObjectNotFoundError, "Error adding #{item.name}, catalog " +
           "#{catalog_name} not available." unless catalog
       catalog_item = Xml::WrapperFactory.create_instance("CatalogItem")
       catalog_item.name = item.name
       catalog_item.entity = item
       @logger.info("Adding #{catalog_item.name} to catalog #{catalog_name}")
-      @connection.post(catalog.add_item_link, catalog_item, VCloudSdk::Xml::MEDIA_TYPE[:CATALOG_ITEM])
+      @connection.post(catalog.add_item_link, catalog_item,
+        Xml::ADMIN_MEDIA_TYPE[:CATALOG_ITEM])
     end
 
     def generate_metadata_href(entity, key)

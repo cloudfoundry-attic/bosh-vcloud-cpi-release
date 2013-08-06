@@ -49,7 +49,7 @@ module VCloudSdk
         get_nodes("Link", {"rel" => "undeploy"}, true).first
       end
 
-      def remove_link(force = false)
+      def remove_link
         get_nodes("Link", {"rel" => "remove"}, true).first
       end
 
@@ -75,18 +75,6 @@ module VCloudSdk
 
       def metadata_link
         get_nodes("Link", {"type" => MEDIA_TYPE[:METADATA]}, true).first
-      end
-
-      def container_vapp_link
-        get_nodes("Link", {"type" => MEDIA_TYPE[:VAPP]}, true).first
-      end
-
-      def running_tasks
-        get_nodes("Task", {"status" => "running"})
-      end
-
-      def tasks
-        get_nodes("Task")
       end
 
       def name

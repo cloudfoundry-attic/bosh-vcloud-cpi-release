@@ -15,7 +15,7 @@ module Bosh
 
       def_delegators :@delegate,
                      :create_stemcell, :delete_stemcell,
-                     :create_vm, :delete_vm, :reboot_vm,
+                     :create_vm, :delete_vm, :reboot_vm, :has_vm?,
                      :configure_networks,
                      :create_disk, :delete_disk,
                      :attach_disk, :detach_disk,
