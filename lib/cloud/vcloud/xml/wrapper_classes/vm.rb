@@ -130,6 +130,15 @@ module VCloudSdk
           "busType", VCLOUD_NAMESPACE)] = HARDWARE_TYPE[:SCSI_CONTROLLER]
       end
 
+      def find_attached_disk(disk)
+        href = disk.is_a?(String) ? disk : disk.href
+        hardware_section.hard_disks.find do |d|
+          hard_disk_href = d.disk_href
+          next if hard_disk_href.nil?
+          hard_disk_href == href
+        end
+      end
+      
       def change_cpu_count(quantity)
         item = hardware_section.cpu
         item.set_rasd("VirtualQuantity", quantity)

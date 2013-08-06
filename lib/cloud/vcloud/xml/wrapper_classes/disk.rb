@@ -11,7 +11,9 @@ module VCloudSdk
       end
 
       def remove_link(force = false)
-        get_nodes("Link", {"rel" => "remove"}, true).first
+        link = get_nodes("Link", {"rel" => "remove"}, true).first
+        return link unless force
+        fix_if_invalid(link, "remove", MEDIA_TYPE[:DISK], "#{href}")
       end
 
       def name=(name)

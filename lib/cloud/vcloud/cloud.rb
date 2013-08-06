@@ -209,6 +209,9 @@ module VCloudCloud
       steps "detach_disk(#{vm_id}, #{disk_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
         s.state[:disk] = client.resolve_entity disk_id
+        # if disk is not attached, just ignore
+        next unless vm.find_attached_disk s.state[:disk]
+      
         if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           s.next Steps::DiscardSuspendedState, :vm
         end
@@ -229,7 +232,7 @@ module VCloudCloud
     def delete_disk(disk_id)
       steps "delete_disk(#{disk_id})" do |s|
         disk = client.resolve_entity disk_id
-        s.next Steps::Delete, disk
+        s.next Steps::Delete, disk, true
       end
     end
 

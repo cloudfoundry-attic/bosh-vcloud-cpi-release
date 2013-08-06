@@ -16,7 +16,13 @@ module VCloudSdk
       end
 
       def capacity_mb
-        host_resource[HOST_RESOURCE_ATTRIBUTE[:CAPACITY]]
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:CAPACITY], VCLOUD_NAMESPACE)
+        v && v.value
+      end
+
+      def disk_href
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:DISK], VCLOUD_NAMESPACE)
+        v && v.value
       end
 
       def disk_id
@@ -28,11 +34,13 @@ module VCloudSdk
       end
 
       def bus_sub_type
-        host_resource[HOST_RESOURCE_ATTRIBUTE[:BUS_SUB_TYPE]]
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:BUS_SUB_TYPE], VCLOUD_NAMESPACE)
+        v && v.value
       end
 
       def bus_type
-        host_resource[HOST_RESOURCE_ATTRIBUTE[:BUS_TYPE]]
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:BUS_TYPE], VCLOUD_NAMESPACE)
+        v && v.value
       end
 
       def parent_instance_id

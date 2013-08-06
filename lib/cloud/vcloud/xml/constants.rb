@@ -56,7 +56,8 @@ module VCloudSdk
     HOST_RESOURCE_ATTRIBUTE = {
         :CAPACITY => "capacity",
         :BUS_SUB_TYPE => "busSubType",
-        :BUS_TYPE => "busType"
+        :BUS_TYPE => "busType",
+        :DISK => "disk"
     }
 
     TASK_STATUS = {
