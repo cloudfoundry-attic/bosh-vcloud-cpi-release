@@ -16,8 +16,8 @@ Gem::Specification.new do |s|
   s.files        = `git ls-files -- lib/*`.split("\n") + %w(README)
   s.require_path = "lib"
 
-  s.add_dependency "bosh_common"
-  s.add_dependency "bosh_cpi"
+  s.add_dependency "bosh_common", "~> 1.5.0.pre3"
+  s.add_dependency "bosh_cpi", "~> 1.5.0.pre3"
   s.add_dependency "yajl-ruby", ">=0.8.2"
   s.add_dependency "builder","~>3.1.4"
   s.add_dependency "httpclient", "=2.2.4"

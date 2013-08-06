@@ -1,4 +1,5 @@
 require 'securerandom'
+require 'logger'
 
 require_relative 'errors'
 require_relative 'vcd_client'

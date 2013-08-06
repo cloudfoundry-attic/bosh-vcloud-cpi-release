@@ -1,4 +1,5 @@
 require "yaml"
+require "cloud"
 require "cloud/vcloud"
 
 module VCloudCloud
@@ -180,7 +181,6 @@ end
 
 RSpec.configure do |c|
   c.treat_symbols_as_metadata_keys_with_true_values = true  # for RSpec-3
-  c.filter_run :all
 end
 
 
