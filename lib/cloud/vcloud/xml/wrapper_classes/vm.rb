@@ -2,11 +2,6 @@ module VCloudSdk
   module Xml
 
     class Vm < Wrapper
-      def initialize(xml, ns = nil, ns_definitions = nil)
-        super(xml, ns, ns_definitions)
-        @logger = Config.logger
-      end
-
       def attach_disk_link
         get_nodes("Link", {"rel" => "disk:attach",
           "type" => MEDIA_TYPE[:DISK_ATTACH_DETACH_PARAMS]}, true).first
@@ -135,14 +130,21 @@ module VCloudSdk
           "busType", VCLOUD_NAMESPACE)] = HARDWARE_TYPE[:SCSI_CONTROLLER]
       end
 
+      def find_attached_disk(disk)
+        href = disk.is_a?(String) ? disk : disk.href
+        hardware_section.hard_disks.find do |d|
+          hard_disk_href = d.disk_href
+          next if hard_disk_href.nil?
+          hard_disk_href == href
+        end
+      end
+      
       def change_cpu_count(quantity)
-        @logger.debug("Updating CPU count on vm #{name} to #{quantity} ")
         item = hardware_section.cpu
         item.set_rasd("VirtualQuantity", quantity)
       end
 
       def change_memory(mb)
-        @logger.debug("Updating memory on vm #{name} to #{mb} MB")
         item = hardware_section.memory
         item.set_rasd("VirtualQuantity", mb)
       end
@@ -157,10 +159,6 @@ module VCloudSdk
         new_nic.network = network_name
         new_nic.set_ip_addressing_mode(addressing_mode, ip)
         new_nic.is_primary = is_primary
-        @logger.info("Adding NIC #{nic_index} to VM #{name} with the " +
-          "following parameters: Network name: #{network_name}, " +
-          "Addressing mode #{addressing_mode}, " +
-          "IP address: #{ip.nil? ? "blank" : ip}")
       end
 
       # NIC modification methods
@@ -189,7 +187,6 @@ module VCloudSdk
         vhw_section = hardware_section
         nics.each do |nic|
           nic_index = nic.nic_index
-          @logger.info("Removing NIC #{nic_index} from VM #{name}")
           net_conn_section.remove_network_connection(nic_index)
           vhw_section.remove_nic(nic_index)
         end

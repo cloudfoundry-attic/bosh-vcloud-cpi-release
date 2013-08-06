@@ -15,6 +15,16 @@ module VCloudSdk
         super(item.node, item.namespace, item.namespace_definitions)
       end
 
+      def capacity_mb
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:CAPACITY], VCLOUD_NAMESPACE)
+        v && v.value
+      end
+
+      def disk_href
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:DISK], VCLOUD_NAMESPACE)
+        v && v.value
+      end
+
       def disk_id
         get_rasd_content(RASD_TYPES[:ADDRESS_ON_PARENT])
       end
@@ -23,32 +33,14 @@ module VCloudSdk
         get_rasd_content(RASD_TYPES[:INSTANCE_ID])
       end
 
-      def capacity_mb
-        v = host_resource.attribute_with_ns(
-            VCloudSdk::Xml::HOST_RESOURCE_ATTRIBUTE[:CAPACITY],
-            VCloudSdk::Xml::VCLOUD_NAMESPACE)
-        return v.nil? ? nil : v.value
-      end
-
-      def disk_href
-        v = host_resource.attribute_with_ns(
-            VCloudSdk::Xml::HOST_RESOURCE_ATTRIBUTE[:DISK],
-            VCloudSdk::Xml::VCLOUD_NAMESPACE)
-        return v.nil? ? nil : v.value
-      end
-
       def bus_sub_type
-        v = host_resource.attribute_with_ns(
-            VCloudSdk::Xml::HOST_RESOURCE_ATTRIBUTE[:BUS_SUB_TYPE],
-            VCloudSdk::Xml::VCLOUD_NAMESPACE)
-        return v.nil? ? nil : v.value
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:BUS_SUB_TYPE], VCLOUD_NAMESPACE)
+        v && v.value
       end
 
       def bus_type
-        v = host_resource.attribute_with_ns(
-            VCloudSdk::Xml::HOST_RESOURCE_ATTRIBUTE[:BUS_TYPE],
-            VCloudSdk::Xml::VCLOUD_NAMESPACE)
-        return v.nil? ? nil : v.value
+        v = host_resource.attribute_with_ns(HOST_RESOURCE_ATTRIBUTE[:BUS_TYPE], VCLOUD_NAMESPACE)
+        v && v.value
       end
 
       def parent_instance_id

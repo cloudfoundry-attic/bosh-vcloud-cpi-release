@@ -16,7 +16,6 @@ module VCloudSdk
                     "name" => name},
                   true).first
       end
-
     end
   end
 end

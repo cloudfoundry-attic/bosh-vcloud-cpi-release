@@ -22,6 +22,10 @@ module VCloudSdk
         get_nodes("Link", {"rel" => "power:reboot"}, true).first
       end
 
+      def cancel_link
+        get_nodes("Link", {"rel" => "task:cancel"}, true).first
+      end
+
       def remove_link(force = false)
         link = get_nodes("Link", {"rel" => "remove"}, true).first
         return link if !force
