@@ -1,9 +1,3 @@
-$: << File.expand_path(File.dirname(__FILE__))
-
-require "ruby_vcloud_sdk"
-require "cloud/vcloud/const"
-require "cloud/vcloud/util"
-
 require "common/common"
 
 require "digest/sha1"
@@ -11,8 +5,10 @@ require "fileutils"
 require "logger"
 require "securerandom"
 require "yajl"
-require "const"
 require "thread"
+
+require_relative "const"
+require_relative "util"
 
 module VCloudCloud
 

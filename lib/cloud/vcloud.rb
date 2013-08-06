@@ -3,6 +3,8 @@ require "common/thread_formatter"
 require "securerandom"
 require "forwardable"
 
+require_relative "ruby_vcloud_sdk"
+
 autoload :VCloudCloud, "cloud/vcloud/cloud"
 
 module Bosh
