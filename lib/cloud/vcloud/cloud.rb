@@ -1,9 +1,3 @@
-$: << File.expand_path(File.dirname(__FILE__))
-
-require "ruby_vcloud_sdk"
-require "cloud/vcloud/const"
-require "cloud/vcloud/util"
-
 require "common/common"
 
 require "digest/sha1"
@@ -11,16 +5,36 @@ require "fileutils"
 require "logger"
 require "securerandom"
 require "yajl"
-require "const"
 require "thread"
+
+require_relative 'errors'
+require_relative 'const'
+require_relative 'util'
+require_relative 'vcd_client'
+require_relative 'steps'
 
 module VCloudCloud
 
   class Cloud
 
+    private
+    
+    def client
+      @client_lock.synchronize do
+        @client = VCloudClient.new(@vcd, @logger) if @client.nil?
+      end
+      @client
+    end
+    
+    def steps(name, &block)
+      Transaction.perform name, client(), &block
+    end
+    
+    public
+    
     def initialize(options)
       @logger = Bosh::Clouds::Config.logger
-      VCloudSdk::Config.configure({ "logger" => @logger })
+      #VCloudSdk::Config.configure({ "logger" => @logger })
       @logger.debug("Input cloud options: #{options.inspect}")
 
       @agent_properties = options["agent"]
@@ -29,70 +43,34 @@ module VCloudCloud
       @vcd = vcds[0]
 
       finalize_options
+      
       @control = @vcd["control"]
       @retries = @control["retries"]
       @logger.info("VCD cloud options: #{options.inspect}")
 
       @client_lock = Mutex.new
 
-      at_exit { destroy_client }
-    end
-
-    def client
-      @client_lock.synchronize {
-        if @client.nil?
-          create_client
-        else
-          begin
-            @client.get_ovdc
-            @client
-          rescue VCloudSdk::CloudError => e
-            log_exception("validate, creating new session.", e)
-            create_client
-          end
-        end
-      }
+      #at_exit { destroy_client }
     end
 
     def create_stemcell(image, _)
-      @client = client
-
-      with_thread_name("create_stemcell(#{image}, _)") do
-        @logger.debug("create_stemcell #{image} #{_}")
-        result = nil
-        Dir.mktmpdir do |temp_dir|
-          @logger.info("Extracting stemcell to: #{temp_dir}")
-          output = `tar -C #{temp_dir} -xzf #{image} 2>&1`
-          raise "Corrupt image, tar exit status: #{$?.exitstatus} output:" +
-            "#{output}" if $?.exitstatus != 0
-
-          ovf_file = Dir.entries(temp_dir).find {
-            |entry| File.extname(entry) == ".ovf" }
-          raise "Missing OVF" unless ovf_file
-          ovf_file = File.join(temp_dir, ovf_file)
-
-          name = "sc-#{generate_unique_name}"
-          @logger.info("Generated name: #{name}")
-
-          @logger.info("Uploading #{ovf_file}")
-          result = @client.upload_vapp_template(name, temp_dir).urn
-        end
-
-        @logger.info("Stemcell created as catalog vApp with ID #{result}.")
-        result
-      end
+      (steps "create_stemcell(#{image}, _)" do |s|
+        s.next Steps::StemcellInfo, image
+        s.next Steps::CreateTemplate
+        s.next Steps::UploadTemplateFiles
+        s.next Steps::WaitTasks, s.state[:vapp_template]
+        s.next Steps::AddCatalogItem, s.state[:vapp_template]
+      end)[:catalog_item].urn
     end
 
     def delete_stemcell(catalog_vapp_id)
-      @client = client
-
-      with_thread_name("delete_stemcell(#{catalog_vapp_id})") do
-        @logger.debug("delete_stemcell #{catalog_vapp_id}")
-
-        # shadow VMs (stemcell replicas) get deleted serially,
-        # and upon failure to delete they must be deleted manually
-        # from VCD "stranded items"
-        @client.delete_catalog_vapp(catalog_vapp_id)
+      steps "delete_stemcell(#{catalog_vapp_id})" do |s|
+        catalog_vapp = client.resolve_entity catalog_vapp_id
+        raise CloudError, "Catalog vApp #{id} not found" unless catalog_vapp
+        vapp = client.resolve_link catalog_vapp.entity
+        s.next Steps::WaitTasks, vapp, :accept_failures => true
+        client.invoke :delete, vapp.remove_link
+        client.invoke :delete, catalog_vapp.href
       end
     end
 

@@ -1,9 +1,6 @@
-require "common/thread_pool"
-require "common/thread_formatter"
-require "securerandom"
-require "forwardable"
+require 'forwardable'
 
-autoload :VCloudCloud, "cloud/vcloud/cloud"
+autoload :VCloudCloud, 'cloud/vcloud/cloud'
 
 module Bosh
   module Clouds
