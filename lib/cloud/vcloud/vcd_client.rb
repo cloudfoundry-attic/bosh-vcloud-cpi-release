@@ -172,7 +172,7 @@ module VCloudCloud
       entity = reload entity
       
       # verify all tasks succeeded
-      unless accept_failure
+      unless accept_failure || entity.tasks.nil? || entity.tasks.empty?
         failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
         unless failed_tasks.empty?
           @logger.error "Failed tasks: #{failed_tasks}"
