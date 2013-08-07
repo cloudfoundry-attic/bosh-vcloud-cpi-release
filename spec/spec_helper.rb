@@ -10,7 +10,7 @@ module VCloudCloud
       end
 
       def test_configuration
-        @@test_config ||= Psych.load_file(spec_asset("test-director-config.yml"))
+        @@test_config ||= YAML.load_file(spec_asset("test-director-config.yml"))
       end
 
       def vcd_settings
@@ -29,7 +29,7 @@ module VCloudCloud
 
       def test_deployment_manifest
         @@test_manifest ||=
-          Psych.load_file(spec_asset("test-deployment-manifest.yml"))
+          YAML.load_file(spec_asset("test-deployment-manifest.yml"))
       end
 
       def generate_unique_name
@@ -90,7 +90,7 @@ module VCloudSdk
       end
 
       def test_configuration
-        @@test_config ||= Psych.load_file(spec_asset("test-config.yml"))
+        @@test_config ||= YAML.load_file(spec_asset("test-config.yml"))
       end
 
       def properties
