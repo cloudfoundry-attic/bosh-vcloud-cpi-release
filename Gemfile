@@ -7,4 +7,5 @@ group :test, :development do
   gem 'rake', '~> 10.0'
   gem 'ci_reporter'
   gem 'rspec'
+  gem 'simplecov'
 end
