@@ -41,7 +41,7 @@ module VCloudSdk
           if (xml)
             wrap_document(xml, ns, namespace_defintions, *args)
           else
-            raise CpiError,
+            raise Bosh::Clouds::CpiError,
               "XML type #{type_name} not found in xml_templates dir."
           end
         end
