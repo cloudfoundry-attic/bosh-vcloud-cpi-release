@@ -66,6 +66,8 @@ module VCloudCloud
       resolve_link catalog_link
     end
 
+    # TODO we can discard type parameter since name should be
+    # the unique identifier of a item in one catalog.
     def catalog_item(catalog_type, name, type)
       cat = catalog catalog_type
       items = cat.catalog_items name
@@ -164,13 +166,12 @@ module VCloudCloud
     end
     
     def wait_entity(entity, accept_failure = false)
-      return if !entity.running_tasks || entity.running_tasks.empty?
       entity.running_tasks.each do |task|
-          wait_task task, accept_failure
-      end
-        
+        wait_task task, accept_failure
+      end if entity.running_tasks && !entity.running_tasks.empty?
+
       entity = reload entity
-      
+
       # verify all tasks succeeded
       unless accept_failure || entity.tasks.nil? || entity.tasks.empty?
         failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
