@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name         = "bosh_vcloud_cpi"
-  s.version      = "0.4.9"
+  s.version      = "0.5.0"
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud CPI"
   s.description  = "BOSH vCloud CPI\n#{`git rev-parse HEAD`[0, 6]}"
@@ -22,5 +22,5 @@ Gem::Specification.new do |s|
   s.add_dependency "builder","~>3.1.4"
   s.add_dependency "httpclient", "=2.2.4"
   s.add_dependency "rest-client", "~>1.6.7"
-  s.add_dependency "nokogiri", "= 1.5.6"
+  s.add_dependency "nokogiri", "~>1.5.6"
 end
