@@ -141,7 +141,7 @@ module VCloudSdk
           end
         end
         namespace_wanted = ns_wanted_no_prefix unless namespace_wanted
-        raise CpiError, "Namespace #{href} not found." unless namespace_wanted
+        raise Bosh::Clouds::CpiError, "Namespace #{href} not found." unless namespace_wanted
         ns_prefix = namespace_wanted.prefix.nil? ? "xmlns" :
           namespace_wanted.prefix
         "#{ns_prefix}:#{name}"
@@ -152,9 +152,6 @@ module VCloudSdk
         xpath(create_xpath_query(type_name, attrs, only_immediate, namespace))
       end
 
-      # There seem to be a Nokogiri bug such that attribute's namespace
-      # prefixes are ignored.  For example, to return an attribute named
-      # vcloud:capacity, use "capacity", not "vcloud:capacity".
       def [](attr)
         @root[attr]
       end
@@ -183,11 +180,11 @@ module VCloudSdk
       def add_child(child, namespace_prefix = nil, namespace_href = nil,
           parent = @root)
         if child.is_a? Wrapper
-          @root.add_child(child.node)
+          parent.add_child(child.node)
         elsif child.is_a? String
           node = Nokogiri::XML::Node.new(child, parent)
           if (namespace_prefix.nil? ^ namespace_href.nil?)
-            raise CpiError,
+            raise Bosh::Clouds::CpiError,
               "Namespace prefix must both be nil or defined together."
           end
           # This is a little more cumbersome but Nokogiri has problems
@@ -199,7 +196,7 @@ module VCloudSdk
           end
           parent.add_child(node)
         else
-          raise CpiError, "Cannot add child.  Unknown object passed in."
+          raise Bosh::Clouds::CpiError, "Cannot add child.  Unknown object passed in."
         end
       end
 

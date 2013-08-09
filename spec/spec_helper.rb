@@ -144,20 +144,6 @@ module VCloudSdk
 
   end
 
-  module Xml
-
-    class Wrapper
-      def ==(other)
-        @root.diff(other.node) do |change, node|
-          # " " Means no difference, "+" means addition and "-" means deletion
-          return false if change != " " && node.to_s.strip().length != 0
-        end
-        true
-      end
-    end
-
-  end
-
   class Config
     class << self
       def logger
