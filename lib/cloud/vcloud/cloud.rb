@@ -16,11 +16,11 @@ module VCloudCloud
       @agent_properties = options['agent'] || {}
       
       vcds = options['vcds']
-      raise ArgumentError, 'Invalid number of VCDs' unless vcds.size == 1
+      raise ArgumentError, 'Invalid number of VCDs' unless vcds && vcds.size == 1
       @vcd = vcds[0]
 
       @entities = @vcd['entities']
-      raise ArgumentError, 'Invalid entities in VCD settings' unless @entities.is_a?(Hash)
+      raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
       
       @client_lock = Mutex.new
     end
@@ -37,7 +37,7 @@ module VCloudCloud
     def delete_stemcell(catalog_vapp_id)
       steps "delete_stemcell(#{catalog_vapp_id})" do |s|
         catalog_vapp = client.resolve_entity catalog_vapp_id
-        raise "Catalog vApp #{id} not found" unless catalog_vapp
+        raise "Catalog vApp #{catalog_vapp_id} not found" unless catalog_vapp
         vapp = client.resolve_link catalog_vapp.entity
         client.wait_entity vapp, true
         client.invoke :delete, vapp.remove_link
@@ -53,10 +53,10 @@ module VCloudCloud
 
         # disk_locality should be an array of disk ids
         disk_locality = independent_disks disk_locality
-        
+
         # agent_id is used as vm name
         description = @entities['description']
-        
+
         # if requested_name is present, we need to recompose vApp
         container_vapp = nil
         unless requested_name.nil?
@@ -72,33 +72,33 @@ module VCloudCloud
         # if container vApp exists, use a temp name for new vApp as it will
         # be recomposed later
         vapp_name = "vapp-tmp-#{unique_name}" if container_vapp
-        
+
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
         client.flush_cache  # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
-        
+
         # perform recomposing
         if container_vapp
-          existing_vm_hrefs = container_vapp.vms.map { |vm| vm.href }
+          existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
           client.wait_entity container_vapp
           s.next Steps::Recompose, container_vapp
           client.flush_cache
           vapp = s.state[:vapp] = client.reload vapp
           client.wait_entity vapp
           s.next Steps::Delete, vapp, true
-          client.flush_cache          
+          client.flush_cache
           vapp = s.state[:vapp] = client.reload container_vapp
-          vm_href = vapp.vms.map { |vm| vm.href } - existing_vm_hrefs
+          vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
           raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
           vm = s.state[:vm] = client.resolve_link vm_href[0]
         end
-        
+
         # save original disk configuration
         s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
-        
+
         reconfigure_vm s, agent_id, description, resource_pool, networks
-        
+
         # create env and generate env ISO image
         s.state[:env_metadata_key] = @entities['vm_metadata_key'] 
         s.next Steps::CreateAgentEnv, networks, environment, @agent_properties
@@ -109,10 +109,11 @@ module VCloudCloud
         s.next Steps::PowerOn, :vm
       end)[:vm].urn
     end
-    
+
     def reboot_vm(vm_id)
       steps "reboot_vm(#{vm_id})" do |s|
-        vm = s.state[:vm] = client.resolve_link client.resolve_entity(vm_id)
+        vm = s.state[:vm] = client.resolve_entity(vm_id)
+
         if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           s.next Steps::DiscardSuspendedState, :vm
           s.next Steps::PowerOn, :vm
@@ -138,7 +139,7 @@ module VCloudCloud
         vm = s.state[:vm] = client.resolve_entity vm_id
         
         s.next Steps::PowerOff, :vm, true
-        
+       
         vapp_link = vm.container_vapp_link
         vapp = s.state[:vapp] = client.resolve_link vapp_link
 
@@ -164,7 +165,7 @@ module VCloudCloud
         s.next Steps::PowerOff, :vm, true
 
         # load container vApp
-        vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
+        s.state[:vapp] = client.resolve_link vm.container_vapp_link
         
         reconfigure_vm s, nil, nil, nil, networks
         
@@ -212,7 +213,6 @@ module VCloudCloud
         s.state[:disk] = client.resolve_entity disk_id
         # if disk is not attached, just ignore
         next unless vm.find_attached_disk s.state[:disk]
-      
         if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           s.next Steps::DiscardSuspendedState, :vm
         end
