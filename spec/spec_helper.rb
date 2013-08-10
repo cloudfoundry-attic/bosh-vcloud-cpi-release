@@ -89,7 +89,7 @@ module VCloudSdk
 
   class ApiRequestError < ApiError; end
   class ApiTimeoutError < ApiError; end
-  
+
   module Test
 
     class << self
@@ -153,9 +153,9 @@ module VCloudSdk
         logger.level = Logger::DEBUG
         logger
       end
-      
+
       def configure(config)
-      end      
+      end
     end
   end
 

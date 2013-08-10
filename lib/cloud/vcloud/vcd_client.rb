@@ -17,33 +17,33 @@ module VCloudCloud
       @user = vcd_settings['user']
       @pass = vcd_settings['password']
       @entities = vcd_settings['entities']
-      
+
       control = @entities['control'] || {}
       @wait_max       = control['wait_max'] || WAIT_MAX
       @wait_delay     = control['wait_delay'] || WAIT_DELAY
       @retry_max      = control['retry_max'] || RETRY_MAX
       @retry_delay    = control['retry_delay'] || RETRY_DELAY
       @cookie_timeout = control['cookie_timeout'] || COOKIE_TIMEOUT
-      
+
       @cache = Cache.new
     end
-    
+
     def org_name
       @entities['organization']
     end
-    
+
     def vdc_name
       @entities['virtual_datacenter']
     end
-    
+
     def vapp_catalog_name
       @entities['vapp_catalog']
     end
-    
+
     def media_catalog_name
       @entities['media_catalog']
     end
-    
+
     def org
       @cache.get :org do
         session
@@ -58,11 +58,11 @@ module VCloudCloud
         resolve_link vdc_link
       end
     end
-    
+
     # catalog should be either :vapp or :media
     def catalog(catalog_type)
       catalog_link = org.catalog_link @entities["#{catalog_type.to_s}_catalog"]
-      raise ObjectNotFoundError, "Invalid catalog type: #{catalog_type}" unless catalog_link      
+      raise ObjectNotFoundError, "Invalid catalog type: #{catalog_type}" unless catalog_link
       resolve_link catalog_link
     end
 
@@ -79,38 +79,38 @@ module VCloudCloud
       end if items
       result
     end
-    
+
     def media(name)
       catalog_media = catalog_item :media, name, VCloudSdk::Xml::MEDIA_TYPE[:MEDIA]
       raise ObjectNotFoundError, "Invalid catalog media: #{name}" unless catalog_media
       media = resolve_link catalog_media.entity
       [media, catalog_media]
     end
-    
+
     def vapp_by_name(name)
       node = vdc.get_vapp name
       raise ObjectNotFoundError, "vApp #{name} does not exist" unless node
       resolve_link node.href
     end
-    
+
     def resolve_link(link)
       invoke :get, link
     end
-    
+
     def resolve_entity(id)
       session
       entity = invoke :get, "#{@entity_resolver_link.href}#{id}"
       raise ObjectNotFoundError, "Invalid entity urn: #{id}" unless entity
       resolve_link entity.link
     end
-    
+
     def reload(object)
       resolve_link object.href
     end
-    
+
     def invoke(method, path, options = {})
       session unless options[:login]
-      
+
       path = path.href unless path.is_a?(String)
 
       params = {
@@ -146,11 +146,11 @@ module VCloudCloud
       session
       FileUploader.upload url, size, stream, options.merge({ :cookie => @cookie, :authorization => @auth_token })
     end
-    
+
     def invoke_and_wait(*args)
       wait_task invoke(*args)
     end
-    
+
     def wait_task(task, accept_failure = false)
       timed_loop do
         task = retry_for_network_issue { reload task }
@@ -164,7 +164,7 @@ module VCloudCloud
       end
       task
     end
-    
+
     def wait_entity(entity, accept_failure = false)
       entity.running_tasks.each do |task|
         wait_task task, accept_failure
@@ -180,10 +180,10 @@ module VCloudCloud
           raise "Some tasks failed"
         end
       end
-      
+
       entity
     end
-    
+
     def timed_loop(raise_exception = true)
       start_time = Time.now
       while Time.now - start_time < @wait_max
@@ -192,13 +192,13 @@ module VCloudCloud
       end
       raise TimeoutError if raise_exception
     end
-    
+
     def flush_cache
       @cache.clear
     end
 
     private
-    
+
     WAIT_MAX       = 300    # maximum wait seconds for a single task
     WAIT_DELAY     = 5      # delay in seconds for pooling next task status
     COOKIE_TIMEOUT = 1500   # timeout in seconds after which session must be re-created
@@ -208,7 +208,7 @@ module VCloudCloud
     def cookie_available?
       @cookie && Time.now < @cookie_expiration
     end
-    
+
     def session
       unless cookie_available?
         auth = "#{@user}@#{@entities['organization']}:#{@pass}"
@@ -228,7 +228,7 @@ module VCloudCloud
     def wrap_response(response)
       VCloudSdk::Xml::WrapperFactory.wrap_document response
     end
-    
+
     def retry_for_network_issue
       retries = 0
       delay = @retry_delay

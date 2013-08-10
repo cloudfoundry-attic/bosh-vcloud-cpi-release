@@ -3,7 +3,7 @@ module VCloudCloud
     def initialize
       @objects = {}
     end
-    
+
     def get(id, &block)
       object = @objects[id]
       unless object
@@ -12,7 +12,7 @@ module VCloudCloud
       end
       object
     end
-    
+
     def clear
       @objects = {}
     end

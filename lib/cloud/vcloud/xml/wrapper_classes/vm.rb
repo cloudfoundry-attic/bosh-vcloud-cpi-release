@@ -138,7 +138,7 @@ module VCloudSdk
           hard_disk_href == href
         end
       end
-      
+
       def change_cpu_count(quantity)
         item = hardware_section.cpu
         item.set_rasd("VirtualQuantity", quantity)

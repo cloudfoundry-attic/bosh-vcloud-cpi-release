@@ -14,14 +14,14 @@ module VCloudCloud
       @logger.debug "Input cloud options: #{options.inspect}"
 
       @agent_properties = options['agent'] || {}
-      
+
       vcds = options['vcds']
       raise ArgumentError, 'Invalid number of VCDs' unless vcds && vcds.size == 1
       @vcd = vcds[0]
 
       @entities = @vcd['entities']
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
-      
+
       @client_lock = Mutex.new
     end
 
@@ -100,7 +100,7 @@ module VCloudCloud
         reconfigure_vm s, agent_id, description, resource_pool, networks
 
         # create env and generate env ISO image
-        s.state[:env_metadata_key] = @entities['vm_metadata_key'] 
+        s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::CreateAgentEnv, networks, environment, @agent_properties
 
         save_agent_env s
@@ -137,9 +137,9 @@ module VCloudCloud
     def delete_vm(vm_id)
       steps "delete_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
-        
+
         s.next Steps::PowerOff, :vm, true
-       
+
         vapp_link = vm.container_vapp_link
         vapp = s.state[:vapp] = client.resolve_link vapp_link
 
@@ -153,7 +153,7 @@ module VCloudCloud
           s.next Steps::Undeploy, :vm
           s.next Steps::Delete, s.state[:vm], true
         end
-        s.next Steps::DeleteCatalogMedia, vm.name        
+        s.next Steps::DeleteCatalogMedia, vm.name
       end
     end
 
@@ -166,17 +166,17 @@ module VCloudCloud
 
         # load container vApp
         s.state[:vapp] = client.resolve_link vm.container_vapp_link
-        
+
         reconfigure_vm s, nil, nil, nil, networks
-        
+
         # update environment
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
         vm = s.state[:vm] = client.reload vm
         Steps::CreateAgentEnv.update_network_env s.state[:env], vm, networks
-        
+
         save_agent_env s
-        
+
         # power on
         s.next Steps::PowerOn, :vm
       end
@@ -195,14 +195,14 @@ module VCloudCloud
         s.state[:vm] = client.resolve_entity vm_id
         s.state[:disk] = client.resolve_entity disk_id
         s.next Steps::AttachDetachDisk, :attach
-        
+
         # update environment
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
         s.state[:env]['disks'] ||= {}
         s.state[:env]['disks']['persistent'] ||= {}
         s.state[:env]['disks']['persistent'][disk_id] = disk_id
-        
+
         save_agent_env s
       end
     end
@@ -225,7 +225,7 @@ module VCloudCloud
         if env['disks'] && env['disks']['persistent'].is_a?(Hash)
           env['disks']['persistent'].delete disk_id
         end
-        
+
         save_agent_env s
       end
     end
@@ -252,7 +252,7 @@ module VCloudCloud
       end
       @client
     end
-    
+
     def steps(name, options = {}, &block)
       Transaction.perform name, client(), options, &block
     end
@@ -272,7 +272,7 @@ module VCloudCloud
     def network_names(networks)
       networks.map { |k,v| v['cloud_properties']['name'] }.uniq
     end
-    
+
     def reconfigure_vm(s, name, description, resource_pool, networks)
       net_names = network_names networks
       s.next Steps::AddNetworks, net_names
@@ -282,22 +282,21 @@ module VCloudCloud
 
     def save_agent_env(s)
       s.next Steps::SaveAgentEnv
-      
+
       vm = s.state[:vm]
 
       # eject and delete old env ISO
       s.next Steps::EjectCatalogMedia, vm.name
       s.next Steps::DeleteCatalogMedia, vm.name
-      
+
       # attach new env ISO
       storage_profiles = client.vdc.storage_profiles || []
       media_storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['media_storage_profile'] }
       s.next Steps::UploadCatalogMedia, vm.name, s.state[:iso], 'iso', media_storage_profile
       s.next Steps::AddCatalogItem, :media, s.state[:media]
       s.next Steps::InsertCatalogMedia, vm.name
-      
+
       s.state[:vm] = client.reload vm
     end
   end
-
 end

@@ -10,7 +10,7 @@ module VCloudCloud
         # HACK: Workaround. recomposeLink is not available when vapp is running (so force construct the link)
         recompose_vapp_link = container_vapp.recompose_vapp_link true
         client.invoke_and_wait :post, recompose_vapp_link, :payload => params
-      end      
+      end
     end
   end
 end

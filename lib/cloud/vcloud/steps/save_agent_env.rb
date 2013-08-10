@@ -9,7 +9,7 @@ module VCloudCloud
         metadata_link = "#{vm.metadata_link.href}/#{state[:env_metadata_key]}"
 
         @logger.debug "AGENT_ENV #{vm.urn} #{state[:env].inspect}"
-        
+
         env_json = Yajl::Encoder.encode state[:env]
         @logger.debug "ENV.ISO Content: #{env_json}"
         tmpdir = state[:tmpdir] = Dir.mktmpdir
@@ -19,7 +19,7 @@ module VCloudCloud
         output = `#{genisoimage} -o #{iso_path} #{env_path} 2>&1`
         @logger.debug "GENISOIMAGE #{output}"
         raise "genisoimage: #{$?.exitstatus}: #{output}" unless $?.success?
-        
+
         metadata = VCloudSdk::Xml::WrapperFactory.create_instance 'MetadataValue'
         metadata.value = env_json
         client.invoke_and_wait :put, metadata_link,
@@ -28,13 +28,13 @@ module VCloudCloud
         state[:vm] = client.reload state[:vm]
         state[:iso] = iso_path
       end
-      
+
       def cleanup
         FileUtils.remove_entry_secure state[:tmpdir] if state[:tmpdir]
       end
-      
+
       private
-      
+
       def genisoimage  # TODO: this should exist in bosh_common, eventually
         @genisoimage ||= Bosh::Common.which(%w{genisoimage mkisofs})
       end

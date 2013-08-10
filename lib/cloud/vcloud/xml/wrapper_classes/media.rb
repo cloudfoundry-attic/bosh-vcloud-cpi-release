@@ -47,7 +47,7 @@ module VCloudSdk
       def running_tasks
         get_nodes("Task", {"status" => "running"})
       end
-    
+
       def tasks
         get_nodes("Task")
       end

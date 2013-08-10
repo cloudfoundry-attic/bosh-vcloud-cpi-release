@@ -19,9 +19,9 @@ module VCloudCloud
         end
         state[:vapp] = client.reload vapp
       end
-      
+
       private
-      
+
       def copy_network_settings(network, network_config, vapp_net_name, fence_mode)
         config_ip_scope = network_config.ip_scope
         net_ip_scope = network.ip_scope

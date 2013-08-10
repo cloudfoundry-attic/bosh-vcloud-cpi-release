@@ -11,7 +11,7 @@ module VCloudCloud
         raise "Invalid stemcell image: having #{files.length} .ovf files" if files.length != 1
         state[:stemcell_ovf] = File.basename files[0]
       end
-      
+
       def cleanup
         FileUtils.remove_entry_secure state[:stemcell_dir] if state[:stemcell_dir]
       end

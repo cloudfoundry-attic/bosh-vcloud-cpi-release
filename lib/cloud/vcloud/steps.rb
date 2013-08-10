@@ -4,24 +4,24 @@ module VCloudCloud
   # Abstract Step
   class Step
     attr_reader :state, :client
-    
+
     def initialize(state, client)
       @client = client
       @logger = client.logger
       @state = state
     end
-    
+
     def rollback
     end
-    
+
     def cleanup
     end
   end
-  
+
   # Transactional step execution engine
   class Transaction
     attr_reader :name, :state, :client
-    
+
     def initialize(name, client)
       @name = name
       @client = client
@@ -29,14 +29,14 @@ module VCloudCloud
       @state = {}
       @steps = []
     end
-    
+
     def next(step_class, *args, &block)
       step = step_class.new @state, @client
       @steps << step
       @logger.debug "STEP #{step_class.to_s}"
       step.perform *args, &block
     end
-    
+
     def perform(options = {}, &block)
       with_thread_name @name do
         # Perform all steps guarded by exception handler
@@ -53,13 +53,13 @@ module VCloudCloud
       end
       @state
     end
-    
+
     def self.perform(name, client = nil, options = {}, &block)
       new(name, client).perform options, &block
     end
-    
+
     private
-    
+
     def reverse_steps(method)
       @steps.reverse_each do |step|
         begin

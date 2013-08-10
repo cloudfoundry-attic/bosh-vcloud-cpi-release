@@ -205,7 +205,7 @@ module VCloudSdk
       def create_child(tag)
         Nokogiri::XML::Node.new(tag, @root)
       end
-      
+
       protected
 
       def node

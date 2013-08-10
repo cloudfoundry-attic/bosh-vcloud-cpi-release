@@ -5,11 +5,11 @@ module VCloudCloud
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
         params.name = name
         template = client.invoke :post, client.vdc.upload_link, :payload => params
-        
+
         # commit states
         state[:vapp_template] = template
       end
-      
+
       def rollback
         template = state[:vapp_template]
         if template

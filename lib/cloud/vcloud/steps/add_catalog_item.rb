@@ -10,7 +10,7 @@ module VCloudCloud
                                catalog.add_item_link,
                                :payload => catalog_item,
                                :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:CATALOG_ITEM] }
-        
+
         state[:catalog_item] = result
       end
     end

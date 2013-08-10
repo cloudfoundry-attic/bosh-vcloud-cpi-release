@@ -19,11 +19,11 @@ module VCloudCloud
               client.upload_stream file.upload_link.href, f.size, f
             end
           end
-          
+
           template = client.reload template
         end
         state[:vapp_template] = client.wait_entity template
-      end      
+      end
     end
   end
 end
