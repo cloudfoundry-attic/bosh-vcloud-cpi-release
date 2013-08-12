@@ -27,7 +27,7 @@ module VCloudCloud
         client.stub(:resolve_entity).with(vapp_id).and_return vapp
         client.stub(:resolve_link).with(vapp_link).and_return vapp
         client.stub(:resolve_entity).with(disk_id).and_return disk
-        client.stub(:reload) {|obj| obj}
+        client.stub(:reload) { |obj| obj }
         client.stub(:flush_cache)
         client
       end
@@ -394,7 +394,6 @@ module VCloudCloud
       end
 
       it "ignore a disk not belongs to vm" do
-        client.stub(:reload) {|obj| obj}
         vm.should_receive(:find_attached_disk).and_return nil
         state = {:vm => vm, :env => {}}
         trx.stub("state").and_return { state }
