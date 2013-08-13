@@ -46,7 +46,7 @@ module VCloudCloud
           vm.stub_chain("hardware_section.nics") { nics }
           vm.stub_chain("hardware_section.hard_disks") { [system_disk, ephemeral_disk] }
 
-          Transaction.perform("reboot", client) do |s|
+          Transaction.perform("create_agent_env", client) do |s|
             s.state[:vm] = vm
             s.state[:disks] = [ system_disk ]
             s.state[:env] = environment
