@@ -32,7 +32,7 @@ module VCloudCloud
             :post, recompose_link, anything
           )
           vapp.should_receive(:recompose_vapp_link) { recompose_link }
-          described_class.new(state, client).perform(vapp)
+          described_class.new(state, client).perform(vapp.name, vapp, vm)
         end
       end
     end

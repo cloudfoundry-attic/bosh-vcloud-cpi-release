@@ -145,6 +145,7 @@ module VCloudCloud
         resource_pool = double("resource pool")
         networks = double("networks")
         existing_vapp = double("existing_vapp")
+        existing_vapp.stub(:name).and_return vapp_name
         existing_vapp.should_receive(:vms).and_return []
         # after recompose
         existing_vapp.should_receive(:vms).and_return [vm]
@@ -159,7 +160,7 @@ module VCloudCloud
           anything,
           anything )
         trx.should_receive(:next).once.ordered.with(
-          Steps::Recompose, existing_vapp)
+          Steps::Recompose, vapp_name, existing_vapp, vm)
         trx.should_receive(:next).once.ordered.with(
           Steps::Delete, vapp, anything)
         trx.should_receive(:next).once.ordered.with(

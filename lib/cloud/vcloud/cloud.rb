@@ -23,6 +23,7 @@ module VCloudCloud
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
 
       @client_lock = Mutex.new
+      @recompose_lock = Mutex.new
     end
 
     def create_stemcell(image, _)
@@ -47,49 +48,56 @@ module VCloudCloud
 
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
       (steps "create_vm(#{agent_id}, #{catalog_vapp_id}, #{resource_pool}, ...)" do |s|
-        # request name available for recomposing vApps
-        requested_name = environment && environment['vapp']
-        vapp_name = requested_name || agent_id
-
         # disk_locality should be an array of disk ids
         disk_locality = independent_disks disk_locality
 
         # agent_id is used as vm name
         description = @entities['description']
 
-        # if requested_name is present, we need to recompose vApp
-        container_vapp = nil
-        unless requested_name.nil?
-          begin
-            @logger.debug "Requesting container vApp: #{requested_name}"
-            container_vapp = client.vapp_by_name requested_name
-          rescue ObjectNotFoundError
-            # ignored, keep container_vapp nil
-            @logger.debug "Invalid container vApp: #{requested_name}"
-          end
-        end
-
-        # if container vApp exists, use a temp name for new vApp as it will
-        # be recomposed later
-        vapp_name = "vapp-tmp-#{unique_name}" if container_vapp
+        requested_name = environment && environment['vapp']
+        vapp_name = requested_name ? "vapp-tmp-#{unique_name}" : agent_id
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
         client.flush_cache  # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
 
-        # perform recomposing
-        if container_vapp
-          existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
-          client.wait_entity container_vapp
-          s.next Steps::Recompose, container_vapp
-          client.flush_cache
-          vapp = s.state[:vapp] = client.reload vapp
-          client.wait_entity vapp
-          s.next Steps::Delete, vapp, true
-          client.flush_cache
-          vapp = s.state[:vapp] = client.reload container_vapp
-          vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
+        # recompose if requested
+        if requested_name
+          container_vapp = nil
+          vm_href = nil
+          existing_vm_hrefs = []
+
+          @recompose_lock.synchronize do
+            begin
+              @logger.debug "Requesting container vApp: #{requested_name}"
+              container_vapp = client.vapp_by_name requested_name
+            rescue ObjectNotFoundError
+              # ignored, keep container_vapp nil
+              @logger.debug "Invalid container vApp: #{requested_name}"
+            end
+
+            if container_vapp
+              existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
+              client.wait_entity container_vapp
+              s.next Steps::Recompose, container_vapp.name, container_vapp, vm
+              client.flush_cache
+              vapp = s.state[:vapp] = client.reload vapp
+              client.wait_entity vapp
+              s.next Steps::Delete, vapp, true
+            else
+              # just rename the vApp
+              container_vapp = vapp
+              s.next Steps::Recompose, requested_name, container_vapp
+            end
+
+            # reload all the stuff
+            client.flush_cache
+            vapp = s.state[:vapp] = client.reload container_vapp
+            client.wait_entity vapp
+            vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
+          end
+
           raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
           vm = s.state[:vm] = client.resolve_link vm_href[0]
         end
