@@ -1,11 +1,11 @@
 module VCloudCloud
   module Steps
-    class CreateAgentEnv < Step
+    class CreateOrUpdateAgentEnv < Step
       def perform(networks, environment, agent_properties, &block)
         vm = state[:vm] = client.reload state[:vm]
 
         system_disk = state[:disks][0]
-        ephemeral_disk = get_newly_added_disk vm
+        ephemeral_disk = CreateOrUpdateAgentEnv.get_newly_added_disk vm, state[:disks]
         state[:env] = {
           'vm' => { 'name' => vm.name, 'id' => vm.urn },
           'agent_id' => vm.name,
@@ -14,18 +14,18 @@ module VCloudCloud
             'ephemeral' => ephemeral_disk.disk_id,
             'persistent' => {}
           },
-          'networks' => CreateAgentEnv.generate_network_env(vm.hardware_section.nics, networks),
+          'networks' => CreateOrUpdateAgentEnv.generate_network_env(vm.hardware_section.nics, networks),
           'env' => environment || {}
         }.merge! agent_properties
       end
 
       private
 
-      def get_newly_added_disk(vm)
+      def self.get_newly_added_disk(vm, previous_disks_list)
         disks = vm.hardware_section.hard_disks
-        newly_added = disks - state[:disks]
+        newly_added = disks - previous_disks_list
         if newly_added.size != 1
-          raise "Expecting #{state[:disks].size + 1} disks, found #{disks.size}"
+          raise "Expecting #{previous_disks_list.size + 1} disks, found #{disks.size}"
         end
         newly_added[0]
       end
@@ -52,6 +52,14 @@ module VCloudCloud
 
       def self.update_network_env(env, vm, networks)
         env['networks'] = generate_network_env vm.hardware_section.nics, networks
+      end
+
+      def self.update_persistent_disk(env, vm, disk_id, previous_disks_list)
+        env['disks'] ||= {}
+        env['disks']['persistent'] ||= {}
+
+        persistent_disk = get_newly_added_disk(vm, previous_disks_list)
+        env['disks']['persistent'][disk_id] = persistent_disk.disk_id
       end
     end
   end

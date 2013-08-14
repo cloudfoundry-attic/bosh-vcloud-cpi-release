@@ -19,7 +19,7 @@ end
 module VCloudCloud
   module Steps
 
-    describe CreateAgentEnv do
+    describe CreateOrUpdateAgentEnv do
       include_context "base"
 
       describe ".perform" do

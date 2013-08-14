@@ -121,7 +121,7 @@ module VCloudCloud
           catalog_vapp_id, anything, anything, anything
         )
         trx.should_receive(:next).once.ordered.with(
-          Steps::CreateAgentEnv, anything, anything, anything
+          Steps::CreateOrUpdateAgentEnv, anything, anything, anything
         )
         trx.should_receive(:next).once.ordered.with(
           Steps::PowerOn, anything)
@@ -163,7 +163,7 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(
           Steps::Delete, vapp, anything)
         trx.should_receive(:next).once.ordered.with(
-          Steps::CreateAgentEnv,
+          Steps::CreateOrUpdateAgentEnv,
           networks,
           anything,
           anything )
@@ -322,7 +322,7 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(
           Steps::PowerOn, anything
         )
-        Steps::CreateAgentEnv.stub(:update_network_env)
+        Steps::CreateOrUpdateAgentEnv.stub(:update_network_env)
 
         subject.configure_networks(vm_id, networks)
       end
@@ -369,7 +369,14 @@ module VCloudCloud
           Steps::LoadAgentEnv )
         subject.stub(:save_agent_env)
 
+        ephemeral_disk = double("ephemeral_disk")
+        ephemeral_disk.should_receive(:disk_id).and_return("1")
+
+        vm.stub_chain("hardware_section.hard_disks").and_return( [], [ ephemeral_disk ])
+
         subject.attach_disk(vm_id, disk_id)
+
+        state[:env]['disks']['persistent'][disk_id].should == "1"
       end
     end
 

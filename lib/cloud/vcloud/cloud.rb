@@ -101,7 +101,7 @@ module VCloudCloud
 
         # create env and generate env ISO image
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
-        s.next Steps::CreateAgentEnv, networks, environment, @agent_properties
+        s.next Steps::CreateOrUpdateAgentEnv, networks, environment, @agent_properties
 
         save_agent_env s
 
@@ -173,7 +173,7 @@ module VCloudCloud
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
         vm = s.state[:vm] = client.reload vm
-        Steps::CreateAgentEnv.update_network_env s.state[:env], vm, networks
+        Steps::CreateOrUpdateAgentEnv.update_network_env s.state[:env], vm, networks
 
         save_agent_env s
 
@@ -192,16 +192,20 @@ module VCloudCloud
 
     def attach_disk(vm_id, disk_id)
       steps "attach_disk(#{vm_id}, #{disk_id})" do |s|
-        s.state[:vm] = client.resolve_entity vm_id
-        s.state[:disk] = client.resolve_entity disk_id
+        vm = s.state[:vm] = client.resolve_entity vm_id
+
+        # vm.hardware_section will change, save current state of disks
+        previous_disks_list = Array.new(vm.hardware_section.hard_disks)
+
+        s.state[:disk]  = client.resolve_entity disk_id
         s.next Steps::AttachDetachDisk, :attach
 
         # update environment
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::LoadAgentEnv
-        s.state[:env]['disks'] ||= {}
-        s.state[:env]['disks']['persistent'] ||= {}
-        s.state[:env]['disks']['persistent'][disk_id] = disk_id
+
+        vm = s.state[:vm] = client.reload vm
+        Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
 
         save_agent_env s
       end
