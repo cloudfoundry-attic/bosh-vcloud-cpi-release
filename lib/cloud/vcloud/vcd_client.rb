@@ -201,7 +201,7 @@ module VCloudCloud
 
     WAIT_MAX       = 300    # maximum wait seconds for a single task
     WAIT_DELAY     = 5      # delay in seconds for pooling next task status
-    COOKIE_TIMEOUT = 1500   # timeout in seconds after which session must be re-created
+    COOKIE_TIMEOUT = 600    # timeout in seconds after which session must be re-created
     RETRY_MAX      = 3      # maximum attempts
     RETRY_DELAY    = 100    # delay of first retry, the next is * 2
 
