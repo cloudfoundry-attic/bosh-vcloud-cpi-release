@@ -127,6 +127,7 @@ module VCloudCloud
           Steps::PowerOn, anything)
         trx.stub_chain("[].urn").and_return result
         trx.stub_chain("state.[]").with(:vapp).and_return vapp
+        trx.stub_chain("state.[]").with(:vm).and_return vm
         trx.stub_chain("state.[]=")
         subject.stub(:reconfigure_vm)
         subject.stub(:save_agent_env)
@@ -172,6 +173,7 @@ module VCloudCloud
           Steps::PowerOn, anything)
         trx.stub_chain("[].urn").and_return result
         trx.stub_chain("state.[]").with(:vapp).and_return vapp
+        trx.stub_chain("state.[]").with(:vm).and_return vm
         trx.stub_chain("state.[]=")
         client.stub(:wait_entity)
         client.should_receive(:vapp_by_name).with(vapp_name).

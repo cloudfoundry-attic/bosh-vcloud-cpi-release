@@ -22,9 +22,8 @@ module VCloudCloud
       @entities = @vcd['entities']
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
 
-      @client_lock    = Mutex.new # lock for establishing client connection
-      @recompose_lock = Mutex.new # lock for recompose vApp
-      @delete_lock    = Mutex.new # lock for deleting vApp when there's only 1 vm left
+      @client_lock = Mutex.new # lock for establishing client connection
+      @vapp_lock   = Mutex.new # lock for recompose vApp and delete vm from vApp
     end
 
     def create_stemcell(image, _)
@@ -63,13 +62,19 @@ module VCloudCloud
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
 
+        # save original disk configuration
+        s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
+        reconfigure_vm s, agent_id, description, resource_pool, networks
+
+        vapp, vm =[s.state[:vapp], s.state[:vm]]
+
         # recompose if requested
         if requested_name
           container_vapp = nil
           vm_href = nil
           existing_vm_hrefs = []
 
-          @recompose_lock.synchronize do
+          @vapp_lock.synchronize do
             begin
               @logger.debug "Requesting container vApp: #{requested_name}"
               container_vapp = client.vapp_by_name requested_name
@@ -80,7 +85,6 @@ module VCloudCloud
 
             if container_vapp
               existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
-              client.wait_entity container_vapp
               s.next Steps::Recompose, container_vapp.name, container_vapp, vm
               client.flush_cache
               vapp = s.state[:vapp] = client.reload vapp
@@ -100,22 +104,23 @@ module VCloudCloud
           end
 
           raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
-          vm = s.state[:vm] = client.resolve_link vm_href[0]
+          s.state[:vm] = client.resolve_link vm_href[0]
         end
-
-        # save original disk configuration
-        s.state[:disks] = Array.new(vm.hardware_section.hard_disks)
-
-        reconfigure_vm s, agent_id, description, resource_pool, networks
 
         # create env and generate env ISO image
         s.state[:env_metadata_key] = @entities['vm_metadata_key']
         s.next Steps::CreateOrUpdateAgentEnv, networks, environment, @agent_properties
 
-        save_agent_env s
-
-        # power on
-        s.next Steps::PowerOn, :vm
+        # TODO refact this
+        if requested_name
+          @vapp_lock.synchronize do
+            save_agent_env s
+            s.next Steps::PowerOn, :vm
+          end
+        else
+          save_agent_env s
+          s.next Steps::PowerOn, :vm
+        end
       end)[:vm].urn
     end
 
@@ -123,13 +128,15 @@ module VCloudCloud
       steps "reboot_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity(vm_id)
 
-        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-          s.next Steps::DiscardSuspendedState, :vm
-          s.next Steps::PowerOn, :vm
-        elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
-          s.next Steps::PowerOn, :vm
-        else
-          s.next Steps::Reboot, :vm
+        @vapp_lock.synchronize do
+          if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+            s.next Steps::DiscardSuspendedState, :vm
+            s.next Steps::PowerOn, :vm
+          elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
+            s.next Steps::PowerOn, :vm
+          else
+            s.next Steps::Reboot, :vm
+          end
         end
       end
     end
@@ -147,10 +154,10 @@ module VCloudCloud
       steps "delete_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
 
-        # poweroff vm before we are able to delete it
-        s.next Steps::PowerOff, :vm, true
+        @vapp_lock.synchronize do
+          # poweroff vm before we are able to delete it
+          s.next Steps::PowerOff, :vm, true
 
-        @delete_lock.synchronize do
           vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
           if vapp.vms.size == 1
             # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
@@ -163,6 +170,7 @@ module VCloudCloud
             s.next Steps::Delete, s.state[:vm], true
           end
         end
+
         s.next Steps::DeleteCatalogMedia, vm.name
       end
     end
@@ -171,24 +179,26 @@ module VCloudCloud
       steps "configure_networks(#{vm_id}, #{networks})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
 
-        # power off vm first
-        s.next Steps::PowerOff, :vm, true
+        @vapp_lock.synchronize do
+          # power off vm first
+          s.next Steps::PowerOff, :vm, true
 
-        # load container vApp
-        s.state[:vapp] = client.resolve_link vm.container_vapp_link
+          # load container vApp
+          s.state[:vapp] = client.resolve_link vm.container_vapp_link
 
-        reconfigure_vm s, nil, nil, nil, networks
+          reconfigure_vm s, nil, nil, nil, networks
 
-        # update environment
-        s.state[:env_metadata_key] = @entities['vm_metadata_key']
-        s.next Steps::LoadAgentEnv
-        vm = s.state[:vm] = client.reload vm
-        Steps::CreateOrUpdateAgentEnv.update_network_env s.state[:env], vm, networks
+          # update environment
+          s.state[:env_metadata_key] = @entities['vm_metadata_key']
+          s.next Steps::LoadAgentEnv
+          vm = s.state[:vm] = client.reload vm
+          Steps::CreateOrUpdateAgentEnv.update_network_env s.state[:env], vm, networks
 
-        save_agent_env s
+          save_agent_env s
 
-        # power on
-        s.next Steps::PowerOn, :vm
+          # power on
+          s.next Steps::PowerOn, :vm
+        end
       end
     end
 
@@ -208,16 +218,19 @@ module VCloudCloud
         previous_disks_list = Array.new(vm.hardware_section.hard_disks)
 
         s.state[:disk]  = client.resolve_entity disk_id
-        s.next Steps::AttachDetachDisk, :attach
 
-        # update environment
-        s.state[:env_metadata_key] = @entities['vm_metadata_key']
-        s.next Steps::LoadAgentEnv
+        @vapp_lock.synchronize do
+          s.next Steps::AttachDetachDisk, :attach
 
-        vm = s.state[:vm] = client.reload vm
-        Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
+          # update environment
+          s.state[:env_metadata_key] = @entities['vm_metadata_key']
+          s.next Steps::LoadAgentEnv
 
-        save_agent_env s
+          vm = s.state[:vm] = client.reload vm
+          Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
+
+          save_agent_env s
+        end
       end
     end
 
@@ -227,20 +240,23 @@ module VCloudCloud
         s.state[:disk] = client.resolve_entity disk_id
         # if disk is not attached, just ignore
         next unless vm.find_attached_disk s.state[:disk]
-        if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-          s.next Steps::DiscardSuspendedState, :vm
-        end
-        s.next Steps::AttachDetachDisk, :detach
 
-        # update environment
-        s.state[:env_metadata_key] = @entities['vm_metadata_key']
-        s.next Steps::LoadAgentEnv
-        env = s.state[:env]
-        if env['disks'] && env['disks']['persistent'].is_a?(Hash)
-          env['disks']['persistent'].delete disk_id
-        end
+        @vapp_lock.synchronize do
+          if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+            s.next Steps::DiscardSuspendedState, :vm
+          end
+          s.next Steps::AttachDetachDisk, :detach
 
-        save_agent_env s
+          # update environment
+          s.state[:env_metadata_key] = @entities['vm_metadata_key']
+          s.next Steps::LoadAgentEnv
+          env = s.state[:env]
+          if env['disks'] && env['disks']['persistent'].is_a?(Hash)
+            env['disks']['persistent'].delete disk_id
+          end
+
+          save_agent_env s
+        end
       end
     end
 
