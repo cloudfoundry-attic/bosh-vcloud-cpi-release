@@ -3,12 +3,9 @@ require 'spec_helper'
 module VCloudCloud
   module Steps
 
-    describe UploadCatalogMedia do
+    describe UploadMediaFiles do
 
-      let(:name) { "media_name" }
       let(:iso) { "media_iso" }
-      let(:type) { "media_type" }
-      let(:storage_profile) { "media_storage_profile" }
 
       let(:media_file_size) { "1000" }
       let(:media_file) do
@@ -45,20 +42,20 @@ module VCloudCloud
       end
 
       it "invokes the step" do
-        File.should_receive(:new).once.with(iso, 'rb') { media_file }
+        # setup test data
+        state = {:media => media}
 
-        media_file.should_receive(:stat).once
-        media.should_receive(:incomplete_files).once
-        incomplete_file.should_receive(:upload_link).once
-
-        client.should_receive(:invoke).once.ordered.with(:post, upload_media_link, kind_of(Hash))
+        # configure mock expectations
+        File.should_receive(:new).once.ordered.with(iso, 'rb') { media_file }
+        media.should_receive(:incomplete_files).once.ordered
+        incomplete_file.should_receive(:upload_link).once.ordered
+        media_file.should_receive(:stat).once.ordered
         client.should_receive(:upload_stream).once.ordered.with(file_upload_link_href, media_file_size, media_file)
         client.should_receive(:reload).once.ordered.with(media)
 
-        Transaction.perform("upload_catalog_media", client) do |s|
-          s.next described_class, name, iso, type, storage_profile
-          s.state[:media].should be media
-        end
+        # run test
+        described_class.new(state, client).perform iso
+        expect(state[:media]).to be media
       end
     end
 

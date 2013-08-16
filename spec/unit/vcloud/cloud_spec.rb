@@ -316,8 +316,10 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(
           Steps::DeleteCatalogMedia, vm_name)
         trx.should_receive(:next).once.ordered.with(
-          Steps::UploadCatalogMedia, vm_name,
-          anything, anything, anything )
+            Steps::CreateMedia, vm_name,
+            anything, anything, anything )
+        trx.should_receive(:next).once.ordered.with(
+            Steps::UploadMediaFiles, anything )
         trx.should_receive(:next).once.ordered.with(
           Steps::AddCatalogItem, anything, anything)
         trx.should_receive(:next).once.ordered.with(

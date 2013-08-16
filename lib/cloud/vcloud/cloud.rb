@@ -322,7 +322,8 @@ module VCloudCloud
       # attach new env ISO
       storage_profiles = client.vdc.storage_profiles || []
       media_storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['media_storage_profile'] }
-      s.next Steps::UploadCatalogMedia, vm.name, s.state[:iso], 'iso', media_storage_profile
+      s.next Steps::CreateMedia, vm.name, s.state[:iso], 'iso', media_storage_profile
+      s.next Steps::UploadMediaFiles, s.state[:iso]
       s.next Steps::AddCatalogItem, :media, s.state[:media]
       s.next Steps::InsertCatalogMedia, vm.name
 
