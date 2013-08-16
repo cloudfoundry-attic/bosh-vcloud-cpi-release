@@ -129,10 +129,12 @@ module VCloudCloud
       params[:cookies] = @cookie if !options[:login] && cookie_available?
       params[:payload] = options[:payload].to_s if options[:payload]
       params[:headers].merge! options[:headers] if options[:headers]
-      @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
-      response = RestClient::Request.execute params do |response, request, result, &block|
-        @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
-        response.return! request, result, &block
+      response = retry_for_network_issue do
+        @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
+        RestClient::Request.execute params do |response, request, result, &block|
+          @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
+          response.return! request, result, &block
+        end
       end
       if options[:login]
         @auth_token = response.headers[:x_vcloud_authorization]
@@ -153,7 +155,7 @@ module VCloudCloud
 
     def wait_task(task, accept_failure = false)
       timed_loop do
-        task = retry_for_network_issue { reload task }
+        task = reload task
         status = task.status.downcase
         @logger.debug "WAIT TASK #{task.urn} #{task.operation} #{status}"
         return task if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
