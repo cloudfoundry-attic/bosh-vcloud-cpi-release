@@ -1,6 +1,5 @@
 require 'forwardable'
-
-autoload :VCloudCloud, 'cloud/vcloud/cloud'
+require_relative 'vcloud/cloud'
 
 module Bosh
   module Clouds

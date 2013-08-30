@@ -1,3 +1,6 @@
 Gemfile.lock
 coverage
+.bundle
 .idea
+/vendor
+/_*

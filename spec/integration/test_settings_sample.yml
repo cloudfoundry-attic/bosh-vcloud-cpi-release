@@ -1,0 +1,59 @@
+---
+vcds:
+  - url: https://vcd-wdc
+    user: cpi
+    password: password
+    entities:
+      organization: tempest-1
+      virtual_datacenter: tempest-1-org-vdc
+      vapp_catalog: cpi-dev
+      media_catalog: cpi-dev
+      media_storage_profile: "*"
+      vm_metadata_key: agent-env
+
+image: _image.tgz
+
+tests:
+  basic:
+    resource_pool:
+      cpu: 1
+      ram: 256
+      disk: 1024
+    network: tempest-1-org-vdc-nw
+    vms:
+      - name: vm01
+        ip: 10.146.29.161
+        env:
+          vapp: test-vapp
+        reboot: true
+      - name: vm02
+        ip: 10.146.29.162
+        env:
+          vapp: test-vapp
+        ip2: 10.146.29.163
+        disk:
+          size: 16384
+
+  concurrent:
+    resource_pool:
+      cpu: 1
+      ram: 256
+      disk: 1024
+    network: tempest-1-org-vdc-nw
+    vms:
+      - name: conc01
+        ip: 10.146.29.164
+        env:
+          vapp: conc-vapp
+      - name: conc02
+        ip: 10.146.29.165
+        env:
+          vapp: conc-vapp
+      - name: conc03
+        ip: 10.146.29.166
+        env:
+          vapp: conc-vapp
+      - name: conc04
+        ip: 10.146.29.167
+        env:
+          vapp: conc-vapp
