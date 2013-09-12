@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Usage: stress-deploy DIRECTOR_URL MANIFEST BASE_IP LEVELS FACTOR
+#    DIRECTOR_URL: https://IP:25555
+#    MANIFEST:     The YAML file used to deploy stress with "bosh deployment ..."
+#    BASE_IP:      The base IP address of IP pools used for newly created stress test VMs
+#    LEVELS:       The recursive level, recommend 2
+#    FACTOR:       The number of VMs to be created by one stress test VM recursively
+
+BASE=$(readlink -nf $(dirname $0))
+
+DIRECTOR_URL=$1
+MANIFEST=$2
+BASE_IP=$3
+LEVELS=$4
+FACTOR=$5
+
+DEPLOY_NAME=$(grep -E '^name:' "$MANIFEST" | sed -r 's/^.+:\s*(\S+).*$/\1/')
+DIRECTOR_UUID=$(grep -E '^director_uuid:' "$MANIFEST" | sed -r 's/^.+:\s*(\S+).*$/\1/')
+REDIS_HOST=$(grep -2 'redis:' "$MANIFEST" | grep 'host:' | sed -r 's/^.+:\s*(\S+).*$/\1/')
+REDIS_PORT=$(grep -2 'redis:' "$MANIFEST" | grep 'port:' | sed -r 's/^.+:\s*(\S+).*$/\1/')
+SEED_IP=$(grep -10 'template: stress' "$MANIFEST" | tail -n +11 | grep -1 'static_ips:' | grep -E '^\s*-\s*[[:digit:]]+' | sed -r 's/^.*-\s*(\S+).*$/\1/')
+
+REDIS_OPTS="-h $REDIS_HOST"
+[ -n "$REDIS_PORT" ] && REDIS_OPTS="$REDIS_OPTS -p $REDIS_PORT"
+[ -z "$REDIS_PORT" ] && REDIS_PORT=6379
+
+SCRIPT_CONTENT=$(cat "$BASE/../scripts/deploy.sh" \
+                    | sed -r "s!^(STRESS_BOSH_DIRECTOR=).*\$!\\1$DIRECTOR_URL!" \
+                    | sed -r "s/^(STRESS_BOSH_UUID=).*\$/\\1$DIRECTOR_UUID/" \
+                    | sed -r "s/^(STRESS_REDIS_HOST=).*\$/\\1$REDIS_HOST/" \
+                    | sed -r "s/^(STRESS_REDIS_PORT=).*\$/\\1$REDIS_PORT/" \
+                )
+
+echo "$SCRIPT_CONTENT" | head -n 10
+
+REDIS_CLI="redis-cli $REDIS_OPTS"
+$REDIS_CLI SET stress-deploy $(echo "$SCRIPT_CONTENT" | base64 -w 0)
+$REDIS_CLI DEL s-${SEED_IP//./_} r-${SEED_IP//./_} p-${SEED_IP//./_} c-${SEED_IP//./_}
+$REDIS_CLI LPUSH c-${SEED_IP//./_} "scripts/from-redis stress-deploy $BASE_IP $LEVELS $FACTOR"
+
+COMPILERS=$(grep -E '^COMPILERS=' "$BASE/../scripts/deploy.sh" | sed -r 's/^COMPILERS=([[:digit:]]+).*$/\1/')
+IP_POOL_SIZE=$(($FACTOR*2+$COMPILERS))
+
+# Assume we use 172.31.0.0/16 as subnet
+IP_SUF0=${BASE_IP##*.}
+SUBNET=${BASE_IP%.*}
+IP_SUF1=${SUBNET##*.}
+SUBNET=${SUBNET%.*}
+BASEADDR=$(($IP_SUF1*256+$IP_SUF0))
+
+addr2ip() {
+    local suf0 suf1
+    suf0=$(($1&255))
+    suf1=$(($1>>8))
+    echo ${SUBNET}.${suf1}.${suf0}
+}
+
+STRESS_NODES="$SEED_IP"
+
+find_stress_nodes() {
+    local baseaddr=$1 levels=$2 segsize=0 i l
+    if [ $levels -gt 0 ]; then
+        for ((i=0;i<$FACTOR;i=i+1)); do
+            STRESS_NODES="$STRESS_NODES $(addr2ip $((baseaddr+i)))"
+        done
+        for ((l=0;l<$levels;l=l+1)); do
+            segsize=$(($segsize+$IP_POOL_SIZE*$FACTOR**$l))
+        done
+        for ((i=0;i<$FACTOR;i=i+1)); do
+            find_stress_nodes $(($baseaddr+$IP_POOL_SIZE+$segsize*$i)) $(($levels-1))
+        done
+    fi
+}
+
+find_stress_nodes $BASEADDR $((LEVELS-1))
+
+for ip in $STRESS_NODES; do
+    echo $ip
+done
+
+NODES_COUNT=$(echo "$STRESS_NODES" | wc -w)
+COMPLETED=
+COMPLETED_COUNT=0
+FAILED_COUNT=0
+while true; do
+    last_count=$COMPLETED_COUNT
+    for ip in $STRESS_NODES ; do
+        [ "${COMPLETED/$ip/}" != "$COMPLETED" ] && continue
+        id=$($REDIS_CLI LRANGE r-${ip//./_} 0 -1)
+        if [ -n "$id" ]; then
+            COMPLETED="$COMPLETED $ip" && COMPLETED_COUNT=$(echo "$COMPLETED" | wc -w)
+            ret=$($REDIS_CLI HGET s-${ip//./_} ${id}:ret)
+            if [ "$ret" != "0" ]; then
+                echo "Task failed on $ip:"
+                echo $($REDIS_CLI HGET s-${ip//./_} "${id}:out" | base64 -d | gzip -d -c -f)
+                FAILED_COUNT=$(($FAILED_COUNT+1))
+            fi
+        fi
+    done
+    [ $COMPLETED_COUNT -ne $last_count ] && echo "Progress: $((COMPLETED_COUNT*100/NODES_COUNT))%"
+    [ $COMPLETED_COUNT -eq $NODES_COUNT ] && break
+    sleep 1
+done
+
+[ $FAILED_COUNT -ne 0 ] && exit 1
+
+[ -n "$BOSH" ] || BOSH=bosh
+for ip in $STRESS_NODES ; do
+    $REDIS_CLI DEL r-${ip//./_} s-${ip//./_} p-${ip//./_} c-${ip//./_}
+    $BOSH -n delete deployment ${DEPLOY_NAME}_${ip//./_} --force
+done

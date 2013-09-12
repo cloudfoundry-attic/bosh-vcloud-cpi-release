@@ -1,0 +1,3 @@
+#!/bin/bash
+set -e
+redis-cli $REDIS_OPTS set "$1" $(cat "$2" | base64 -w 0)

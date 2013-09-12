@@ -1,0 +1,38 @@
+#!/bin/bash
+STRESS_IP=$1
+STRESS_KEY=${STRESS_IP//./_}
+for id in $(redis-cli $REDIS_OPTS --raw LRANGE r-$STRESS_KEY 0 -1 | tac) ; do
+    echo "CMD: $(redis-cli $REDIS_OPTS --raw HGET s-$STRESS_KEY ${id}:cmd)"
+    ret=$(redis-cli $REDIS_OPTS --raw HGET s-$STRESS_KEY ${id}:ret)
+    output=$(redis-cli $REDIS_OPTS --raw HGET s-$STRESS_KEY ${id}:out)
+    if [ -n "$output" -o -n "$ret" ]; then
+        echo -e "RET: $ret\n"
+        [ -n "$output" ] && ( echo "$output" | base64 -d | gzip -d -c -f )
+    else
+        echo "INPROGRESS"
+    fi
+    echo
+done
+
+print_commands() {
+    while read ; do
+        echo "$REPLY"
+    done
+}
+
+echo "RUNNING:"
+redis-cli $REDIS_OPTS --raw LRANGE p-$STRESS_KEY 0 -1 | tac | print_commands
+echo
+
+echo "WAITING:"
+redis-cli $REDIS_OPTS --raw LRANGE c-$STRESS_KEY 0 -1 | tac | print_commands
+echo
+
+shift
+for arg in $@ ; do
+    case "$arg" in
+        --clean|-c)
+            redis-cli $REDIS_OPTS DEL r-$STRESS_KEY s-$STRESS_KEY
+            ;;
+    esac
+done

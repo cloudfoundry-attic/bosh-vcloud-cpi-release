@@ -11,8 +11,10 @@ namespace :spec do
   end
 
   desc 'stress test'
-  RSpec::Core::RakeTask.new :stress, :cfg_file do |t, args|
-    ENV['TEST_SETTINGS'] ||= args[:cfg_file]
+  RSpec::Core::RakeTask.new :stress, :director_url, :manifest, :base_ip do |t, args|
+    ENV['STRESS_DIRECTOR'] ||= args[:director_url]
+    ENV['STRESS_MANIFEST'] ||= args[:manifest]
+    ENV['STRESS_BASE_IP']  ||= args[:base_ip]
     t.pattern = 'spec/stress/**/*_spec.rb'
   end
 end

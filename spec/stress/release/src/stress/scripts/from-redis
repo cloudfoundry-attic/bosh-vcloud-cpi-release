@@ -1,0 +1,8 @@
+#!/bin/bash
+export STRESS_REDIS_SCRIPT_KEY="$1"
+shift
+
+set -x
+set -e
+redis-cli $STRESS_REDIS_OPTS get "$STRESS_REDIS_SCRIPT_KEY" | base64 -d >/tmp/${STRESS_REDIS_SCRIPT_KEY}.sh
+bash /tmp/${STRESS_REDIS_SCRIPT_KEY}.sh "$@"

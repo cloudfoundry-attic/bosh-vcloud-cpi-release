@@ -1,0 +1,7 @@
+/release/.*
+/release/blobs
+/release/dev_releases
+/release/config/dev.yml
+/release/src/bosh-cli/vendor
+/release/src/ruby
+/_*

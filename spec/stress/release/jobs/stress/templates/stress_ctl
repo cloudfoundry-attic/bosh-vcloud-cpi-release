@@ -1,0 +1,32 @@
+#!/bin/bash
+
+RUN_DIR=/var/vcap/sys/run/stress
+LOG_DIR=/var/vcap/sys/log/stress
+PIDFILE=$RUN_DIR/stress.pid
+RUN_AS_DAEMON=yes
+
+source /var/vcap/packages/common/utils.sh
+source /var/vcap/jobs/stress/config/stress.conf
+
+case $1 in
+
+  start)
+    pid_guard $PIDFILE "stress"
+
+    mkdir -p $RUN_DIR
+    mkdir -p $LOG_DIR
+
+    echo $$ > $PIDFILE
+
+    # We do this because we want ENV variables used here, but Redis does not support it, so we explicitly state them.
+    exec /var/vcap/packages/stress/stress-server >> $LOG_DIR/stress.stdout.log 2>>$LOG_DIR/stress.stderr.log
+    ;;
+
+  stop)
+    kill_and_wait $PIDFILE
+
+    ;;
+  *)
+  echo "Usage: stress_ctl {start|stop}" ;;
+esac
+exit 0

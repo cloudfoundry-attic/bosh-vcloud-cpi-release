@@ -1,0 +1,7 @@
+#!/bin/bash
+
+STRESS_IP=$1
+STRESS_KEY=${STRESS_IP//./_}
+shift
+
+redis-cli $REDIS_OPTS LPUSH c-$STRESS_KEY "scripts/from-redis $*"

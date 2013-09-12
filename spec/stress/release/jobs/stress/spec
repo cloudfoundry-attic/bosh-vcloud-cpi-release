@@ -1,0 +1,13 @@
+---
+name: stress
+
+templates:
+  stress_ctl: bin/stress_ctl
+  stress.conf.erb: config/stress.conf
+
+packages:
+  - redis
+  - common
+  - ruby
+  - bosh-cli
+  - stress

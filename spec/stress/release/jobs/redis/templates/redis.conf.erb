@@ -1,0 +1,18 @@
+port <%= properties.redis.port %>
+timeout 300
+databases 16
+daemonize $RUN_AS_DAEMON
+pidfile $RUN_DIR/redis.pid
+<% if properties.redis.password %>
+requirepass <%= properties.redis.password %>
+<% end %>
+<% if properties.redis.persisted %>
+dir $STORE
+<% end %>
+maxclients 0
+maxmemory-policy noeviction
+<% if properties.redis.maxmemory %>
+maxmemory <%= properties.redis.maxmemory %>
+<% end %>
+appendonly no
+logfile ${LOG_DIR}/redis.log

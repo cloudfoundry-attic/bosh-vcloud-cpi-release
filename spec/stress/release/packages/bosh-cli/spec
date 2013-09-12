@@ -1,0 +1,4 @@
+---
+name: bosh-cli
+files:
+- bosh-cli/**/*

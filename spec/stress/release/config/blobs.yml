@@ -1,0 +1,9 @@
+---
+redis/redis-2.2.4.tar.gz:
+  object_id: rest/objects/4e4e78bca41e122004e4e8ec65f67f04fbd4f388786e
+  sha: 063e6e9f615ceda664d0691a6ea59befb22ebc40
+  size: 447499
+ruby/rubygems-1.8.24.tgz:
+  object_id: rest/objects/4e4e78bca21e121004e4e7d511f553050aa6aad74ec8
+  sha: 30f27047e74f7943117736a0d3e224994fee0905
+  size: 380101
