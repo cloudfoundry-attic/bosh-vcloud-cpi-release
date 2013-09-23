@@ -19,6 +19,17 @@ module VCloudCloud
         state[:vapp] = client.wait_entity vapp
       end
 
+      def rollback
+        vapp = state[:vapp]
+        if vapp
+          link = vapp.remove_link
+          client.invoke_and_wait :delete, link if link
+
+          # remove the item from state
+          state.delete :vapp
+        end
+      end
+
       private
 
       def locality_spec(template, disk_locality)

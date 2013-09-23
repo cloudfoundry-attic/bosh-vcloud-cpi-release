@@ -93,6 +93,35 @@ module VCloudCloud
           expect(state).to be {}
         end
       end
+
+      describe ".rollback" do
+        it "does nothing" do
+          # setup test data
+          state = {}
+
+          # configure mock expectations
+          vapp.should_not_receive(:remove_link)
+          client.should_not_receive(:invoke_and_wait)
+
+          # run test
+          step = described_class.new state, client
+          step.rollback
+        end
+
+        it "invokes the method" do
+          #setup the test data
+          state = {:vapp => vapp}
+          remove_link = "http://vapp/remove"
+
+          # configure mock expectations
+          vapp.should_receive(:remove_link).once.ordered { remove_link }
+          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+
+          # run the test
+          described_class.new(state, client).rollback
+          expect(state.key?(:vapp)).to be_false
+        end
+      end
     end
 
   end
