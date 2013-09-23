@@ -13,6 +13,17 @@ module VCloudCloud
                   :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:DISK_CREATE_PARAMS] }
         state[:disk] = client.wait_entity disk
       end
+
+      def rollback
+        disk = state[:disk]
+        if disk
+          link = disk.remove_link
+          client.invoke_and_wait :delete, link if link
+
+          # remove the item from state
+          state.delete :disk
+        end
+      end
     end
   end
 end
