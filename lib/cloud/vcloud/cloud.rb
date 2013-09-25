@@ -68,12 +68,14 @@ module VCloudCloud
 
         vapp, vm =[s.state[:vapp], s.state[:vm]]
 
-        # recompose if requested
+        # To handle concurrent create_vm requests,
+        # if the target vApp exists, creates a temp vApp, and then recomposes its VM to the target vApp.
         if requested_name
           container_vapp = nil
           vm_href = nil
           existing_vm_hrefs = []
 
+          # VM is added to the target vApp sequentially.
           @vapp_lock.synchronize do
             begin
               @logger.debug "Requesting container vApp: #{requested_name}"
@@ -87,7 +89,7 @@ module VCloudCloud
               existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
               s.next Steps::Recompose, container_vapp.name, container_vapp, vm
               client.flush_cache
-              vapp = s.state[:vapp] = client.reload vapp
+              vapp = client.reload vapp
               client.wait_entity vapp
               s.next Steps::Delete, vapp, true
             else
@@ -98,7 +100,7 @@ module VCloudCloud
 
             # reload all the stuff
             client.flush_cache
-            vapp = s.state[:vapp] = client.reload container_vapp
+            vapp = client.reload container_vapp
             client.wait_entity vapp
             vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
           end
@@ -121,6 +123,11 @@ module VCloudCloud
           save_agent_env s
           s.next Steps::PowerOn, :vm
         end
+
+        # Update state to point to the correct vapp instead of the newly created temporary vapp for transition
+        # We do this as the final step to avoid problems such as rollback of Steps::Instantiate, which deletes state[:vapp]
+        s.state[:vapp] = vapp
+        s.state
       end)[:vm].urn
     end
 
