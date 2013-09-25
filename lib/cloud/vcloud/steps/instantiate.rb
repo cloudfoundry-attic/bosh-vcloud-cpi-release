@@ -1,5 +1,7 @@
 module VCloudCloud
   module Steps
+    # Create a vApp from a vApp template
+    # Ref: http://pubs.vmware.com/vcd-51/index.jsp?topic=%2Fcom.vmware.vcloud.api.reference.doc_51%2Fdoc%2Foperations%2FPOST-InstantiateVAppTemplate.html
     class Instantiate < Step
       def perform(template_id, vapp_name, description, disk_locality, &block)
         catalog_item = client.resolve_entity template_id

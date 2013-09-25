@@ -1,5 +1,8 @@
 module VCloudCloud
   module Steps
+    # Recompose a vApp to add or remove VMs.
+    # Ref: http://pubs.vmware.com/vcd-51/index.jsp#operations/POST-RecomposeVApp.html
+
     class Recompose < Step
       def perform(name, container_vapp, vm = nil, &block)
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'RecomposeVAppParams'

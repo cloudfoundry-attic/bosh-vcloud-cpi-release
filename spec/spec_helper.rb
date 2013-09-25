@@ -185,10 +185,9 @@ module Bosh
     class Config
       class << self
         def logger()
-          log_file = VCloudCloud::Test::test_configuration[
-              "cloud"]["properties"]["log_file"]
+          log_file = VCloudCloud::Test::director_cloud_properties['log_file']
           FileUtils.mkdir_p(File.dirname(log_file))
-          logger = Logger.new(log_file)
+          logger = Logger.new(log_file)  # You can switch to STDOUT if you don't want to use file for logging
           logger.level = Logger::DEBUG
           logger
         end
