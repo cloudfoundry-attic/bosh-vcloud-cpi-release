@@ -91,7 +91,11 @@ module VCloudCloud
               client.flush_cache
               vapp = client.reload vapp
               client.wait_entity vapp
-              s.next Steps::Delete, vapp, true
+              begin
+                s.next Steps::Delete, vapp, true
+              rescue => ex
+                @logger.warn "Caught exception when trying to delete tmp vapp #{vapp.name}: #{ex.to_s}"
+              end
             else
               # just rename the vApp
               container_vapp = vapp

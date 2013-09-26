@@ -34,6 +34,7 @@ module VCloudCloud
 
       let(:vapp) do
         vapp = double("vapp")
+        vapp.stub(:name) {'testVapp'}
         vapp
       end
 
@@ -114,6 +115,7 @@ module VCloudCloud
           remove_link = "http://vapp/remove"
 
           # configure mock expectations
+          client.should_receive(:vapp_by_name).once.ordered.with(vapp.name).and_return(vapp)
           vapp.should_receive(:remove_link).once.ordered { remove_link }
           client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
