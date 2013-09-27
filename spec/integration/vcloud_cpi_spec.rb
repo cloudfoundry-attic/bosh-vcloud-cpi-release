@@ -122,7 +122,7 @@ describe 'vCloud CPI' do
 
   context "when received exception during create_vm" do
     context "when target vapp exists" do
-      it 'the tmp vapp should be removed', :type => 'integration', :slow => true do
+      it 'basic config, the tmp vapp should be removed', :type => 'integration', :slow => true do
         pending 'Integration test disabled without TEST_SETTINGS' unless @cpi
 
         test_configure 'basic'
@@ -161,6 +161,56 @@ describe 'vCloud CPI' do
         # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
         # even from dashboard. So if there's only one VM, just stop and delete the vApp
         # We don't need to poweroff vapp since its VM is already poweroff
+        params = VCloudSdk::Xml::WrapperFactory.create_instance 'UndeployVAppParams'
+        @target.client.invoke_and_wait :post, vapp.undeploy_link, :payload => params
+        link = vapp.remove_link true
+        @target.client.invoke_and_wait :delete, link
+      end
+
+      it 'concurrent config, the tmp vapps should be removed', :type => 'integration', :slow => true do
+        pending 'Integration test disabled without TEST_SETTINGS' unless @cpi
+
+        test_configure 'concurrent'
+
+        vm = @conf['vms'][0]
+        @network['ip'] = vm['ip']
+        # First successfully create the target vapp
+        @logger.info "create_vm(#{vm['name']}, #{@template_id}, #{@resource_pool.inspect}, #{@networks.inspect}, #{vm['disk-locality']}, #{vm['env']})"
+        vm_id = @cpi.create_vm vm['name'], @template_id, @resource_pool, @networks, vm['disk-locality'], vm['env']
+        vm_id.should_not be_nil
+
+        exceptionMsg = 'Recompose Failed!'
+        VCloudCloud::Steps::Recompose.any_instance.stub(:perform).and_raise(exceptionMsg)
+
+        threads = []
+        @conf['vms'][1..-1].each_index do |index|
+          vm = @conf['vms'][index]
+          threads << Thread.new do
+            network = @network.dup
+            network['ip'] = vm['ip']
+            networks = {}
+            networks[network['cloud_properties']['name']] = network
+
+            @logger.info "[#{index}:#{Thread.current.object_id.to_s(16)}] create_vm(#{vm['name']}, #{@template_id}, #{@resource_pool.inspect}, #{networks.inspect}, #{vm['disk-locality']}, #{vm['env']})"
+            begin
+              @cpi.create_vm vm['name'], @template_id, @resource_pool, networks, vm['disk-locality'], vm['env']
+              fail 'create_vm should fail'
+            rescue => ex
+              ex.to_s.should eq exceptionMsg
+            end
+          end
+        end
+
+        threads.each { |thread| thread.join }
+
+        # The target vapp should exist despite that the tmp vapps are deleted
+        vapp_name = vm['env']['vapp']
+        @target.client.flush_cache  # flush cached vdc which contains vapp list
+        vapp = @target.client.vapp_by_name vapp_name
+        vapp.name.should eq vapp_name
+        vapp.vms.size.should eq 1
+
+        @target.client.invoke_and_wait :post, vapp.power_off_link
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'UndeployVAppParams'
         @target.client.invoke_and_wait :post, vapp.undeploy_link, :payload => params
         link = vapp.remove_link true
