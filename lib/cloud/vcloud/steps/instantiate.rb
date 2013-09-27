@@ -28,9 +28,13 @@ module VCloudCloud
 
           # Note that when renaming vApp, the remove_link stays the same and points to
           # the original vApp. To avoid potential inconsistency, fetch vApp from the server.
-          vapp = client.vapp_by_name vapp.name
-          link = vapp.remove_link true
-          client.invoke_and_wait :delete, link if link
+          begin
+            vapp = client.vapp_by_name vapp.name
+            link = vapp.remove_link true
+            client.invoke_and_wait :delete, link if link
+          rescue => ex
+            @logger.debug(ex) if @logger
+          end
 
           # remove the item from state
           state.delete :vapp
