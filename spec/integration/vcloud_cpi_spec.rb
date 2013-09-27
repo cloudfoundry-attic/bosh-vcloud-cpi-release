@@ -149,6 +149,7 @@ describe 'vCloud CPI' do
 
         # The target vapp should exist despite that the tmp vapp is deleted
         vapp_name = vm['env']['vapp']
+        @target.client.flush_cache  # flush cached vdc which contains vapp list
         vapp = @target.client.vapp_by_name vapp_name
         vapp.name.should eq vapp_name
         vapp.vms.size.should eq 2
@@ -188,6 +189,7 @@ describe 'vCloud CPI' do
 
         # The tmp vapp is renamed to the target vapp
         vapp_name = vm['env']['vapp']
+        @target.client.flush_cache  # flush cached vdc which contains vapp list
         vapp = @target.client.vapp_by_name vapp_name
         vapp.name.should eq vapp_name
         @target.client.invoke_and_wait :delete, vapp.remove_link
