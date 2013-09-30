@@ -203,7 +203,24 @@ module VCloudCloud
         subject.reboot_vm vm_id
       end
 
-      it "pown on a vm when it's powered off" do
+      it 'Force a hard-reboot when failed to perform a soft-reboot' do
+        vm['status'] = VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
+        exceptionMsg = 'Reboot Failed!'
+        trx.should_receive(:next).once.ordered.with(
+            Steps::Reboot, anything ).and_raise(exceptionMsg)
+        trx.should_receive(:next).once.ordered.with(
+            Steps::PowerOff, anything, anything )
+        trx.should_receive(:next).once.ordered.with(
+            Steps::PowerOn, anything )
+
+        begin
+          subject.reboot_vm vm_id
+        rescue => ex
+          ex.to_s.should eq exceptionMsg
+        end
+      end
+
+      it "power on a vm when it's powered off" do
         vm['status'] = VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
         trx.should_receive(:next).once.ordered.with(
           Steps::PowerOn, anything )

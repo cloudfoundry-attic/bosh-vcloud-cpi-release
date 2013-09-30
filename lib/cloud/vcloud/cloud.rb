@@ -146,7 +146,14 @@ module VCloudCloud
           elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
             s.next Steps::PowerOn, :vm
           else
-            s.next Steps::Reboot, :vm
+            begin
+              s.next Steps::Reboot, :vm
+            rescue => ex
+              @logger.warn "Caught exception when trying to Reboot vm #{vm_id}: #{ex.to_s}"
+              @logger.debug 'Force a hard-reboot when failed to perform a soft-reboot'
+              s.next Steps::PowerOff, :vm, true
+              s.next Steps::PowerOn, :vm
+            end
           end
         end
       end
