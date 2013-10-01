@@ -10,7 +10,7 @@ module VCloudCloud
     shared_context "base" do
       before do
         subject.client = client
-        subject.stub(:steps).and_yield(trx).and_return(trx)
+        subject.stub(:steps).and_yield(trx).and_return(state)
       end
 
       let(:trx) do
@@ -70,11 +70,15 @@ module VCloudCloud
       it "create_stemcell" do
         image = "stemcell_name"
         result = "urn"
+        template = double('template')
+        catalog_item = double('catalog_item')
         trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
         trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
         trx.should_receive(:next).once.ordered.with(Steps::UploadTemplateFiles)
         trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
-        trx.stub_chain("[].urn").and_return(result)
+        trx.stub_chain('state.[]').with(:vapp_template).and_return template
+        trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item
+        catalog_item.stub(:urn).and_return result
 
         subject.create_stemcell(image, nil).should == result
       end
@@ -125,9 +129,9 @@ module VCloudCloud
         )
         trx.should_receive(:next).once.ordered.with(
           Steps::PowerOn, anything)
-        trx.stub_chain("[].urn").and_return result
         trx.stub_chain("state.[]").with(:vapp).and_return vapp
         trx.stub_chain("state.[]").with(:vm).and_return vm
+        vm.stub(:urn).and_return result
         trx.stub_chain("state.[]=")
         subject.stub(:reconfigure_vm)
         subject.stub(:save_agent_env)
@@ -171,9 +175,9 @@ module VCloudCloud
           anything )
         trx.should_receive(:next).once.ordered.with(
           Steps::PowerOn, anything)
-        trx.stub_chain("[].urn").and_return result
         trx.stub_chain("state.[]").with(:vapp).and_return vapp
         trx.stub_chain("state.[]").with(:vm).and_return vm
+        vm.stub(:urn).and_return result
         trx.stub_chain("state.[]=")
         client.stub(:wait_entity)
         client.should_receive(:vapp_by_name).with(vapp_name).
@@ -359,7 +363,8 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(
           Steps::CreateDisk, anything, size_mb, nil
         )
-        trx.stub_chain("[].urn").and_return result
+        trx.stub_chain("state.[]").with(:disk).and_return disk
+        disk.stub(:urn).and_return result
 
         subject.create_disk(size_mb).should == result
       end
@@ -373,7 +378,8 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(
           Steps::CreateDisk, anything, size_mb, vm
         )
-        trx.stub_chain("[].urn").and_return result
+        trx.stub_chain("state.[]").with(:disk).and_return disk
+        disk.stub(:urn).and_return result
 
         subject.create_disk(size_mb, vm_locality).should == result
       end
