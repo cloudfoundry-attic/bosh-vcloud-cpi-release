@@ -17,8 +17,9 @@ module VCloudCloud
 
       def rollback
         catalog_item = state[:catalog_item]
-        client.invoke :delete, catalog_item
+        return unless catalog_item
 
+        client.invoke :delete, catalog_item
         # remove the item from state
         state.delete :catalog_item
       end

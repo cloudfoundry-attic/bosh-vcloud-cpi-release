@@ -55,6 +55,18 @@ module VCloudCloud
       end
 
       describe ".rollback" do
+        it 'does nothing' do
+          # setup test data
+          state = {}
+
+          # configure mock expectations
+          client.should_not_receive(:invoke)
+
+          # run test
+          step = described_class.new state, client
+          expect { step.rollback }.to_not raise_error
+        end
+
         it "invokes the method" do
           #setup the test data
           state = {:catalog_item => catalog_item}
