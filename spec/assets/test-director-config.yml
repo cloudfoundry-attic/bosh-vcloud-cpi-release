@@ -45,6 +45,12 @@ cloud:
           media_catalog: cf-catalog
           vm_metadata_key: cf-agent-env
           description: vcd-cf
+          control:
+            wait_max: 400 # maximum wait seconds for a single task
+            wait_delay: 10 # delay in seconds for pooling next task status
+            cookie_timeout: 1200 # timeout in seconds after which session must be re-created
+            retry_max: 5 # maximum attempts
+            retry_delay: 500 # delay of first retry, the next is * 2
         control:
           retries:
             default: 5

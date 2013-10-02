@@ -10,6 +10,26 @@ module VCloudCloud
     let(:settings) { Test.vcd_settings }
     let(:client) { described_class.new(settings, logger)}
 
+    describe '.initialize' do
+      it 'read control settings from configuration file' do
+        verify_control_settings :@wait_max => 400, :@wait_delay => 10, :@retry_max => 5, :@retry_delay => 500, :@cookie_timeout => 1200
+      end
+
+      it 'use default control settings if not specified in configuration file' do
+        settings['entities']['control'] = nil
+        verify_control_settings :@wait_max => VCloudClient::WAIT_MAX, :@wait_delay => VCloudClient::WAIT_DELAY, \
+          :@retry_max => VCloudClient::RETRY_MAX, :@retry_delay => VCloudClient::RETRY_DELAY, :@cookie_timeout => VCloudClient::COOKIE_TIMEOUT
+      end
+
+      private
+      def verify_control_settings(control_settings)
+        control_settings.each do |instance_variable_name, target_numeric_value|
+          instance_variable = client.instance_variable_get(instance_variable_name)
+          instance_variable.should eql target_numeric_value
+        end
+      end
+    end
+
     describe ".invoke" do
       it "fetch auth header" do
         login_response = double("login_response")

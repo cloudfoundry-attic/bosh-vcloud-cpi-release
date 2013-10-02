@@ -139,7 +139,7 @@ module VCloudCloud
       if options[:login]
         @auth_token = response.headers[:x_vcloud_authorization]
         @cookie = response.cookies
-        @cookie_expiration = Time.now + COOKIE_TIMEOUT  # TODO COOKIE_TIMEOUT should be from configuration
+        @cookie_expiration = Time.now + @cookie_timeout
       end
       (options[:no_wrap] || response.code == 204) ? nil : wrap_response(response)
     end
@@ -203,7 +203,7 @@ module VCloudCloud
 
     WAIT_MAX       = 300    # maximum wait seconds for a single task
     WAIT_DELAY     = 5      # delay in seconds for pooling next task status
-    COOKIE_TIMEOUT = 600    # timeout in seconds after which session must be re-created
+    COOKIE_TIMEOUT = 600    # default timeout in seconds, if not specified in configuration file, after which session must be re-created
     RETRY_MAX      = 3      # maximum attempts
     RETRY_DELAY    = 100    # delay of first retry, the next is * 2
 
