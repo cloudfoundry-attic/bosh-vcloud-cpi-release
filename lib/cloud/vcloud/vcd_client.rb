@@ -11,6 +11,8 @@ module VCloudCloud
   class VCloudClient
     attr_reader :logger
 
+    VCLOUD_VERSION_NUMBER = '5.1'
+
     def initialize(vcd_settings, logger)
       @logger = logger
       @url  = vcd_settings['url']
@@ -109,38 +111,9 @@ module VCloudCloud
     end
 
     def invoke(method, path, options = {})
-      session unless options[:login]
+      session
 
-      path = path.href unless path.is_a?(String)
-
-      params = {
-        :method => method,
-        :url => if path.start_with?('/')
-            @url + path
-          else
-            path
-          end,
-        :headers => {
-          :Accept => 'application/*+xml;version=5.1',
-          :content_type => '*/*'
-        }
-      }
-      params[:headers][:x_vcloud_authorization] = @auth_token if !options[:login] && @auth_token
-      params[:cookies] = @cookie if !options[:login] && cookie_available?
-      params[:payload] = options[:payload].to_s if options[:payload]
-      params[:headers].merge! options[:headers] if options[:headers]
-      response = retry_for_network_issue do
-        @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
-        RestClient::Request.execute params do |response, request, result, &block|
-          @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
-          response.return! request, result, &block
-        end
-      end
-      if options[:login]
-        @auth_token = response.headers[:x_vcloud_authorization]
-        @cookie = response.cookies
-        @cookie_expiration = Time.now + @cookie_timeout
-      end
+      response = send_request method, path, options
       (options[:no_wrap] || response.code == 204) ? nil : wrap_response(response)
     end
 
@@ -211,15 +184,73 @@ module VCloudCloud
       @cookie && Time.now < @cookie_expiration
     end
 
+    def login_url
+      return @login_url if @login_url
+      default_login_url = '/api/sessions'
+
+      begin
+        response = send_request :get, '/api/versions'
+        url_node = wrap_response(response)
+        if url_node.nil?
+          @logger.warn "Unable to find version=#{VCLOUD_VERSION_NUMBER}. Default to #{default_login_url}"
+          @login_url = default_login_url
+        else
+          @login_url = url_node.login_url.content
+        end
+      rescue => ex
+        @logger.warn %Q{
+          Caught exception when retrieving login url:
+          #{ex.to_s}"
+
+          Default to #{default_login_url}
+        }
+
+        @login_url = default_login_url
+      end
+    end
+
+    def send_request(method, path, options = {})
+      path = path.href unless path.is_a?(String)
+
+      params = {
+          :method => method,
+          :url => if path.start_with?('/')
+                    @url + path
+                  else
+                    path
+                  end,
+          :headers => {
+              :Accept => "application/*+xml;version=#{VCLOUD_VERSION_NUMBER}",
+              :content_type => '*/*'
+          }
+      }
+      params[:headers][:x_vcloud_authorization] = @auth_token if !options[:login] && @auth_token
+      params[:cookies] = @cookie if !options[:login] && cookie_available?
+      params[:payload] = options[:payload].to_s if options[:payload]
+      params[:headers].merge! options[:headers] if options[:headers]
+      response = retry_for_network_issue do
+        @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
+        RestClient::Request.execute params do |response, request, result, &block|
+          @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
+          response.return! request, result, &block
+        end
+      end
+    end
+
     def session
       unless cookie_available?
         auth = "#{@user}@#{@entities['organization']}:#{@pass}"
         auth_header = "Basic #{Base64.encode64(auth)}"
-        @session = invoke :post, '/api/sessions',
+        response = send_request :post, login_url,
                     :headers => { :Authorization => auth_header, :content_type => 'application/x-www-form-urlencoded' },
-                    :payload => URI.encode_www_form({ :Authorization => auth_header, :Accept => 'application/*+xml;version=5.1' }),
-                    :login => true,
+                    :payload => URI.encode_www_form({ :Authorization => auth_header, :Accept => "application/*+xml;version=#{VCLOUD_VERSION_NUMBER}" }),
                     :with_response => true
+
+        @auth_token = response.headers[:x_vcloud_authorization]
+        @cookie = response.cookies
+        @cookie_expiration = Time.now + @cookie_timeout
+        @session = wrap_response(response)
+
         flush_cache
         @entity_resolver_link = @session.entity_resolver
         @org_link = @session.org_link @entities['organization']

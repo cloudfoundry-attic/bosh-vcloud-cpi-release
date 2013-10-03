@@ -32,13 +32,17 @@ module VCloudCloud
 
     describe ".invoke" do
       it "fetch auth header" do
-        login_response = double("login_response")
+        version_response = double('version_response')
+        url_node = double('login url node')
+        url_node.stub_chain('login_url.content').and_return '/api/sessions'
+        client.should_receive(:wrap_response).with(version_response).and_return url_node
+
+        login_response = double('login_response')
         cookies = "cookies string"
         auth_token = {:x_vcloud_authorization => auth_token }
         login_response.should_receive(:headers).and_return auth_token
         login_response.should_receive(:cookies).and_return cookies
         base_url = URI.parse(settings['url'])
-        login_response.should_receive(:code).and_return 201
 
         session = double("session")
         session.should_receive(:entity_resolver)
@@ -47,6 +51,11 @@ module VCloudCloud
 
         info_response = double("info response")
         info_response.should_receive(:code).and_return 204
+        # version
+        RestClient::Request.should_receive(:execute) do |arg|
+          arg[:url].should == base_url.merge('/api/versions').to_s
+          arg[:cookies].should be_nil
+        end.and_return version_response
         # login
         RestClient::Request.should_receive(:execute) do |arg|
           arg[:url].should == base_url.merge("/api/sessions").to_s
