@@ -116,10 +116,15 @@ module VCloudSdk
         section.add_item(new_disk)
         # The order matters!
         new_disk.add_rasd(RASD_TYPES[:HOST_RESOURCE])
-        new_disk.add_rasd(RASD_TYPES[:INSTANCE_ID])
+
+        instance_id_type = RASD_TYPES[:INSTANCE_ID]
+        new_disk.add_rasd(instance_id_type)
+        new_disk.set_rasd(instance_id_type, section.highest_instance_id + 1)
+
         rt = RASD_TYPES[:RESOURCE_TYPE]
         new_disk.add_rasd(rt)
         new_disk.set_rasd(rt, HARDWARE_TYPE[:HARD_DISK])
+
         host_resource = new_disk.get_rasd(RASD_TYPES[:HOST_RESOURCE])
         host_resource[new_disk.create_qualified_name(
           "capacity", VCLOUD_NAMESPACE)] = size_mb.to_s

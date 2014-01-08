@@ -28,7 +28,8 @@ module VCloudSdk
       end
 
       def highest_instance_id
-        hardware.map{|h| h.instance_id}.max
+        ids = hardware.map{|h| h.get_rasd_content(RASD_TYPES[:INSTANCE_ID])}.compact
+        ids.map {|id| id.to_i}.max
       end
 
       def nics
