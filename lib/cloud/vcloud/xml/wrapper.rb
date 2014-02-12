@@ -186,7 +186,7 @@ module VCloudSdk
           set_namespace(node, namespace_prefix, namespace_href)
           parent.add_child(node)
         else
-          fail CpiError, "Cannot add child.  Unknown object passed in."
+          fail Bosh::Clouds::CpiError, "Cannot add child.  Unknown object passed in."
         end
       end
 
@@ -246,7 +246,7 @@ module VCloudSdk
         if namespace_prefix.nil? && namespace_href.nil?
           return
         elsif namespace_prefix.nil? || namespace_href.nil?
-          fail CpiError,
+          fail Bosh::Clouds::CpiError,
                "Namespace prefix must both be nil or defined together."
         end
 
