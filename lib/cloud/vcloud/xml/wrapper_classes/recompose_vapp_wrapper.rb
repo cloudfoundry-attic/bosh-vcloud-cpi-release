@@ -26,13 +26,10 @@ module VCloudSdk
       def add_source_item(entity_to_add_href)
         return unless entity_to_add_href
 
-        prefix = namespace.prefix
-        prefix += ':' if prefix
-
-        node_sourced_item = create_child("#{prefix}SourcedItem")
+        node_sourced_item = create_child("SourcedItem", namespace.prefix, namespace.href)
         node_sourced_item["sourceDelete"] = "true"
 
-        node_source = add_child("#{prefix}Source", nil, nil, node_sourced_item)
+        node_source = add_child("Source", namespace.prefix, namespace.href, node_sourced_item)
         node_source["href"] = entity_to_add_href
 
         get_nodes("AllEULAsAccepted").first.node.before(node_sourced_item)
