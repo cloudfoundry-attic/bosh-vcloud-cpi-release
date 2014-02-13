@@ -17,4 +17,9 @@ namespace :spec do
     ENV['STRESS_BASE_IP']  ||= args[:base_ip]
     t.pattern = 'spec/stress/**/*_spec.rb'
   end
+
+  desc 'lifecycle test'
+  RSpec::Core::RakeTask.new :lifecycle do |t|
+    t.pattern = 'spec/integration/lifecycle_spec.rb'
+  end
 end
