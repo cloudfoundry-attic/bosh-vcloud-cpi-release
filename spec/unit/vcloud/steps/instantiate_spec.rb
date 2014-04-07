@@ -38,6 +38,8 @@ module VCloudCloud
         vapp
       end
 
+      let(:vapp_name) { "vapp_name" }
+
       let(:instantiate_vapp_template_link_value) {"http://vdc/instantiate/vapp/template"}
       let(:client) do
         client = double("vcloud client")
@@ -111,18 +113,18 @@ module VCloudCloud
 
         it "invokes the method" do
           #setup the test data
-          state = {:vapp => vapp}
+          state = {:instantiate_vapp_name => vapp_name}
           remove_link = "http://vapp/remove"
 
           # configure mock expectations
           client.should_receive(:flush_cache).once.ordered
-          client.should_receive(:vapp_by_name).once.ordered.with(vapp.name).and_return(vapp)
+          client.should_receive(:vapp_by_name).once.ordered.with(vapp_name).and_return(vapp)
           vapp.should_receive(:remove_link).once.ordered { remove_link }
           client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:vapp)).to be_false
+          expect(state.key?(:instantiate_vapp_name)).to be_false
         end
       end
     end

@@ -15,6 +15,7 @@ module VCloudCloud
       let(:vm) do
         vm = double("vm")
         vm.stub(:href) { "href" }
+        vm.stub(:name) { "vm_name" }
         vm
       end
 
@@ -33,6 +34,37 @@ module VCloudCloud
           )
           vapp.should_receive(:recompose_vapp_link) { recompose_link }
           described_class.new(state, client).perform(vapp.name, vapp, vm)
+        end
+      end
+
+      describe ".rollback" do
+        it "does nothing" do
+          # setup test data
+          state = {}
+
+          # configure mock expectations
+          client.should_not_receive(:reload).with(vm)
+          client.should_not_receive(:invoke_and_wait)
+
+          # run test
+          step = described_class.new state, client
+          step.rollback
+        end
+
+        it "deletes the vm" do
+          #setup the test data
+          state = {:vm => vm}
+          remove_link = "http://vm/remove"
+          entity = double("entity")
+
+          # configure mock expectations
+          client.should_receive(:reload).once.ordered.with(vm).and_return(entity)
+          entity.should_receive(:remove_link).once { remove_link }
+          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+
+          # run the test
+          described_class.new(state, client).rollback
+          expect(state.key?(:vm)).to be_false
         end
       end
     end

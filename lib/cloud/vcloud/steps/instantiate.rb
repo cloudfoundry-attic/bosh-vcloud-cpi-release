@@ -16,21 +16,23 @@ module VCloudCloud
         params.linked_clone = false
         params.set_locality = locality_spec template, disk_locality
 
+        state[:instantiate_vapp_name] = vapp_name
+
         vapp = client.invoke :post, client.vdc.instantiate_vapp_template_link, :payload => params
 
         state[:vapp] = client.wait_entity vapp
       end
 
       def rollback
-        vapp = state[:vapp]
-        if vapp
-          @logger.debug "Requesting vApp: #{vapp.name}"
+        vapp_name = state[:instantiate_vapp_name]
+        if vapp_name
+          @logger.debug "Requesting vApp: #{vapp_name}"
 
           # Note that when renaming vApp, the remove_link stays the same and points to
           # the original vApp. To avoid potential inconsistency, fetch vApp from the server.
           begin
             client.flush_cache  # flush cached vdc which contains vapp list
-            vapp = client.vapp_by_name vapp.name
+            vapp = client.vapp_by_name vapp_name
             link = vapp.remove_link true
             client.invoke_and_wait :delete, link if link
           rescue => ex
@@ -39,6 +41,7 @@ module VCloudCloud
 
           # remove the item from state
           state.delete :vapp
+          state.delete :instantiate_vapp_name
         end
       end
 

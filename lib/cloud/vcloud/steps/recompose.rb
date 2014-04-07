@@ -14,6 +14,26 @@ module VCloudCloud
         recompose_vapp_link = container_vapp.recompose_vapp_link true
         client.invoke_and_wait :post, recompose_vapp_link, :payload => params
       end
+
+      def rollback
+        # The recompose method is only used in create_vm step.
+        # The rollback logic here is to delete the new-created VM.
+        vm = state[:vm]
+        if vm
+          @logger.debug "Requesting VM: #{vm.name}"
+
+          begin
+            entity = client.reload vm
+            link = entity.remove_link true
+            client.invoke_and_wait :delete, link if link
+          rescue => ex
+            @logger.debug(ex) if @logger
+          end
+
+          # remove the item from state
+          state.delete :vm
+        end
+      end
     end
   end
 end
