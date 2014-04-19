@@ -53,18 +53,21 @@ module VCloudCloud
 
         it "deletes the vm" do
           #setup the test data
-          state = {:vm => vm}
+          state = {:vm => vm, :recompose_vapp_name => vapp_name}
           remove_link = "http://vm/remove"
           entity = double("entity")
 
           # configure mock expectations
-          client.should_receive(:reload).once.ordered.with(vm).and_return(entity)
-          entity.should_receive(:remove_link).once { remove_link }
+          client.should_receive(:flush_cache).once.ordered
+          client.should_receive(:vapp_by_name).once.ordered.with(vapp_name).and_return(vapp)
+          vapp.should_receive(:vms).and_return [vm]
+          vm.should_receive(:remove_link).once { remove_link }
           client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run the test
           described_class.new(state, client).rollback
           expect(state.key?(:vm)).to be_false
+          expect(state.key?(:recompose_vapp_name)).to be_false
         end
       end
     end
