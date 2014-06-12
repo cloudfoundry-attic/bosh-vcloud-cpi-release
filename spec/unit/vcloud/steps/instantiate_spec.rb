@@ -77,7 +77,7 @@ module VCloudCloud
 
           # run the test
           step = described_class.new state, client
-          step.perform template_id, vapp_name, vapp_description, disk_locality
+          step.perform template_id, vapp_name, vapp_description, disk_locality, nil
           expect(state[:vapp]).to eql vapp
         end
 
@@ -92,7 +92,7 @@ module VCloudCloud
 
           # run the test
           step = described_class.new state, client
-          expect{step.perform tid, vapp_name, vapp_description, disk_locality}.to raise_exception ObjectNotFoundError
+          expect{step.perform tid, vapp_name, vapp_description, disk_locality, nil}.to raise_exception ObjectNotFoundError
           expect(state).to be {}
         end
       end

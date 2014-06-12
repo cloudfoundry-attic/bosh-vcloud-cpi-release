@@ -32,6 +32,19 @@ module VCloudSdk
         disk.node.after(node)
       end
 
+      def storage_profile=(storage_profile)
+        return unless storage_profile
+
+        raise "disk storage profile already set." if @storage_profile
+        @storage_profile = true
+
+        node = create_child("StorageProfile")
+        node["type"] = storage_profile.type
+        node["name"] = storage_profile.name
+        node["href"] = storage_profile.href
+        disk.node.add_child(node)
+      end
+
       private
 
       def disk

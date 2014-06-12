@@ -32,7 +32,6 @@ module VCloudSdk
         source_node["href"] = src["href"]
         source_node["id"] = src["id"]
         source_node["type"] = src["type"]
-        source_node["id"] = src["id"]
       end
 
       def set_locality=(locality)
@@ -71,6 +70,39 @@ module VCloudSdk
           node_re["type"] = v.type
           node_re["name"] = v.name
           node_re["href"] = v.href
+        end
+      end
+
+      def set_storage_profile=(storage_profile)
+        return unless storage_profile
+
+        raise "vApp storage profile already set." if @storage_profile
+        @storage_profile = true
+
+        storage_profile.each do |k,v|
+          node_sp = create_child("SourcedVmInstantiationParams",
+                                 namespace.prefix,
+                                 namespace.href)
+
+          is_source_delete.node.after(node_sp)
+
+          node_sv = add_child("Source",
+                              namespace.prefix,
+                              namespace.href,
+                              node_sp)
+
+          node_sv["type"] = k.type
+          node_sv["name"] = k.name
+          node_sv["href"] = k.href
+
+          node_lp = create_child("StorageProfile",
+                                 namespace.prefix,
+                                 namespace.href)
+          node_lp["type"] = v.type
+          node_lp["name"] = v.name
+          node_lp["href"] = v.href
+
+          node_sv.after(node_lp)
         end
       end
 

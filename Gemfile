@@ -6,8 +6,8 @@ gemspec
 group :test, :development do
   gem 'rake', '~> 10.0'
   gem 'ci_reporter'
-  gem 'rspec'
+  gem 'rspec', '2.14.1'
   gem 'simplecov'
   gem 'simplecov-rcov'
-  gem "rubocop"
+  gem 'rubocop', '0.18.1'
 end

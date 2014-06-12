@@ -2,6 +2,14 @@ require 'spec_helper'
 
 describe VCloudCloud::Cloud do
   before(:all) do
+
+=begin
+    File.readlines("./spec/integration/env.txt").each do |line|
+      values = line.split("=")
+      ENV[values[0].strip] = values[1].strip
+    end
+=end
+
     @host          = ENV['BOSH_VCLOUD_CPI_URL']     || raise("Missing BOSH_VCLOUD_CPI_URL")
     @user          = ENV['BOSH_VCLOUD_CPI_USER']     || raise("Missing BOSH_VCLOUD_CPI_USER")
     @password      = ENV['BOSH_VCLOUD_CPI_PASSWORD'] || raise("Missing BOSH_VCLOUD_CPI_PASSWORD")
@@ -11,9 +19,11 @@ describe VCloudCloud::Cloud do
     @vdc           = ENV['BOSH_VCLOUD_CPI_VDC']     || raise("Missing BOSH_VCLOUD_CPI_VDC")
     @vapp_catalog  = ENV['BOSH_VCLOUD_CPI_VAPP_CATALOG'] || raise("Missing BOSH_VCLOUD_CPI_VAPP_CATALOG")
     @media_catalog = ENV['BOSH_VCLOUD_CPI_MEDIA_CATALOG']         || raise("Missing BOSH_VCLOUD_CPI_MEDIA_CATALOG")
-    @storage_prof  = ENV['BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE")
+    @media_storage_prof  = ENV['BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE")
+    @vapp_storage_prof  = ENV['BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE")
     @metadata_key  = ENV['BOSH_VCLOUD_CPI_VM_METADATA_KEY']     || raise("Missing BOSH_VCLOUD_CPI_VM_METADATA_KEY")
     @target_ip     = ENV['BOSH_VCLOUD_CPI_IP']     || raise("Missing BOSH_VCLOUD_CPI_IP")
+    @target_ip2     = ENV['BOSH_VCLOUD_CPI_IP2']     || raise("Missing BOSH_VCLOUD_CPI_IP2")
     @netmask       = ENV['BOSH_VCLOUD_CPI_NETMASK'] || raise("Missing BOSH_VCLOUD_CPI_NETMASK")
     @dns           = ENV['BOSH_VCLOUD_CPI_DNS']         || raise("Missing BOSH_VCLOUD_CPI_DNS")
     @gateway       = ENV['BOSH_VCLOUD_CPI_GATEWAY']     || raise("Missing BOSH_VCLOUD_CPI_GATEWAY")
@@ -33,7 +43,8 @@ describe VCloudCloud::Cloud do
           'virtual_datacenter' => @vdc,
           'vapp_catalog' => @vapp_catalog,
           'media_catalog' => @media_catalog,
-          'media_storage_profile' => @storage_prof,
+          'media_storage_profile' => @media_storage_prof,
+          'vapp_storage_profile' => @vapp_storage_prof,
           'vm_metadata_key' => @metadata_key,
           'description' => 'MicroBosh on vCloudDirector',
         }
@@ -54,11 +65,22 @@ describe VCloudCloud::Cloud do
 
   after(:all) { cpi.delete_stemcell(@stemcell_id) if @stemcell_id }
 
-  before { @vm_id = nil }
-  after { cpi.delete_vm(@vm_id) if @vm_id }
+  before {
+    @vm_id = nil
+    @vm_id2 = nil
+  }
 
-  before { @disk_id = nil }
-  after { cpi.delete_disk(@disk_id) if @disk_id }
+  after {
+    cpi.delete_vm(@vm_id) if @vm_id
+    cpi.delete_vm(@vm_id2) if @vm_id2
+  }
+
+
+  before { @disk_id, @disk_id2 = nil, nil }
+  after {
+    cpi.delete_disk(@disk_id) if @disk_id
+    cpi.delete_disk(@disk_id2) if @disk_id2
+  }
 
   def vm_lifecycle(network_spec, disk_locality)
     resource_pool = {
@@ -68,7 +90,7 @@ describe VCloudCloud::Cloud do
     }
 
     @vm_id = cpi.create_vm(
-      'agent-007',
+      'agent1-007',
       @stemcell_id,
       resource_pool,
       network_spec,
@@ -85,6 +107,28 @@ describe VCloudCloud::Cloud do
     cpi.attach_disk(@vm_id, @disk_id)
 
     cpi.detach_disk(@vm_id, @disk_id)
+
+    #now use the same vapp name and different vm name to create vm again
+
+    network_spec["static"]["ip"] = @target_ip2
+    @vm_id2 = cpi.create_vm(
+        'agent1-008',
+        @stemcell_id,
+        resource_pool,
+        network_spec,
+        disk_locality,
+        {'key' => 'value', 'vapp' => 'agent1-007'}
+    )
+
+    cpi.has_vm?(@vm_id2).should be(true)
+
+    @disk_id2 = cpi.create_disk(2048, @vm_id2)
+    @disk_id2.should_not be_nil
+
+    cpi.attach_disk(@vm_id2, @disk_id2)
+
+    cpi.detach_disk(@vm_id2, @disk_id2)
+
   end
 
   describe 'vcloud' do

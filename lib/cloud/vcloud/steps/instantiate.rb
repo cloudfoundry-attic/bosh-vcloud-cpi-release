@@ -3,7 +3,7 @@ module VCloudCloud
     # Create a vApp from a vApp template
     # Ref: http://pubs.vmware.com/vcd-51/index.jsp?topic=%2Fcom.vmware.vcloud.api.reference.doc_51%2Fdoc%2Foperations%2FPOST-InstantiateVAppTemplate.html
     class Instantiate < Step
-      def perform(template_id, vapp_name, description, disk_locality, &block)
+      def perform(template_id, vapp_name, description, disk_locality, storage_profile, &block)
         catalog_item = client.resolve_entity template_id
         raise ObjectNotFoundError, "Invalid vApp template Id: #{template_id}" unless catalog_item
         template = client.resolve_link catalog_item.entity
@@ -15,6 +15,7 @@ module VCloudCloud
         params.all_eulas_accepted = true
         params.linked_clone = false
         params.set_locality = locality_spec template, disk_locality
+        params.set_storage_profile = storage_profile_spec(template, storage_profile) if storage_profile
 
         state[:instantiate_vapp_name] = vapp_name
 
@@ -56,6 +57,14 @@ module VCloudCloud
           end
         end
         locality
+      end
+
+      def storage_profile_spec(template, storage_profile)
+        vm_storage_profiles = {}
+        template.vms.each do |vm|
+          vm_storage_profiles[vm] = storage_profile
+        end
+        vm_storage_profiles
       end
     end
   end

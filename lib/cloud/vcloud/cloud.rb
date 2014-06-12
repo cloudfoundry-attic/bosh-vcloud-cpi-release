@@ -57,7 +57,10 @@ module VCloudCloud
         requested_name = environment && environment['vapp']
         vapp_name = requested_name ? "vapp-tmp-#{unique_name}" : agent_id
 
-        s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality
+        storage_profiles = client.vdc.storage_profiles || []
+        storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['vapp_storage_profile'] }
+
+        s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality, storage_profile
         client.flush_cache  # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
@@ -224,7 +227,9 @@ module VCloudCloud
       (steps "create_disk(#{size_mb}, #{vm_locality.inspect})" do |s|
         # vm_locality is used as vm_id
         vm = vm_locality.nil? ? nil : client.resolve_entity(vm_locality)
-        s.next Steps::CreateDisk, unique_name, size_mb, vm
+        storage_profiles = client.vdc.storage_profiles || []
+        storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['vapp_storage_profile'] }
+        s.next Steps::CreateDisk, unique_name, size_mb, vm, storage_profile
       end)[:disk].urn
     end
 

@@ -40,7 +40,7 @@ module VCloudCloud
           client.should_receive(:wait_entity).once.ordered.with(disk)
 
           # run test
-          described_class.new(state, client).perform disk_name, disk_size, vm
+          described_class.new(state, client).perform disk_name, disk_size, vm, nil
           expect(state[:disk]).to be disk
         end
 
@@ -53,7 +53,7 @@ module VCloudCloud
           client.should_receive(:wait_entity).once.ordered.with(disk)
 
           # run test
-          described_class.new(state, client).perform disk_name, disk_size, nil
+          described_class.new(state, client).perform disk_name, disk_size, nil, nil
           expect(state[:disk]).to be disk
         end
       end
