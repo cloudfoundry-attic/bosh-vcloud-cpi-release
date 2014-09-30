@@ -317,41 +317,9 @@ module VCloudCloud
           'cloud_properties' => { 'name' => "demo_network"}
         }
         networks = { demo_network: network }
-        vm.stub(:name) { vm_name }
-        vapp.stub(:vms) { [vm, vm2] }
-        state[:vm] = vm
-        trx.should_receive(:next).once.ordered.with(
-          Steps::PowerOff, anything, anything )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::AddNetworks, anything )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::ReconfigureVM, anything, anything, anything,
-          networks)
-        trx.should_receive(:next).once.ordered.with(
-          Steps::DeleteUnusedNetworks, anything )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::LoadAgentEnv )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::SaveAgentEnv )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::EjectCatalogMedia, vm_name)
-        trx.should_receive(:next).once.ordered.with(
-          Steps::DeleteCatalogMedia, vm_name)
-        trx.should_receive(:next).once.ordered.with(
-            Steps::CreateMedia, vm_name,
-            anything, anything, anything )
-        trx.should_receive(:next).once.ordered.with(
-            Steps::UploadMediaFiles, anything )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::AddCatalogItem, anything, anything)
-        trx.should_receive(:next).once.ordered.with(
-          Steps::InsertCatalogMedia, vm_name)
-        trx.should_receive(:next).once.ordered.with(
-          Steps::PowerOn, anything
-        )
-        Steps::CreateOrUpdateAgentEnv.stub(:update_network_env)
 
-        subject.configure_networks(vm_id, networks)
+        expect {subject.configure_networks(vm_id, networks)}
+          .to raise_error Bosh::Clouds::NotSupported
       end
     end
 

@@ -197,30 +197,7 @@ module VCloudCloud
     end
 
     def configure_networks(vm_id, networks)
-      steps "configure_networks(#{vm_id}, #{networks})" do |s|
-        vm = s.state[:vm] = client.resolve_entity vm_id
-
-        @vapp_lock.synchronize do
-          # power off vm first
-          s.next Steps::PowerOff, :vm, true
-
-          # load container vApp
-          s.state[:vapp] = client.resolve_link vm.container_vapp_link
-
-          reconfigure_vm s, nil, nil, nil, networks
-
-          # update environment
-          s.state[:env_metadata_key] = @entities['vm_metadata_key']
-          s.next Steps::LoadAgentEnv
-          vm = s.state[:vm] = client.reload vm
-          Steps::CreateOrUpdateAgentEnv.update_network_env s.state[:env], vm, networks
-
-          save_agent_env s
-
-          # power on
-          s.next Steps::PowerOn, :vm
-        end
-      end
+      raise Bosh::Clouds::NotSupported, 'VDC CPI was configured to return NotSupported'
     end
 
     def create_disk(size_mb, vm_locality = nil)
