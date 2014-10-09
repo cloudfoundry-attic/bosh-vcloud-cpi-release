@@ -30,11 +30,11 @@ module CpiHelper
       @logger = Logger.new ENV['LOGGER']
       @logger.formatter = ThreadFormatter.new
       Bosh::Clouds::Config.configure StubConfig.new(@logger)
-      @cpi = @cfg && Bosh::Clouds::VCloud.new(@cfg)
+      @cpi = @cfg && VCloudCloud::Cloud.new(@cfg)
     end
 
     def new_cpi
-      Bosh::Clouds::VCloud.new @cfg
+      VCloudCloud::Cloud.new @cfg
     end
 
     def client
