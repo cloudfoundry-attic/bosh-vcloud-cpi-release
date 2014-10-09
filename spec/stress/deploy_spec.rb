@@ -8,19 +8,19 @@ describe 'vCloud Stress Deploy' do
   end
 
   it "deploy 2x2" do
-    stress_deploy 2 2
+    stress_deploy 2, 2
   end
 
   it "deploy 2x4" do
-    stress_deploy 4 2
+    stress_deploy 4, 2
   end
 
   it "deploy 4x2" do
-    stress_deploy 2 4
+    stress_deploy 2, 4
   end
 
   it "deploy 8x2" do
-    stress_deploy 2 8
+    stress_deploy 2, 8
   end
   
 end
