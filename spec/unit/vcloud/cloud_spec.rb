@@ -193,7 +193,6 @@ module VCloudCloud
       end
     end
 
-
     describe ".reboot_vm" do
       include_context "base"
 
@@ -417,6 +416,57 @@ module VCloudCloud
         client.stub(:resolve_entity).with(disk_id).and_return disk
 
         subject.delete_disk(disk_id)
+      end
+    end
+
+    describe "methods that raise NotImplemented" do
+      describe ".current_vm_id" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          expect { subject.current_vm_id }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
+      end
+
+      describe ".delete_snapshot" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          expect { subject.delete_snapshot("fake-snapshot-id") }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
+      end
+
+      describe ".has_disk?" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          expect { subject.has_disk?("fake-disk-id") }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
+      end
+
+      describe ".get_disks" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          expect { subject.get_disks("fake-vm-id") }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
+      end
+
+      describe ".set_vm_metadata" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          data = {}
+          expect { subject.set_vm_metadata("fake-vm-id", data) }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
+      end
+
+      describe ".snapshot_disk" do
+        include_context "base"
+
+        it "returns Bosh::Cloud::NotImplemented" do
+          expect { subject.snapshot_disk("fake-disk-id", {}) }.to raise_error(Bosh::Clouds::NotImplemented)
+        end
       end
     end
   end

@@ -7,7 +7,7 @@ require_relative 'steps'
 
 module VCloudCloud
 
-  class Cloud
+  class Cloud < ::Bosh::Cloud
 
     def initialize(options)
       @logger = Bosh::Clouds::Config.logger
