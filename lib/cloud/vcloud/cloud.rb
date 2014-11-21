@@ -200,8 +200,8 @@ module VCloudCloud
       raise Bosh::Clouds::NotSupported, 'VDC CPI was configured to return NotSupported'
     end
 
-    def create_disk(size_mb, vm_locality = nil)
-      (steps "create_disk(#{size_mb}, #{vm_locality.inspect})" do |s|
+    def create_disk(size_mb, cloud_properties, vm_locality = nil)
+      (steps "create_disk(#{size_mb}, #{cloud_properties.inspect}, #{vm_locality.inspect})" do |s|
         # vm_locality is used as vm_id
         vm = vm_locality.nil? ? nil : client.resolve_entity(vm_locality)
         storage_profiles = client.vdc.storage_profiles || []

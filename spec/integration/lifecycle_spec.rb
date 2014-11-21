@@ -101,7 +101,7 @@ describe VCloudCloud::Cloud do
     @vm_id.should_not be_nil
     cpi.has_vm?(@vm_id).should be(true)
 
-    @disk_id = cpi.create_disk(2048, @vm_id)
+    @disk_id = cpi.create_disk(2048, {}, @vm_id)
     @disk_id.should_not be_nil
 
     cpi.attach_disk(@vm_id, @disk_id)
@@ -122,7 +122,7 @@ describe VCloudCloud::Cloud do
 
     cpi.has_vm?(@vm_id2).should be(true)
 
-    @disk_id2 = cpi.create_disk(2048, @vm_id2)
+    @disk_id2 = cpi.create_disk(2048, {}, @vm_id2)
     @disk_id2.should_not be_nil
 
     cpi.attach_disk(@vm_id2, @disk_id2)
@@ -152,7 +152,7 @@ describe VCloudCloud::Cloud do
     end
 
     context 'with existing disks' do
-      before { @existing_volume_id = cpi.create_disk(2048) }
+      before { @existing_volume_id = cpi.create_disk(2048, {}) }
       after { cpi.delete_disk(@existing_volume_id) if @existing_volume_id }
 
       it 'should exercise the vm lifecycle' do
