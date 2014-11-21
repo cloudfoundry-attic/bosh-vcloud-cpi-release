@@ -5,7 +5,9 @@ require_relative '../../lib/cloud/vcloud/steps/instantiate'
 describe 'vCloud CPI' do
 
   before :all do
-    @target = CpiHelper::Target.new ENV['TEST_SETTINGS']
+    settings = ENV['TEST_SETTINGS'] || raise('Missing TEST_SETTINGS')
+
+    @target = CpiHelper::Target.new settings
     @cfg = @target.cfg
     @logger = @target.logger
 
@@ -68,9 +70,10 @@ describe 'vCloud CPI' do
         end
         if vm['disk']
           size = vm['disk']['size'].to_i
+          cloud_properties = vm['disk'].fetch('cloud_properties', {})
           locality = vm['disk']['locality'] ? vm_id : nil
-          @logger.info "create_disk(#{size}, #{locality})"
-          disk_id = @cpi.create_disk size, locality
+          @logger.info "create_disk(#{size}, #{cloud_properties.inspect}, #{locality})"
+          disk_id = @cpi.create_disk size, cloud_properties, locality
           disk_id.should_not be_nil
           @logger.info "attach_disk(#{vm_id}, #{disk_id})"
           @cpi.attach_disk vm_id, disk_id
