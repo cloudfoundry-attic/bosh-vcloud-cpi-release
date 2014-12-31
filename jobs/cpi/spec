@@ -1,0 +1,12 @@
+---
+name: cpi
+templates:
+  vcloud_cpi.erb: bin/vcloud_cpi
+  cpi.erb: bin/cpi
+  cpi.yml.erb: config/cpi.yml
+
+packages:
+- ruby_vcloud_cpi
+- bosh_vcloud_cpi
+
+properties: {}

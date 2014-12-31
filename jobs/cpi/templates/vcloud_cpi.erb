@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'ostruct'
+require 'cloud'
+require 'cloud/vcloud'
+require 'bosh/cpi'
+require 'bosh/cpi/cli'
+
+cpi_config = YAML.load_file(ARGV.shift)
+
+cloud_config = OpenStruct.new(:logger => Logger.new(STDERR))
+
+Bosh::Clouds::Config.configure(cloud_config)
+
+cloud_properties = cpi_config['cloud']['properties']
+
+cpi = Bosh::Clouds::Vcloud.new(cloud_properties)
+cpi_log = StringIO.new #TODO: cloud_properties['log_file'] ?
+cli = Bosh::Cpi::Cli.new(cpi, cpi_log, STDOUT)
+
+cli.run(ARGF.read)

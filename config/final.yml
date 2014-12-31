@@ -1,0 +1,6 @@
+---
+final_name: bosh-vcloud-cpi
+blobstore:
+  provider: s3
+  options:
+    bucket_name: bosh-vcloud-cpi-blobs

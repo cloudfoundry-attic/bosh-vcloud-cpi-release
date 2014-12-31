@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -ex
+
+tmp_dir=$(mktemp -dt vcloud-cpi-XXXXXXXX)
+
+cleanup() {
+  rm -rf $tmp_dir
+}
+
+trap cleanup EXIT
+
+vcloud_cpi_dir=$(cd $(dirname $0)/../ && pwd)
+vcloud_cpi_gems_dir=$vcloud_cpi_dir/src/bosh_vcloud_cpi
+rm -rf $vcloud_cpi_gems_dir
+mkdir -p $vcloud_cpi_gems_dir
+
+(
+  cd $tmp_dir
+  cat > 'Gemfile' <<EOF
+source "https://rubygems.org"
+
+gem "bosh_vcloud_cpi"
+EOF
+
+  bundle install --path .
+
+  cp -r ruby/*/cache/*.gem ${vcloud_cpi_gems_dir}
+)
