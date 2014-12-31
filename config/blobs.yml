@@ -1,1 +1,16 @@
---- {}
+---
+ruby_vcloud_cpi/ruby-1.9.3-p545.tar.gz:
+  object_id: 61fde33c-11e8-487c-a3d2-c69479c8437d
+  sha: !binary |-
+    MDM0NTUzNjQ3NDA5MTRlOGQyZGZkNjQyMWY2ODFiM2ZiNjhhNDMxMw==
+  size: 12582277
+ruby_vcloud_cpi/rubygems-2.1.11.tgz:
+  object_id: 56e6250e-0499-4658-9d1c-e9acd59cc668
+  sha: !binary |-
+    Y2EzMDMzNDMyY2FlMjhkZWI3Y2VkNzljZGEyNzFjYjI5MmI3MGU1OQ==
+  size: 367166
+ruby_vcloud_cpi/yaml-0.1.5.tar.gz:
+  object_id: e20cff65-e1a1-4dda-9e7d-620839339f57
+  sha: !binary |-
+    OGI3OGNiOWY3NTljN2Q4MGRiOGE3MzI4YzBlYmVjZmUzNGZkZTczNw==
+  size: 504897
