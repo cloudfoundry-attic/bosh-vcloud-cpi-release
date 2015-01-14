@@ -3,4 +3,5 @@ final_name: bosh-vcloud-cpi
 blobstore:
   provider: s3
   options:
+    endpoint: https://s3-us-west-1.amazonaws.com
     bucket_name: bosh-vcloud-cpi-blobs
