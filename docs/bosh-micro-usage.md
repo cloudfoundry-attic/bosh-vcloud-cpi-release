@@ -12,11 +12,17 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
 
 1. Create a deployment manifest (ex: `manifest.yml`) inside the deployment directory
 
-    Example deployment manifest:
+    Example deployment manifest (using bash variables):
 
-    ```
+    ```yaml
     ---
     name: bosh-vcloud
+    
+    releases:
+    - name: bosh
+      version: ${BOSH_VERSION}
+    - name: bosh-vcloud-cpi
+      version: ${VCLOUD_CPI_VERSION}
     
     networks:
     - name: default
@@ -177,6 +183,6 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
     ```
     bosh-micro deploy \
         /path/to/bosh-stemcell-${STEMCELL_VERSION}-vcloud-esxi-ubuntu-trusty-go_agent.tgz \
-        /path/to/bosh-vcloud-cpi-${CPI_VERSION}.tgz \
+        /path/to/bosh-vcloud-cpi-${VCLOUD_CPI_VERSION}.tgz \
         /path/to/bosh-${BOSH_VERSION}.tgz
     ```
