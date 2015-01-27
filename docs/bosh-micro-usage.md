@@ -175,5 +175,8 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
 1. Kick off a deploy
 
     ```
-    bosh-micro deploy /path/to/bosh-stemcell-${STEMCELL_VERSION}-vcloud-esxi-ubuntu-trusty-go_agent.tgz /path/to/bosh-vcloud-cpi-${CPI_VERSION}.tgz /path/to/bosh-${BOSH_VERSION}.tgz
+    bosh-micro deploy \
+        /path/to/bosh-stemcell-${STEMCELL_VERSION}-vcloud-esxi-ubuntu-trusty-go_agent.tgz \
+        /path/to/bosh-vcloud-cpi-${CPI_VERSION}.tgz \
+        /path/to/bosh-${BOSH_VERSION}.tgz
     ```
