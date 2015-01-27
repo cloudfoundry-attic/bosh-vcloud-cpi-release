@@ -35,7 +35,7 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
         name: VDC-BOSH
     
     resources:
-      persistent_disk: 4096,
+      persistent_disk: 4096
       cloud_properties:
         ram: 2048
         disk: 8192
@@ -134,11 +134,11 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
         blobstore:
           address: 127.0.0.1
           director:
-            user: ${DIRECTOR_USER}
-            password: ${DIRECTOR_PASSWORD}
+            user: ${BLOBSTORE_DIRECTOR_USER}
+            password: ${BLOBSTORE_DIRECTOR_PASSWORD}
           agent:
-            user: ${AGENT_USER}
-            password: ${AGENT_PASSWORD}
+            user: ${BLOBSTORE_AGENT_USER}
+            password: ${BLOBSTORE_AGENT_PASSWORD}
           provider: dav
         director:
           address: 127.0.0.1
@@ -157,8 +157,8 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
             user: ${HEALTH_MONITOR_USER}
             password: ${HEALTH_MONITOR_PASSWORD}
           director_account:
-            user: ${DIRECTOR_USER}
-            password: ${DIRECTOR_PASSWORD}
+            user: ${HEALTH_MONITOR_DIRECTOR_USER}
+            password: ${HEALTH_MONITOR_DIRECTOR_PASSWORD}
         dns:
           address: 192.168.112.140
           domain_name: microbosh
