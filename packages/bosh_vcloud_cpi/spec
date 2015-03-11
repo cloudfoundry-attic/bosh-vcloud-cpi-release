@@ -3,4 +3,4 @@ name: bosh_vcloud_cpi
 dependencies:
   - ruby_vcloud_cpi
 files:
-  - bosh_vcloud_cpi/*.gem
+  - bosh_vcloud_cpi/vendor/cache/*.gem
