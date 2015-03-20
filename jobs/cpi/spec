@@ -62,6 +62,11 @@ properties:
     default: false
   blobstore.path:
     description: TODO
+  blobstore.agent.user:
+    description: TODO
+  blobstore.agent.password:
+    description: TODO
+
 
 
   agent.mbus:
