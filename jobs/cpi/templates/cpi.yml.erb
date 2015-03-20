@@ -2,24 +2,22 @@
 cloud:
   plugin: vcloud
   properties:
-    <% if_p('vcd') do |vcd| %>
     vcds:
-      - url: <%= vcd.fetch('url') %>
-        user: <%= vcd.fetch('user') %>
-        password: <%= vcd.fetch('password') %>
-        entities:
-          organization: <%= vcd.fetch('entities').fetch('organization') %>
-          virtual_datacenter: <%= vcd.fetch('entities').fetch('virtual_datacenter') %>
-          vapp_catalog: <%= vcd.fetch('entities').fetch('vapp_catalog') %>
-          media_catalog: <%= vcd.fetch('entities').fetch('media_catalog') %>
-          media_storage_profile: "<%= vcd.fetch('entities').fetch('media_storage_profile') %>"
-          vm_metadata_key: <%= vcd.fetch('entities').fetch('vm_metadata_key') %>
-          description: <%= vcd.fetch('entities').fetch('description') %>
-          <% if vcd['control'] %>
-          control:
-            wait_max: <%= vcd.fetch('control').fetch('wait_max') %>
-          <% end %>
-    <% end %>
+    - url: <%= p('vcd.url') %>
+      user: <%= p('vcd.user') %>
+      password: <%= p('vcd.password') %>
+      entities:
+        organization: <%= p('vcd.entities.organization') %>
+        virtual_datacenter: <%= p('vcd.entities.virtual_datacenter') %>
+        vapp_catalog: <%= p('vcd.entities.vapp_catalog') %>
+        media_catalog: <%= p('vcd.entities.media_catalog') %>
+        media_storage_profile: "<%= p('vcd.entities.media_storage_profile') %>"
+        vm_metadata_key: <%= p('vcd.entities.vm_metadata_key') %>
+        description: <%= p('vcd.entities.description') %>
+        <% if_p('vcd.control.wait_max') do |wait_max| %>
+        control:
+          wait_max: <%= wait_max %>
+        <% end %>
 
     agent:
       ntp: [<%= p('agent.ntp').join(", ") %>]
