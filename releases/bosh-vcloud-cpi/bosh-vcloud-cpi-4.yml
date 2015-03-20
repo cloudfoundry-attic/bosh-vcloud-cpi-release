@@ -1,0 +1,22 @@
+---
+packages:
+- name: bosh_vcloud_cpi
+  version: 0869403ef85c80120d121298d598b13311491b77
+  fingerprint: 0869403ef85c80120d121298d598b13311491b77
+  sha1: 4edfadcdd9545af8ea341aadaf622feed6415ca3
+  dependencies:
+  - ruby_vcloud_cpi
+- name: ruby_vcloud_cpi
+  version: 2b2efa032cf5cb015e05f263c8a135751645e99e
+  fingerprint: 2b2efa032cf5cb015e05f263c8a135751645e99e
+  sha1: 05cc3c9b41bdb2fff57f8b5ce4b4f331305061f8
+  dependencies: []
+jobs:
+- name: cpi
+  version: 4e427782d7c829a48d877c1be05ff65233a04270
+  fingerprint: 4e427782d7c829a48d877c1be05ff65233a04270
+  sha1: 49e60ab20769f1f8f0c1091dfa54700ba74ee931
+commit_hash: b3433392
+uncommitted_changes: true
+name: bosh-vcloud-cpi
+version: '4'
