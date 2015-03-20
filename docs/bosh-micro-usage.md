@@ -16,14 +16,8 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
 
     ```yaml
     ---
-    name: bosh-vcloud
-    
-    releases:
-    - name: bosh
-      version: ${BOSH_VERSION}
-    - name: bosh-vcloud-cpi
-      version: ${VCLOUD_CPI_VERSION}
-    
+    name: bosh
+
     networks:
     - name: default
       type: manual
@@ -33,143 +27,115 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
       dns: ["8.8.8.8"]
       cloud_properties:
         name: VDC-BOSH
-    
-    resources:
-      persistent_disk: 4096
-      cloud_properties:
-        ram: 2048
-        disk: 8192
-        cpu: 1
-    
-    disk_pools:
-    - name: ssd-disk-pool
-      disk_size: 2048
-    
+
     resource_pools:
     - name: default
       network: default
       cloud_properties:
         ram: 512
-        disk: 2048
+        disk: 10_000
         cpu: 1
-    
-    env:
-      vapp: bosh-acceptance-vapp
-    
-    vcloud_config: &vcloud
-      url: https://p3v13-vcd.vchs.vmware.com
-      user: ${VCLOUD_API_USER}
-      password: ${VCLOUD_API_PASSWORD}
-      entities:
-        organization: ${VCLOUD_VDC_ORG}
-        virtual_datacenter: ${VCLOUD_VDC}
-        vapp_catalog: micro-bosh-catalog
-        media_catalog: micro-bosh-catalog
-        media_storage_profile: "*"
-        vm_metadata_key: micro-bosh-meta
-        description: MicroBosh on vCloudDirector
-        control:
-          wait_max: 900
-    
-    cloud_provider:
-      mbus: https://${AGENT_USER}:${AGENT_PASSWORD}@192.168.112.140:6868
-      properties:
-        blobstore:
-          provider: local
-          path: /var/vcap/micro_bosh/data/cache
-        agent:
-          mbus: https://${AGENT_USER}:${AGENT_PASSWORD}@0.0.0.0:6868
-          ntp: ["us.pool.ntp.org", "time1.google.com"]
-        vcd: *vcloud
-        log_file: ${CPI_LOG_PATH:-~/vcloud_cpi.log}
-    
+
+    disk_pools:
+    - name: ssd-disk-pool
+      disk_size: 10_000
+
     jobs:
     - name: bosh
-      instances: 1
       templates:
-      - name: nats
-      - name: redis
-      - name: postgres
-      - name: powerdns
-      - name: blobstore
-      - name: director
-      - name: health_monitor
-      - name: registry
-      - name: bosh_vcloud_cpi
+      - {name: nats, release: bosh}
+      - {name: redis, release: bosh}
+      - {name: postgres, release: bosh}
+      - {name: blobstore, release: bosh}
+      - {name: director, release: bosh}
+      - {name: health_monitor, release: bosh}
+      - {name: cpi, release: bosh-vcloud-cpi}
+
+      instances: 1
+      persistent_disk_pool: ssd-disk-pool
+
       networks:
       - name: default
-        static_ips:
-        - 192.168.112.140
-      persistent_disk_pool: ssd-disk-pool
+
       properties:
-        vcd: *vcloud
-        registry:
-          address: 192.168.112.140
-          http:
-            user: ${REGISTRY_USER}
-            password: ${REGISTRY_PASSWORD}
-            port: 25777
-          db:
-            user: ${POSTGRES_USER}
-            password: ${POSTGRES_PASSWORD}
-            host: 127.0.0.1
-            database: bosh
-            port: 5432
-            adapter: postgres
         nats:
-          user: ${NATS_USER}
-          password: ${NATS_PASSWORD}
-          auth_timeout: 3
           address: 127.0.0.1
+          user: nats
+          password: nats-password
+
         redis:
+          listen_addresss: 127.0.0.1
           address: 127.0.0.1
-          password: ${REDIS_PASSWORD}
-          port: 25255
-        postgres:
-          user: ${POSTGRES_USER}
-          password: ${POSTGRES_PASSWORD}
+          password: redis-password
+
+        postgres: &db
           host: 127.0.0.1
+          user: postgres
+          password: postgres-password
           database: bosh
-          port: 5432
+          adapter: postgres
+
+        # Tells the Director/agents how to contact blobstore
         blobstore:
-          address: 127.0.0.1
-          director:
-            user: ${BLOBSTORE_DIRECTOR_USER}
-            password: ${BLOBSTORE_DIRECTOR_PASSWORD}
-          agent:
-            user: ${BLOBSTORE_AGENT_USER}
-            password: ${BLOBSTORE_AGENT_PASSWORD}
+          address: 192.168.112.140
+          port: 25250
           provider: dav
+          director: {user: director, password: director-password}
+          agent: {user: agent, password: agent-password}
+
         director:
           address: 127.0.0.1
           name: micro
-          port: 25555
-          db:
-            user: ${POSTGRES_USER}
-            password: ${POSTGRES_PASSWORD}
-            host: 127.0.0.1
-            database: bosh
-            port: 5432
-            adapter: postgres
-          backend_port: 25556
+          db: *db
+          # Use external CPI
+          cpi_job: cpi
+
         hm:
-          http:
-            user: ${HEALTH_MONITOR_USER}
-            password: ${HEALTH_MONITOR_PASSWORD}
-          director_account:
-            user: ${HEALTH_MONITOR_DIRECTOR_USER}
-            password: ${HEALTH_MONITOR_DIRECTOR_PASSWORD}
-        dns:
-          address: 192.168.112.140
-          domain_name: microbosh
-          db:
-            user: ${POSTGRES_USER}
-            password: ${POSTGRES_PASSWORD}
-            host: 127.0.0.1
-            database: bosh
-            port: 5432
-            adapter: postgres
-        ntp: []
+          http: {user: hm, password: hm-password}
+          director_account: {user: admin, password: admin}
+
+        vcd: &vcloud
+          url: VCLOUD_URL
+          user: VCLOUD_USER
+          password: "VCLOUD_PASSWORD"
+          entities:
+            organization: VCLOUD_ORG
+            virtual_datacenter: VCLOUD_VDC
+            vapp_catalog: VCLOUD_VAPP_VATALOG
+            media_catalog: VCLOUD_MEDIA_VATALOG
+            media_storage_profile: "*"
+            vm_metadata_key: micro-bosh-meta
+            description: MicroBosh on vCloudDirector
+            control:
+              wait_max: 900
+
+        # Tells agents how to contact nats
+        agent: {mbus: "nats://nats:nats-password@192.168.112.140:4222"}
+
+        ntp: &ntp
+        - 0.north-america.pool.ntp.org
+        - 1.north-america.pool.ntp.org
+        - 2.north-america.pool.ntp.org
+        - 3.north-america.pool.ntp.org
+
+    cloud_provider:
+      template: {name: cpi, release: bosh-vcloud-cpi}
+
+      # Tells bosh-micro how to contact remote agent
+      mbus: https://mbus-user:mbus-password@192.168.112.140:6868
+
+      properties:
+        vcd: *vcloud
+
+        # Tells CPI how agent should listen for requests
+        agent: {mbus: "https://mbus-user:mbus-password@0.0.0.0:6868"}
+
+        blobstore:
+          provider: local
+          path: /var/vcap/micro_bosh/data/cache
+
+        ntp: *ntp
+
     ```
 
 1. Set deployment
