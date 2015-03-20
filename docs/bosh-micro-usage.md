@@ -32,7 +32,7 @@ To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
     - name: default
       network: default
       cloud_properties:
-        ram: 512
+        ram: 2048
         disk: 10_000
         cpu: 1
 
