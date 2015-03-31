@@ -1,6 +1,6 @@
 ## Experimental `bosh-micro` usage
 
-> !!! [bosh-micro cli](github.com/cloudfoundry/bosh-micro-cli) is still in active pre-release development !!!
+> !!! [bosh-micro cli](https://github.com/cloudfoundry/bosh-micro-cli) is still in active pre-release development !!!
 
 To start experimenting with bosh-vcloud-cpi release and the new bosh-micro cli:
 
