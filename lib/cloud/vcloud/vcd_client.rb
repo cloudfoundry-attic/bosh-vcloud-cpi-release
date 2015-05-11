@@ -61,9 +61,13 @@ module VCloudCloud
       end
     end
 
-    # catalog should be either :vapp or :media
+    # catalog_type should be either :vapp or :media
+    def catalog_name(catalog_type)
+      @entities["#{catalog_type.to_s}_catalog"]
+    end
+
     def catalog(catalog_type)
-      catalog_link = org.catalog_link @entities["#{catalog_type.to_s}_catalog"]
+      catalog_link = org.catalog_link catalog_name(catalog_type)
       raise ObjectNotFoundError, "Invalid catalog type: #{catalog_type}" unless catalog_link
       resolve_link catalog_link
     end

@@ -31,6 +31,7 @@ module VCloudCloud
         s.next Steps::StemcellInfo, image
         s.next Steps::CreateTemplate, "sc-#{unique_name}"
         s.next Steps::UploadTemplateFiles
+        s.next Steps::AddCatalog, @client.catalog_name(:vapp)
         s.next Steps::AddCatalogItem, :vapp, s.state[:vapp_template]
       end)[:catalog_item].urn
     end

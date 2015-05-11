@@ -16,6 +16,17 @@ module VCloudSdk
                     "name" => name},
                   true).first
       end
+
+      def add_catalog_link
+        link = get_nodes("Link",
+                         {"rel" => "add",
+                          "type" => ADMIN_MEDIA_TYPE[:ADMIN_CATALOG]},
+                         true).first
+        if !link
+          raise "Couldn't find add catalog link in #{@root}"
+        end
+        return link
+      end
     end
   end
 end

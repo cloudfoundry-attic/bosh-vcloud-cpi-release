@@ -96,6 +96,10 @@ module VCloudSdk
         @root["name"]
       end
 
+      def name=(name)
+        @root["name"] = name
+      end
+
       def urn
         @root["id"]
       end

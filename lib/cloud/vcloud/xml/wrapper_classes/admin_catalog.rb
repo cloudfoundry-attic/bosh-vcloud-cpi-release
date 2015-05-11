@@ -14,7 +14,19 @@ module VCloudSdk
           get_nodes("CatalogItem")
         end
       end
-    end
 
+      def running_tasks
+        tasks.find_all {|t| RUNNING.include?(t.status)}
+      end
+
+      def tasks
+        get_nodes("Task")
+      end
+
+      private
+
+      RUNNING = [TASK_STATUS[:RUNNING], TASK_STATUS[:QUEUED],
+                 TASK_STATUS[:PRE_RUNNING]]
+    end
   end
 end
