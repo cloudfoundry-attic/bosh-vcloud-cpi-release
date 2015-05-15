@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name         = "bosh_vcloud_cpi"
-  s.version      = "0.7.3"
+  s.version      = "0.7.4"
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud CPI"
   s.description  = "BOSH vCloud CPI\n#{`git rev-parse HEAD`[0, 6]}"
