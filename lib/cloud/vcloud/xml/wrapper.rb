@@ -92,6 +92,10 @@ module VCloudSdk
         @root["href"]
       end
 
+      def href_id
+        href.split('/')[-1]
+      end
+
       def name
         @root["name"]
       end

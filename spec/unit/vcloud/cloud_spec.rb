@@ -21,6 +21,7 @@ module VCloudCloud
 
       let(:client) do
         client = double("client")
+        client.stub(:catalog_name).with(:vapp).and_return "my_bosh_catalog"
         client.stub(:logger) { Bosh::Clouds::Config.logger }
         client.stub(:resolve_entity).with(vm_id).and_return vm
         client.stub(:resolve_link).with(vm_link).and_return vm
@@ -68,7 +69,7 @@ module VCloudCloud
     describe ".create_stemcell" do
       include_context "base"
 
-      it "create_stemcell" do
+      it "uses a transaction with the expected steps to create a stemcell" do
         image = "stemcell_name"
         result = "urn"
         template = double('template')
@@ -76,6 +77,7 @@ module VCloudCloud
         trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
         trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
         trx.should_receive(:next).once.ordered.with(Steps::UploadTemplateFiles)
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
         trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
         trx.stub_chain('state.[]').with(:vapp_template).and_return template
         trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item

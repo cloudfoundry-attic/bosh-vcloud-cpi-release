@@ -41,7 +41,7 @@ describe VCloudCloud::Cloud do
         'entities' => {
           'organization' => @org,
           'virtual_datacenter' => @vdc,
-          'vapp_catalog' => "#{@vapp_catalog}_#{Process.pid}_#{rand(1000)}",
+          'vapp_catalog' => @vapp_catalog,
           'media_catalog' => @media_catalog,
           'media_storage_profile' => @media_storage_prof,
           'vapp_storage_profile' => @vapp_storage_prof,
@@ -65,7 +65,6 @@ describe VCloudCloud::Cloud do
 
   after(:all) do
     cpi.delete_stemcell(@stemcell_id) if @stemcell_id
-    VCloudCloud::Steps::Delete.new({}, cpi.client).perform(cpi.client.catalog(:vapp))
   end
 
   before {

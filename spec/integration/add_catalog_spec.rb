@@ -56,19 +56,15 @@ describe VCloudCloud::Steps::AddCatalog do
   end
 
   let(:add_catalog_step) { described_class.new({}, @client) }
-  let(:steps_to_rollback) { [] }
   let(:catalog_name) { "a_bosh_test_catalog_#{Process.pid}_#{rand(1000)}" }
 
   after do
-    steps_to_rollback.each do |step|
-      step.rollback
-    end
+    VCloudCloud::Test::delete_catalog_if_exists(@client, catalog_name)
   end
 
   context 'when the catalog does not yet exist' do
     it 'creates the catalog' do
       result = add_catalog_step.perform(catalog_name)
-      steps_to_rollback << add_catalog_step
       expect(result.name).to eq(catalog_name)
 
       @client.flush_cache
@@ -78,22 +74,21 @@ describe VCloudCloud::Steps::AddCatalog do
       expect(catalog.type).to eq(VCloudSdk::Xml::MEDIA_TYPE[:CATALOG])
     end
 
-    it 'rollback deletes the catalog' do
+    it 'rollback does nothing' do
       result = add_catalog_step.perform(catalog_name)
-      expect(result.name).to eq(catalog_name)
       add_catalog_step.rollback
 
       @client.flush_cache
 
       catalog = @client.org.catalog_link(catalog_name)
-      expect(catalog).to be_nil()
+      expect(catalog.name).to eq(catalog_name)
+      expect(catalog.type).to eq(VCloudSdk::Xml::MEDIA_TYPE[:CATALOG])
     end
   end
 
   context 'when the catalog exists' do
     it 'should return successfully from perform' do
       result = add_catalog_step.perform(catalog_name)
-      steps_to_rollback << add_catalog_step
       expect(result.name).to eq(catalog_name)
 
       @client.flush_cache
@@ -110,7 +105,6 @@ describe VCloudCloud::Steps::AddCatalog do
 
     it 'should do nothing in rollback' do
       result = add_catalog_step.perform(catalog_name)
-      steps_to_rollback << add_catalog_step
       expect(result.name).to eq(catalog_name)
 
       # in a different step instance, try to create a catalog with the same name

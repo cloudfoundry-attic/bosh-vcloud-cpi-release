@@ -67,6 +67,13 @@ module VCloudCloud
         rest_logger
       end
 
+      def delete_catalog_if_exists(client, catalog_name)
+        raw_catalog_link = client.org.catalog_link(catalog_name)
+        catalog_link = VCloudSdk::Xml::Link.new(raw_catalog_link)
+        return unless catalog_link
+        catalog_id = catalog_link.href_id
+        client.invoke(:delete, "/api/admin/catalog/#{catalog_id}")
+      end
     end
   end
 
