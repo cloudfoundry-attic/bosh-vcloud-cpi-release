@@ -33,6 +33,11 @@ module VCloudSdk
         fix_if_invalid(link, "remove", "", href)
       end
 
+      def prerunning_tasks
+        get_nodes("Task", {"status" => "queued"})
+          .concat(get_nodes("Task", {"status" => "preRunning"}))
+      end
+
       def running_tasks
         get_nodes("Task", {"status" => "running"})
       end

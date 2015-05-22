@@ -24,6 +24,10 @@ module VCloudSdk
         @root["size"].to_i/1024/1024
       end
 
+      def prerunning_tasks
+        tasks.find_all {|t| TASK_STATUS[:QUEUED].include?(t.status) || TASK_STATUS[:PRE_RUNNING].include?(t.status)}
+      end
+
       def running_tasks
         tasks.find_all {|t| RUNNING.include?(t.status)}
       end
