@@ -275,14 +275,14 @@ module VCloudCloud
     def validate_deployment(old_manifest, new_manifest)
     end
 
-    private
-
     def client
       @client_lock.synchronize do
         @client = VCloudClient.new(@vcd, @logger) if @client.nil?
       end
       @client
     end
+
+    private
 
     def steps(name, options = {}, &block)
       Transaction.perform name, client(), options, &block
@@ -315,6 +315,8 @@ module VCloudCloud
       s.next Steps::SaveAgentEnv
 
       vm = s.state[:vm]
+
+      s.next Steps::AddCatalog, @client.catalog_name(:media)
 
       # eject and delete old env ISO
       s.next Steps::EjectCatalogMedia, vm.name

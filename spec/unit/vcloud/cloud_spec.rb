@@ -421,6 +421,32 @@ module VCloudCloud
       end
     end
 
+    describe ".save_agent_env" do
+      include_context "base"
+
+      it 'performs the expected steps' do
+
+        trx.stub_chain("state.[]").with(:vm).and_return vm
+        trx.stub_chain("state.[]").with(:iso).and_return 'iso'
+        trx.stub_chain("state.[]").with(:media).and_return 'media'
+
+        vm.stub(:name).and_return 'name'
+        client.stub(:catalog_name).with(:media)
+
+        trx.should_receive(:next).once.ordered.with(Steps::SaveAgentEnv)
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::EjectCatalogMedia, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::DeleteCatalogMedia, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::CreateMedia, anything, anything, anything, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::UploadMediaFiles, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::InsertCatalogMedia, anything)
+
+        t = trx
+        subject.instance_eval{save_agent_env(t)}
+      end
+    end
+
     describe "methods that raise NotImplemented" do
       describe ".current_vm_id" do
         include_context "base"

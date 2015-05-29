@@ -30,6 +30,11 @@ describe VCloudCloud::Cloud do
   end
 
   before(:all) do
+
+    # randomize catalog names to ensure this CPI can create them on demand
+    @vapp_catalog = "#{@vapp_catalog}_#{Process.pid}_#{rand(1000)}"
+    @media_catalog = "#{@media_catalog}_#{Process.pid}_#{rand(1000)}"
+
     @cpi = described_class.new(
       'agent' => {
         'ntp' => ENV['BOSH_VCLOUD_CPI_NTP_SERVER'],
@@ -65,6 +70,9 @@ describe VCloudCloud::Cloud do
 
   after(:all) do
     cpi.delete_stemcell(@stemcell_id) if @stemcell_id
+    client = cpi.client
+    VCloudCloud::Test::delete_catalog_if_exists(client, @vapp_catalog)
+    VCloudCloud::Test::delete_catalog_if_exists(client, @media_catalog)
   end
 
   before {
