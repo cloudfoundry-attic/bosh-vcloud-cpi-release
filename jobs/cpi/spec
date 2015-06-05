@@ -67,8 +67,6 @@ properties:
   blobstore.agent.password:
     description: TODO
 
-
-
   agent.mbus:
     description: agent message bus
   agent.ntp:
@@ -86,7 +84,6 @@ properties:
   agent.nats.address:
     description: Address of the nats server
 
-
   nats.user:
     description: Username to connect to nats with
     default: nats
@@ -97,3 +94,10 @@ properties:
   nats.port:
     description: Port that the nats server listens on
     default: 4222
+
+  env.http_proxy:
+    description: Http proxy to connect to cloud API's
+  env.https_proxy:
+    description: Https proxy to connect to cloud API's
+  env.no_proxy:
+    description: No Proxy environment variable
