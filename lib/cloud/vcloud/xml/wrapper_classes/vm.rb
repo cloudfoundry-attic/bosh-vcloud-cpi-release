@@ -76,6 +76,10 @@ module VCloudSdk
         get_nodes("Link", {"type" => MEDIA_TYPE[:VAPP]}, true).first
       end
 
+      def prerunning_tasks
+        tasks.find_all { |t| PRE_RUNNING_TASK_STATUSES.include?(t.status) }
+      end
+
       def running_tasks
         get_nodes("Task", {"status" => "running"})
       end

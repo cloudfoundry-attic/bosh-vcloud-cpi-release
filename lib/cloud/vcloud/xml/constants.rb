@@ -70,6 +70,8 @@ module VCloudSdk
         :ABORTED => "aborted"
     }
 
+    PRE_RUNNING_TASK_STATUSES = [TASK_STATUS[:QUEUED], TASK_STATUS[:PRE_RUNNING]]
+
     MAX_DISK_ID = 15
 
     MEDIA_TYPE = {

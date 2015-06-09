@@ -176,6 +176,7 @@ module VCloudCloud
         task.should_receive(:operation).and_return "update"
         task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
         entity.stub(:running_tasks) {[task]}
+        entity.stub(:prerunning_tasks) {[]}
         entity.stub(:tasks) {[task]}
 
         client.wait_entity(entity)
@@ -191,6 +192,7 @@ module VCloudCloud
         task.stub(:operation).and_return "update"
         task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
         entity.stub(:running_tasks) {[task]}
+        entity.stub(:prerunning_tasks) {[]}
         entity.stub(:tasks) {[task]}
 
         expect{client.wait_entity(entity)}.to raise_error /unsuccessful/
@@ -204,6 +206,7 @@ module VCloudCloud
         task = double("task")
         task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
         entity.stub(:running_tasks) {[]}
+        entity.stub(:prerunning_tasks) {[]}
         entity.stub(:tasks) {[task]}
 
         expect{client.wait_entity(entity)}.to raise_error /tasks failed/

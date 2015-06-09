@@ -17,6 +17,7 @@ module VCloudCloud
         media.stub(:name) {media_name}
         media.stub(:href) {media_href_value}
         media.stub(:running_tasks) {task_list}
+        media.stub(:prerunning_tasks) { [] }
         media
       end
 
@@ -66,6 +67,7 @@ module VCloudCloud
           client.should_receive(:reload).once.ordered.with(vm)
           media.should_receive(:running_tasks).once.ordered
           task_list.should_receive(:empty?).once.ordered {true}
+          media.should_receive(:prerunning_tasks).once.ordered
           client.should_receive(:invoke_and_wait).once.ordered.with(:post, insert_media_link_value, kind_of(Hash))
           client.should_receive(:reload).once.ordered.with(vm)
 

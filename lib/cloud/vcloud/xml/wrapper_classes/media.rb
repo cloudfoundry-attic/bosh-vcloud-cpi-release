@@ -45,8 +45,7 @@ module VCloudSdk
       end
 
       def prerunning_tasks
-        get_nodes("Task", {"status" => "queued"})
-          .concat(get_nodes("Task", {"status" => "preRunning"}))
+        tasks.find_all { |t| PRE_RUNNING_TASK_STATUSES.include?(t.status) }
       end
 
       def running_tasks

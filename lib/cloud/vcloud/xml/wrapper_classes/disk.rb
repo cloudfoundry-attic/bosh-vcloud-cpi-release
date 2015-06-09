@@ -25,7 +25,7 @@ module VCloudSdk
       end
 
       def prerunning_tasks
-        tasks.find_all {|t| TASK_STATUS[:QUEUED].include?(t.status) || TASK_STATUS[:PRE_RUNNING].include?(t.status)}
+        tasks.find_all { |t| PRE_RUNNING_TASK_STATUSES.include?(t.status) }
       end
 
       def running_tasks

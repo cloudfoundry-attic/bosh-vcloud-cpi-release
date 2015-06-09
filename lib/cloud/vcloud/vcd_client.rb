@@ -145,13 +145,15 @@ module VCloudCloud
     end
 
     def wait_entity(entity, accept_failure = false)
-      entity.prerunning_tasks.each do |task|
+      prerunning_tasks = entity.prerunning_tasks
+      prerunning_tasks.each do |task|
         wait_task task, accept_failure
-      end if entity.prerunning_tasks && !entity.prerunning_tasks.empty?
+      end if prerunning_tasks && !prerunning_tasks.empty?
 
-      entity.running_tasks.each do |task|
+      running_tasks = entity.running_tasks
+      running_tasks.each do |task|
         wait_task task, accept_failure
-      end if entity.running_tasks && !entity.running_tasks.empty?
+      end if running_tasks && !running_tasks.empty?
 
       entity = reload entity
 
