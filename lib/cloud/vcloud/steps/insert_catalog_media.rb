@@ -10,7 +10,7 @@ module VCloudCloud
         client.timed_loop do
           media = client.reload media
           vm = client.reload vm
-          if media.running_tasks.empty?
+          if media.running_tasks.empty? && media.prerunning_tasks.empty?
             client.invoke_and_wait :post, vm.insert_media_link,
                     :payload => params,
                     :headers => { :content_type => VCloudSdk::Xml::MEDIA_TYPE[:MEDIA_INSERT_EJECT_PARAMS] }

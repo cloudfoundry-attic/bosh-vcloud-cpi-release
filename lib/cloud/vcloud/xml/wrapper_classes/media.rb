@@ -44,6 +44,11 @@ module VCloudSdk
         get_nodes("Link", {"rel" => "remove"}, true).first
       end
 
+      def prerunning_tasks
+        get_nodes("Task", {"status" => "queued"})
+          .concat(get_nodes("Task", {"status" => "preRunning"}))
+      end
+
       def running_tasks
         get_nodes("Task", {"status" => "running"})
       end
