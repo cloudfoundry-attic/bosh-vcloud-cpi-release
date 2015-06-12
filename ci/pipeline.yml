@@ -41,6 +41,19 @@ jobs:
             base_os: ubuntu
             network_type_to_test: manual
 
+      - conditions: [success, failure]
+        task: save-deployment
+        file: bosh-cpi-release/ci/tasks/save-deployment.yml
+        config:
+          params:
+            base_os: ubuntu
+            network_type_to_test: manual
+
+      - put: bosh-concourse-ci
+        params:
+          repository: save-deployment/deploy/bosh-concourse-ci
+          rebase: true
+
 resources:
   - name: bosh-cpi-dev-artifacts
     type: s3
