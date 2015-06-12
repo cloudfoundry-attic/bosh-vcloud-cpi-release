@@ -15,3 +15,15 @@ ruby_vcloud_cpi/bundler-1.8.2.gem:
   object_id: 38a7cc89-bc22-4e59-b458-d05cefe9a4b3
   sha: e9b810268eea94ac5e825b5ae8a2d5fd19fb5905
   size: 235008
+bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2:
+  object_id: 36bed5e2-aa29-4a27-98a0-f21954d5089b
+  sha: 6464844d6b936d4f43ee98a04d637cd91131de4e
+  size: 1978563
+bosh_vcloud_cpi_mkisofs/patch-include_schily_sha2.h:
+  object_id: 61c8548b-dbaf-4984-b76c-a497afd47a36
+  sha: 6c2c06b7546face6dd58c3fb39484b9120e3e1ca
+  size: 648
+bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2:
+  object_id: 056ebc10-d546-4797-bd2d-0cd1fe195ac1
+  sha: 677af2a1b768d5dfd3bd71dc46f81992e798191b
+  size: 426050
