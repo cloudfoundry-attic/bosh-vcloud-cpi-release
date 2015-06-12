@@ -9,6 +9,8 @@ check_param network_type_to_test
 
 cpi_release_name=bosh-vcloud-cpi
 
+print_git_state bosh-cpi-release
+
 source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 
 semver=`cat version-semver/number`
