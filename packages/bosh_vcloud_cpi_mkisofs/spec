@@ -1,0 +1,7 @@
+---
+name: bosh_vcloud_cpi_mkisofs
+files:
+  - bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2
+  - bosh_vcloud_cpi_mkisofs/patch-include_schily_sha2.h
+  - bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
+
