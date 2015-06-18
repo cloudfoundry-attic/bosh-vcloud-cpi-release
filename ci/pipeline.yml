@@ -4,6 +4,7 @@ groups:
     jobs:
       - build-candidate
       - deploy-ubuntu-manual
+      - bats-ubuntu-manual
 
 jobs:
   - name: build-candidate
@@ -54,6 +55,25 @@ jobs:
           repository: save-deployment/deploy/bosh-concourse-ci
           rebase: true
 
+  - name: bats-ubuntu-manual
+    serial_groups: [ubuntu-director-manual] # can't run while deploying
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [deploy-ubuntu-manual], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-cpi-release}
+        - {trigger: false, passed: [deploy-ubuntu-manual], get: stemcell, resource: openstack-ubuntu-stemcell}
+        - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-concourse-ci}
+        - {trigger: false,                                 get: bats}
+
+      - task: test
+        file: bosh-cpi-release/ci/tasks/run-bats.yml
+        config:
+          params:
+            base_os:                            ubuntu
+            BAT_NETWORKING:                     manual
+            BAT_DIRECTOR:                       {{ubuntu_manual_BAT_DIRECTOR}}
+            BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
+
 resources:
   - name: bosh-cpi-dev-artifacts
     type: s3
@@ -102,3 +122,9 @@ resources:
     type: bosh-io-stemcell
     source:
       name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
+
+  - name: bats
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
+      branch: concourse

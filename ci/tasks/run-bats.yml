@@ -1,0 +1,16 @@
+---
+platform: linux
+image: docker:///bosh/vcloud-cpi-release
+tags: ["vcloud"]
+inputs:
+  - name: bosh-cpi-release
+  - name: stemcell
+  - name: bosh-concourse-ci
+  - name: bats
+run:
+  path: bosh-cpi-release/ci/tasks/run-bats.sh
+params:
+  base_os:                           replace-me
+  BAT_NETWORKING:                    replace-me
+  BAT_DIRECTOR:                      replace-me
+  BAT_VCAP_PASSWORD:                 replace-me
