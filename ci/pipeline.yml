@@ -127,6 +127,37 @@ jobs:
             BAT_DIRECTOR:                       {{centos_manual_BAT_DIRECTOR}}
             BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
 
+  - name: lifecycle
+    serial: true
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
+        - {trigger: false,                            get: bosh-cpi-src}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+
+      - task: test
+        file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        config:
+          params:
+            BOSH_VCLOUD_CPI_URL:                   {{BOSH_VCLOUD_CPI_URL}}
+            BOSH_VCLOUD_CPI_USER:                  {{BOSH_VCLOUD_CPI_USER}}
+            BOSH_VCLOUD_CPI_PASSWORD:              {{BOSH_VCLOUD_CPI_PASSWORD}}
+            BOSH_VCLOUD_CPI_NET_ID:                {{BOSH_VCLOUD_CPI_NET_ID}}
+            BOSH_VCLOUD_CPI_ORG:                   {{BOSH_VCLOUD_CPI_ORG}}
+            BOSH_VCLOUD_CPI_VDC:                   {{BOSH_VCLOUD_CPI_VDC}}
+            BOSH_VCLOUD_CPI_VAPP_CATALOG:          {{BOSH_VCLOUD_CPI_VAPP_CATALOG}}
+            BOSH_VCLOUD_CPI_MEDIA_CATALOG:         {{BOSH_VCLOUD_CPI_MEDIA_CATALOG}}
+            BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE: {{BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE }}
+            BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE:  {{BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE}}
+            BOSH_VCLOUD_CPI_VM_METADATA_KEY:       {{BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
+            BOSH_VCLOUD_CPI_IP:                    {{BOSH_VCLOUD_CPI_IP}}
+            BOSH_VCLOUD_CPI_IP2:                   {{BOSH_VCLOUD_CPI_IP2}}
+            BOSH_VCLOUD_CPI_NETMASK:               {{BOSH_VCLOUD_CPI_NETMASK}}
+            BOSH_VCLOUD_CPI_DNS:                   {{BOSH_VCLOUD_CPI_DNS}}
+            BOSH_VCLOUD_CPI_GATEWAY:               {{BOSH_VCLOUD_CPI_GATEWAY}}
+
+
 resources:
   - name: bosh-cpi-dev-artifacts
     type: s3
@@ -143,6 +174,12 @@ resources:
       uri: git@github.com:cloudfoundry-incubator/bosh-vcloud-cpi-release.git
       branch: master
       private_key: {{github_deployment_key__bosh-vcloud-cpi-release}}
+
+  - name: bosh-cpi-src
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh_vcloud_cpi.git
+      branch: master
 
   - name: version-semver
     type: semver

@@ -32,4 +32,4 @@ sed -i.bak s/"uuid: replace-me"/"uuid: $(bosh status --uuid)"/ $BAT_DEPLOYMENT_S
 
 cd bats
 bundle install
-bundle exec rspec spec
+bundle exec rspec spec/system/with_release_stemcell_spec.rb
