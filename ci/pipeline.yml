@@ -5,6 +5,8 @@ groups:
       - build-candidate
       - deploy-ubuntu-manual
       - bats-ubuntu-manual
+      - deploy-centos-manual
+      - bats-centos-manual
 
 jobs:
   - name: build-candidate
@@ -61,7 +63,7 @@ jobs:
       - aggregate:
         - {trigger: true,  passed: [deploy-ubuntu-manual], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-cpi-release}
-        - {trigger: false, passed: [deploy-ubuntu-manual], get: stemcell, resource: openstack-ubuntu-stemcell}
+        - {trigger: false, passed: [deploy-ubuntu-manual], get: stemcell, resource: vcloud-ubuntu-stemcell}
         - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-concourse-ci}
         - {trigger: false,                                 get: bats}
 
@@ -72,6 +74,57 @@ jobs:
             base_os:                            ubuntu
             BAT_NETWORKING:                     manual
             BAT_DIRECTOR:                       {{ubuntu_manual_BAT_DIRECTOR}}
+            BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
+
+  - name: deploy-centos-manual
+    serial_groups: [centos-director-manual]
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [build-candidate], get: version-semver}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
+        - {trigger: false,                            get: bosh-concourse-ci }
+        - {trigger: false,                            get: bosh-init}
+        - {trigger: false,                            get: bosh-release}
+        - {trigger: false,                            get: stemcell, resource: vcloud-centos-stemcell}
+
+      - task: deploy
+        file: bosh-cpi-release/ci/tasks/deploy.yml
+        config:
+          params:
+            base_os: centos
+            network_type_to_test: manual
+
+      - conditions: [success, failure]
+        task: save-deployment
+        file: bosh-cpi-release/ci/tasks/save-deployment.yml
+        config:
+          params:
+            base_os: centos
+            network_type_to_test: manual
+
+      - put: bosh-concourse-ci
+        params:
+          repository: save-deployment/deploy/bosh-concourse-ci
+          rebase: true
+
+  - name: bats-centos-manual
+    serial_groups: [centos-director-manual] # can't run while deploying
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [deploy-centos-manual], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [deploy-centos-manual], get: bosh-cpi-release}
+        - {trigger: false, passed: [deploy-centos-manual], get: stemcell, resource: vcloud-centos-stemcell}
+        - {trigger: false, passed: [deploy-centos-manual], get: bosh-concourse-ci}
+        - {trigger: false,                                 get: bats}
+
+      - task: test
+        file: bosh-cpi-release/ci/tasks/run-bats.yml
+        config:
+          params:
+            base_os:                            centos
+            BAT_NETWORKING:                     manual
+            BAT_DIRECTOR:                       {{centos_manual_BAT_DIRECTOR}}
             BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
 
 resources:
@@ -122,6 +175,11 @@ resources:
     type: bosh-io-stemcell
     source:
       name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
+
+  - name: vcloud-centos-stemcell
+    type: bosh-io-stemcell
+    source:
+      name: bosh-vsphere-esxi-centos-7-go_agent
 
   - name: bats
     type: git
