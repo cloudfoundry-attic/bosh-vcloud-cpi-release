@@ -42,8 +42,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/deploy.yml
         config:
           params:
-            base_os: ubuntu
-            network_type_to_test: manual
+            base_os:                              ubuntu
+            network_type_to_test:                 manual
+            BAT_DIRECTOR:                         {{ubuntu_manual_BAT_DIRECTOR}}
+            BOSH_VCLOUD_CPI_NETWORK_CIDR:         {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
+            BOSH_VCLOUD_CPI_GATEWAY:              {{BOSH_VCLOUD_CPI_GATEWAY}}
+            BOSH_VCLOUD_CPI_NET_ID:               {{BOSH_VCLOUD_CPI_NET_ID}}
+            BOSH_VCLOUD_CPI_URL:                  {{BOSH_VCLOUD_CPI_URL}}
+            BOSH_VCLOUD_CPI_USER:                 {{BOSH_VCLOUD_CPI_USER}}
+            BOSH_VCLOUD_CPI_PASSWORD:             {{BOSH_VCLOUD_CPI_PASSWORD}}
+            BOSH_VCLOUD_CPI_ORG_AND_VDC:          {{BOSH_VCLOUD_CPI_ORG_AND_VDC}}
+            bats_BOSH_VCLOUD_CPI_CATALOG:         {{bats_BOSH_VCLOUD_CPI_CATALOG}}
+            bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY: {{bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
 
       - conditions: [success, failure]
         task: save-deployment
@@ -93,8 +103,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/deploy.yml
         config:
           params:
-            base_os: centos
-            network_type_to_test: manual
+            base_os:                              centos
+            network_type_to_test:                 manual
+            BAT_DIRECTOR:                         {{centos_manual_BAT_DIRECTOR}}
+            BOSH_VCLOUD_CPI_NETWORK_CIDR:         {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
+            BOSH_VCLOUD_CPI_GATEWAY:              {{BOSH_VCLOUD_CPI_GATEWAY}}
+            BOSH_VCLOUD_CPI_NET_ID:               {{BOSH_VCLOUD_CPI_NET_ID}}
+            BOSH_VCLOUD_CPI_URL:                  {{BOSH_VCLOUD_CPI_URL}}
+            BOSH_VCLOUD_CPI_USER:                 {{BOSH_VCLOUD_CPI_USER}}
+            BOSH_VCLOUD_CPI_PASSWORD:             {{BOSH_VCLOUD_CPI_PASSWORD}}
+            BOSH_VCLOUD_CPI_ORG_AND_VDC:          {{BOSH_VCLOUD_CPI_ORG_AND_VDC}}
+            bats_BOSH_VCLOUD_CPI_CATALOG:         {{bats_BOSH_VCLOUD_CPI_CATALOG}}
+            bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY: {{bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
 
       - conditions: [success, failure]
         task: save-deployment
