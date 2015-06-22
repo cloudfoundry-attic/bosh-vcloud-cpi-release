@@ -18,6 +18,7 @@ params:
   BOSH_VCLOUD_CPI_MEDIA_CATALOG:         replace-me
   BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE: replace-me
   BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE:  replace-me
+  BOSH_VCLOUD_CPI_VAPP_NAME:             replace-me
   BOSH_VCLOUD_CPI_VM_METADATA_KEY:       replace-me
   BOSH_VCLOUD_CPI_IP:                    replace-me
   BOSH_VCLOUD_CPI_IP2:                   replace-me
