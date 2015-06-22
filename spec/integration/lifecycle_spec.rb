@@ -18,6 +18,7 @@ describe VCloudCloud::Cloud do
     @org           = ENV['BOSH_VCLOUD_CPI_ORG']     || raise("Missing BOSH_VCLOUD_CPI_ORG")
     @vdc           = ENV['BOSH_VCLOUD_CPI_VDC']     || raise("Missing BOSH_VCLOUD_CPI_VDC")
     @vapp_catalog  = ENV['BOSH_VCLOUD_CPI_VAPP_CATALOG'] || raise("Missing BOSH_VCLOUD_CPI_VAPP_CATALOG")
+    @vapp_name     = ENV['BOSH_VCLOUD_CPI_VAPP_NAME'] || raise("Missing BOSH_VCLOUD_CPI_VAPP_NAME")
     @media_catalog = ENV['BOSH_VCLOUD_CPI_MEDIA_CATALOG']         || raise("Missing BOSH_VCLOUD_CPI_MEDIA_CATALOG")
     @media_storage_prof  = ENV['BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE")
     @vapp_storage_prof  = ENV['BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE")
@@ -100,12 +101,12 @@ describe VCloudCloud::Cloud do
     }
 
     @vm_id = cpi.create_vm(
-      'agent1-007',
+      "#{@vapp_name}_#{Process.pid}_#{rand(1000)}",
       @stemcell_id,
       resource_pool,
       network_spec,
       disk_locality,
-      {'key' => 'value'}
+      {'vapp' => @vapp_name}
     )
 
     @vm_id.should_not be_nil
@@ -122,12 +123,12 @@ describe VCloudCloud::Cloud do
 
     network_spec["static"]["ip"] = @target_ip2
     @vm_id2 = cpi.create_vm(
-        'agent1-008',
+        "#{@vapp_name}_#{Process.pid}_#{rand(1000)}",
         @stemcell_id,
         resource_pool,
         network_spec,
         disk_locality,
-        {'key' => 'value', 'vapp' => 'agent1-007'}
+        {'vapp' => @vapp_name}
     )
 
     cpi.has_vm?(@vm_id2).should be(true)
