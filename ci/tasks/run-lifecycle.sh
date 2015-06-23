@@ -32,6 +32,7 @@ pushd bosh-cpi-release
   bosh create release --name local --version 0.0.0 --with-tarball --force
 popd
 
+echo "compiling mkisofs"
 mkdir iso_image_install
 pushd iso_image_install
   tar -xvzf ../bosh-cpi-release/dev_releases/local/local-0.0.0.tgz
