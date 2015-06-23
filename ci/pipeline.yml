@@ -8,6 +8,7 @@ groups:
       - deploy-centos-manual
       - bats-centos-manual
       - lifecycle
+      - promote-candidate
 
 jobs:
   - name: build-candidate
@@ -195,6 +196,22 @@ jobs:
             BOSH_VCLOUD_CPI_DNS:                   {{BOSH_VCLOUD_CPI_DNS}}
             BOSH_VCLOUD_CPI_GATEWAY:               {{BOSH_VCLOUD_CPI_GATEWAY}}
 
+  - name: promote-candidate
+    serial: true
+    plan:
+    - aggregate:
+      - {trigger: true,  passed: [lifecycle, bats-ubuntu-manual, bats-centos-manual], get: bosh-cpi-dev-artifacts}
+      - {trigger: false, passed: [lifecycle, bats-ubuntu-manual, bats-centos-manual], get: bosh-cpi-release}
+
+    - task: promote
+      file: bosh-cpi-release/ci/tasks/promote-candidate.yml
+      config:
+        params:
+          aws_access_key_id: {{s3_vcloud_cpi_access_key}}
+          aws_secret_access_key: {{s3_vcloud_cpi_secret_key}}
+
+    - put: bosh-cpi-release
+      params: {repository: promote/bosh-cpi-release, rebase: true}
 
 resources:
   - name: bosh-cpi-dev-artifacts
