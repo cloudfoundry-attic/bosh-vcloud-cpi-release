@@ -13,4 +13,12 @@ params:
   base_os:                           replace-me
   BAT_NETWORKING:                    replace-me
   BAT_DIRECTOR:                      replace-me
-  BAT_VCAP_PASSWORD:                 replace-me
+  BOSH_VCLOUD_CPI_NETWORK_CIDR:      replace-me
+  BOSH_VCLOUD_CPI_GATEWAY:           replace-me
+  BOSH_VCLOUD_CPI_NET_ID:            replace-me
+  BOSH_VCLOUD_BAT_STEMCELL_NAME:     replace-me
+  BOSH_VCLOUD_FIRST_BAT_IP:          replace-me
+  BOSH_VCLOUD_SECOND_BAT_IP:         replace-me
+  BOSH_VCLOUD_NETWORK_RESERVED_1:    replace-me
+  BOSH_VCLOUD_NETWORK_RESERVED_2:    replace-me
+  BOSH_VCLOUD_NETWORK_STATIC:        replace-me

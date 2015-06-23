@@ -82,10 +82,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-bats.yml
         config:
           params:
-            base_os:                            ubuntu
-            BAT_NETWORKING:                     manual
-            BAT_DIRECTOR:                       {{ubuntu_manual_BAT_DIRECTOR}}
-            BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
+            base_os:                        ubuntu
+            BAT_NETWORKING:                 manual
+            BAT_DIRECTOR:                   {{ubuntu_manual_BAT_DIRECTOR}}
+            BOSH_VCLOUD_CPI_NETWORK_CIDR:   {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
+            BOSH_VCLOUD_CPI_GATEWAY:        {{BOSH_VCLOUD_CPI_GATEWAY}}
+            BOSH_VCLOUD_CPI_NET_ID:         {{BOSH_VCLOUD_CPI_NET_ID}}
+            BOSH_VCLOUD_BAT_STEMCELL_NAME:  {{ubuntu_BOSH_VCLOUD_BAT_STEMCELL_NAME}}
+            BOSH_VCLOUD_FIRST_BAT_IP:       {{ubuntu_BOSH_VCLOUD_FIRST_BAT_IP}}
+            BOSH_VCLOUD_SECOND_BAT_IP:      {{ubuntu_BOSH_VCLOUD_SECOND_BAT_IP}}
+            BOSH_VCLOUD_NETWORK_RESERVED_1: {{ubuntu_BOSH_VCLOUD_NETWORK_RESERVED_1}}
+            BOSH_VCLOUD_NETWORK_RESERVED_2: {{ubuntu_BOSH_VCLOUD_NETWORK_RESERVED_2}}
+            BOSH_VCLOUD_NETWORK_STATIC:     {{ubuntu_BOSH_VCLOUD_NETWORK_STATIC}}
 
   - name: deploy-centos-manual
     serial_groups: [centos-director-manual]
@@ -143,10 +151,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-bats.yml
         config:
           params:
-            base_os:                            centos
-            BAT_NETWORKING:                     manual
-            BAT_DIRECTOR:                       {{centos_manual_BAT_DIRECTOR}}
-            BAT_VCAP_PASSWORD:                  {{BAT_VCAP_PASSWORD}}
+            base_os:                        centos
+            BAT_NETWORKING:                 manual
+            BAT_DIRECTOR:                   {{centos_manual_BAT_DIRECTOR}}
+            BOSH_VCLOUD_CPI_NETWORK_CIDR:   {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
+            BOSH_VCLOUD_CPI_GATEWAY:        {{BOSH_VCLOUD_CPI_GATEWAY}}
+            BOSH_VCLOUD_CPI_NET_ID:         {{BOSH_VCLOUD_CPI_NET_ID}}
+            BOSH_VCLOUD_BAT_STEMCELL_NAME:  {{centos_BOSH_VCLOUD_BAT_STEMCELL_NAME}}
+            BOSH_VCLOUD_FIRST_BAT_IP:       {{centos_BOSH_VCLOUD_FIRST_BAT_IP}}
+            BOSH_VCLOUD_SECOND_BAT_IP:      {{centos_BOSH_VCLOUD_SECOND_BAT_IP}}
+            BOSH_VCLOUD_NETWORK_RESERVED_1: {{centos_BOSH_VCLOUD_NETWORK_RESERVED_1}}
+            BOSH_VCLOUD_NETWORK_RESERVED_2: {{centos_BOSH_VCLOUD_NETWORK_RESERVED_2}}
+            BOSH_VCLOUD_NETWORK_STATIC:     {{centos_BOSH_VCLOUD_NETWORK_STATIC}}
 
   - name: lifecycle
     serial: true
