@@ -4,7 +4,6 @@ require 'logger'
 require_relative 'errors'
 require_relative 'vcd_client'
 require_relative 'steps'
-require_relative 'file_mutex'
 
 module VCloudCloud
 
@@ -23,11 +22,8 @@ module VCloudCloud
       @entities = @vcd['entities']
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
 
-      client_lock_location = Dir.mktmpdir('client_lock')
-      vapp_lock_location = Dir.mktmpdir('vapp_lock')
-
-      @client_lock = FileMutex.new(client_lock_location) # lock for establishing client connection
-      @vapp_lock   = FileMutex.new(vapp_lock_location) # lock for recompose vApp and delete vm from vApp
+      @client_lock = Mutex.new # lock for establishing client connection
+      @vapp_lock   = Mutex.new # lock for recompose vApp and delete vm from vApp
     end
 
     def create_stemcell(image, _)
