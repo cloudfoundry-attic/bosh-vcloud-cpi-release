@@ -8,20 +8,13 @@ inputs:
 run:
   path: bosh-cpi-release/ci/tasks/run-lifecycle.sh
 params:
-  BOSH_VCLOUD_CPI_URL:                   replace-me
-  BOSH_VCLOUD_CPI_USER:                  replace-me
-  BOSH_VCLOUD_CPI_PASSWORD:              replace-me
-  BOSH_VCLOUD_CPI_NET_ID:                replace-me
-  BOSH_VCLOUD_CPI_ORG:                   replace-me
-  BOSH_VCLOUD_CPI_VDC:                   replace-me
-  BOSH_VCLOUD_CPI_VAPP_CATALOG:          replace-me
-  BOSH_VCLOUD_CPI_MEDIA_CATALOG:         replace-me
-  BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE: replace-me
-  BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE:  replace-me
-  BOSH_VCLOUD_CPI_VAPP_NAME:             replace-me
-  BOSH_VCLOUD_CPI_VM_METADATA_KEY:       replace-me
-  BOSH_VCLOUD_CPI_IP:                    replace-me
-  BOSH_VCLOUD_CPI_IP2:                   replace-me
-  BOSH_VCLOUD_CPI_NETMASK:               replace-me
-  BOSH_VCLOUD_CPI_DNS:                   replace-me
-  BOSH_VCLOUD_CPI_GATEWAY:               replace-me
+  VCLOUD_HOST:     replace-me
+  VCLOUD_USER:     replace-me
+  VCLOUD_PASSWORD: replace-me
+  VCLOUD_VLAN:     replace-me
+  VCLOUD_VDC:      replace-me
+  NETWORK_NETMASK: replace-me
+  NETWORK_DNS:     replace-me
+  NETWORK_GATEWAY: replace-me
+  LIFECYCLE_IP1:   replace-me
+  LIFECYCLE_IP2:   replace-me

@@ -4,25 +4,35 @@ set -e
 
 source bosh-cpi-release/ci/tasks/utils.sh
 
-check_param BOSH_VCLOUD_CPI_URL
-check_param BOSH_VCLOUD_CPI_USER
-check_param BOSH_VCLOUD_CPI_PASSWORD
-check_param BOSH_VCLOUD_CPI_NET_ID
-check_param BOSH_VCLOUD_CPI_ORG
-check_param BOSH_VCLOUD_CPI_VDC
-check_param BOSH_VCLOUD_CPI_VAPP_CATALOG
-check_param BOSH_VCLOUD_CPI_VAPP_NAME
-check_param BOSH_VCLOUD_CPI_MEDIA_CATALOG
-check_param BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE
-check_param BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE
-check_param BOSH_VCLOUD_CPI_VM_METADATA_KEY
-check_param BOSH_VCLOUD_CPI_IP
-check_param BOSH_VCLOUD_CPI_IP2
-check_param BOSH_VCLOUD_CPI_NETMASK
-check_param BOSH_VCLOUD_CPI_DNS
-check_param BOSH_VCLOUD_CPI_GATEWAY
+check_param VCLOUD_HOST
+check_param VCLOUD_USER
+check_param VCLOUD_PASSWORD
+check_param VCLOUD_VLAN
+check_param VCLOUD_VDC
+check_param NETWORK_NETMASK
+check_param NETWORK_DNS
+check_param NETWORK_GATEWAY
+check_param LIFECYCLE_IP1
+check_param LIFECYCLE_IP2
 
 export BOSH_VCLOUD_CPI_STEMCELL=$PWD/stemcell/stemcell.tgz
+export BOSH_VCLOUD_CPI_URL=${VCLOUD_HOST}
+export BOSH_VCLOUD_CPI_USER=${VCLOUD_USER}
+export BOSH_VCLOUD_CPI_PASSWORD=${VCLOUD_PASSWORD}
+export BOSH_VCLOUD_CPI_NET_ID=${VCLOUD_VLAN}
+export BOSH_VCLOUD_CPI_ORG=${VCLOUD_VDC}
+export BOSH_VCLOUD_CPI_VDC=${VCLOUD_VDC}
+export BOSH_VCLOUD_CPI_VAPP_CATALOG=bosh-concourse-lifecycle-catalog
+export BOSH_VCLOUD_CPI_VAPP_NAME=bosh-concourse-lifecycle-vapp
+export BOSH_VCLOUD_CPI_MEDIA_CATALOG=bosh-concourse-lifecycle-catalog
+export BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE=*
+export BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE=SSD-Accelerated
+export BOSH_VCLOUD_CPI_VM_METADATA_KEY=vm-metadata-key
+export BOSH_VCLOUD_CPI_IP=$LIFECYCLE_IP1
+export BOSH_VCLOUD_CPI_IP2=$LIFECYCLE_IP2
+export BOSH_VCLOUD_CPI_NETMASK=NETWORK_NETMASK
+export BOSH_VCLOUD_CPI_DNS=NETWORK_DNS
+export BOSH_VCLOUD_CPI_GATEWAY=NETWORK_GATEWAY
 
 source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 

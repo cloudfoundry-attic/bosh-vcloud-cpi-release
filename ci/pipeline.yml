@@ -43,18 +43,16 @@ jobs:
         file: bosh-cpi-release/ci/tasks/deploy.yml
         config:
           params:
-            base_os:                              ubuntu
-            network_type_to_test:                 manual
-            BAT_DIRECTOR:                         {{ubuntu_manual_BAT_DIRECTOR}}
-            BOSH_VCLOUD_CPI_NETWORK_CIDR:         {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
-            BOSH_VCLOUD_CPI_GATEWAY:              {{BOSH_VCLOUD_CPI_GATEWAY}}
-            BOSH_VCLOUD_CPI_NET_ID:               {{BOSH_VCLOUD_CPI_NET_ID}}
-            BOSH_VCLOUD_CPI_URL:                  {{BOSH_VCLOUD_CPI_URL}}
-            BOSH_VCLOUD_CPI_USER:                 {{BOSH_VCLOUD_CPI_USER}}
-            BOSH_VCLOUD_CPI_PASSWORD:             {{BOSH_VCLOUD_CPI_PASSWORD}}
-            BOSH_VCLOUD_CPI_ORG_AND_VDC:          {{BOSH_VCLOUD_CPI_ORG_AND_VDC}}
-            bats_BOSH_VCLOUD_CPI_CATALOG:         {{bats_BOSH_VCLOUD_CPI_CATALOG}}
-            bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY: {{bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
+            base_os:              ubuntu
+            network_type_to_test: manual
+            VCLOUD_HOST:          {{VCLOUD_HOST}}
+            VCLOUD_USER:          {{VCLOUD_HOST}}
+            VCLOUD_PASSWORD:      {{VCLOUD_HOST}}
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            VCLOUD_VDC:           {{VCLOUD_VDC}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
 
       - conditions: [success, failure]
         task: save-deployment
@@ -83,18 +81,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-bats.yml
         config:
           params:
-            base_os:                        ubuntu
-            BAT_NETWORKING:                 manual
-            BAT_DIRECTOR:                   {{ubuntu_manual_BAT_DIRECTOR}}
-            BOSH_VCLOUD_CPI_NETWORK_CIDR:   {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
-            BOSH_VCLOUD_CPI_GATEWAY:        {{BOSH_VCLOUD_CPI_GATEWAY}}
-            BOSH_VCLOUD_CPI_NET_ID:         {{BOSH_VCLOUD_CPI_NET_ID}}
-            BOSH_VCLOUD_BAT_STEMCELL_NAME:  {{ubuntu_BOSH_VCLOUD_BAT_STEMCELL_NAME}}
-            BOSH_VCLOUD_FIRST_BAT_IP:       {{ubuntu_BOSH_VCLOUD_FIRST_BAT_IP}}
-            BOSH_VCLOUD_SECOND_BAT_IP:      {{ubuntu_BOSH_VCLOUD_SECOND_BAT_IP}}
-            BOSH_VCLOUD_NETWORK_RESERVED_1: {{ubuntu_BOSH_VCLOUD_NETWORK_RESERVED_1}}
-            BOSH_VCLOUD_NETWORK_RESERVED_2: {{ubuntu_BOSH_VCLOUD_NETWORK_RESERVED_2}}
-            BOSH_VCLOUD_NETWORK_STATIC:     {{ubuntu_BOSH_VCLOUD_NETWORK_STATIC}}
+            base_os:              ubuntu
+            BAT_NETWORKING:       manual
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
+            BATS_STEMCELL_NAME:   {{BATS_STEMCELL_NAME_ubuntu}}
+            BATS_IP1:             {{BATS_IP1_ubuntu}}
+            BATS_IP2:             {{BATS_IP2_ubuntu}}
+            BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
+            BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
+            BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
 
   - name: deploy-centos-manual
     serial_groups: [centos-director-manual]
@@ -112,18 +110,16 @@ jobs:
         file: bosh-cpi-release/ci/tasks/deploy.yml
         config:
           params:
-            base_os:                              centos
-            network_type_to_test:                 manual
-            BAT_DIRECTOR:                         {{centos_manual_BAT_DIRECTOR}}
-            BOSH_VCLOUD_CPI_NETWORK_CIDR:         {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
-            BOSH_VCLOUD_CPI_GATEWAY:              {{BOSH_VCLOUD_CPI_GATEWAY}}
-            BOSH_VCLOUD_CPI_NET_ID:               {{BOSH_VCLOUD_CPI_NET_ID}}
-            BOSH_VCLOUD_CPI_URL:                  {{BOSH_VCLOUD_CPI_URL}}
-            BOSH_VCLOUD_CPI_USER:                 {{BOSH_VCLOUD_CPI_USER}}
-            BOSH_VCLOUD_CPI_PASSWORD:             {{BOSH_VCLOUD_CPI_PASSWORD}}
-            BOSH_VCLOUD_CPI_ORG_AND_VDC:          {{BOSH_VCLOUD_CPI_ORG_AND_VDC}}
-            bats_BOSH_VCLOUD_CPI_CATALOG:         {{bats_BOSH_VCLOUD_CPI_CATALOG}}
-            bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY: {{bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
+            base_os:              centos
+            network_type_to_test: manual
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            VCLOUD_HOST:          {{VCLOUD_HOST}}
+            VCLOUD_USER:          {{VCLOUD_USER}}
+            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD}}
+            VCLOUD_VDC:           {{VCLOUD_VDC}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_centos}}
 
       - conditions: [success, failure]
         task: save-deployment
@@ -152,18 +148,18 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-bats.yml
         config:
           params:
-            base_os:                        centos
-            BAT_NETWORKING:                 manual
-            BAT_DIRECTOR:                   {{centos_manual_BAT_DIRECTOR}}
-            BOSH_VCLOUD_CPI_NETWORK_CIDR:   {{BOSH_VCLOUD_CPI_NETWORK_CIDR}}
-            BOSH_VCLOUD_CPI_GATEWAY:        {{BOSH_VCLOUD_CPI_GATEWAY}}
-            BOSH_VCLOUD_CPI_NET_ID:         {{BOSH_VCLOUD_CPI_NET_ID}}
-            BOSH_VCLOUD_BAT_STEMCELL_NAME:  {{centos_BOSH_VCLOUD_BAT_STEMCELL_NAME}}
-            BOSH_VCLOUD_FIRST_BAT_IP:       {{centos_BOSH_VCLOUD_FIRST_BAT_IP}}
-            BOSH_VCLOUD_SECOND_BAT_IP:      {{centos_BOSH_VCLOUD_SECOND_BAT_IP}}
-            BOSH_VCLOUD_NETWORK_RESERVED_1: {{centos_BOSH_VCLOUD_NETWORK_RESERVED_1}}
-            BOSH_VCLOUD_NETWORK_RESERVED_2: {{centos_BOSH_VCLOUD_NETWORK_RESERVED_2}}
-            BOSH_VCLOUD_NETWORK_STATIC:     {{centos_BOSH_VCLOUD_NETWORK_STATIC}}
+            base_os:              centos
+            BAT_NETWORKING:       manual
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_centos}}
+            BATS_STEMCELL_NAME:   {{BATS_STEMCELL_NAME_centos}}
+            BATS_IP1:             {{BATS_IP1_centos}}
+            BATS_IP2:             {{BATS_IP2_centos}}
+            BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_centos}}
+            BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_centos}}
+            BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_centos}}
 
   - name: lifecycle
     serial: true
@@ -178,23 +174,16 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
         config:
           params:
-            BOSH_VCLOUD_CPI_URL:                   {{BOSH_VCLOUD_CPI_URL}}
-            BOSH_VCLOUD_CPI_USER:                  {{BOSH_VCLOUD_CPI_USER}}
-            BOSH_VCLOUD_CPI_PASSWORD:              {{BOSH_VCLOUD_CPI_PASSWORD}}
-            BOSH_VCLOUD_CPI_NET_ID:                {{BOSH_VCLOUD_CPI_NET_ID}}
-            BOSH_VCLOUD_CPI_ORG:                   {{BOSH_VCLOUD_CPI_ORG}}
-            BOSH_VCLOUD_CPI_VDC:                   {{BOSH_VCLOUD_CPI_VDC}}
-            BOSH_VCLOUD_CPI_VAPP_CATALOG:          {{BOSH_VCLOUD_CPI_VAPP_CATALOG}}
-            BOSH_VCLOUD_CPI_VAPP_NAME:             {{BOSH_VCLOUD_CPI_VAPP_NAME}}
-            BOSH_VCLOUD_CPI_MEDIA_CATALOG:         {{BOSH_VCLOUD_CPI_MEDIA_CATALOG}}
-            BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE: {{BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE}}
-            BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE:  {{BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE}}
-            BOSH_VCLOUD_CPI_VM_METADATA_KEY:       {{BOSH_VCLOUD_CPI_VM_METADATA_KEY}}
-            BOSH_VCLOUD_CPI_IP:                    {{BOSH_VCLOUD_CPI_IP}}
-            BOSH_VCLOUD_CPI_IP2:                   {{BOSH_VCLOUD_CPI_IP2}}
-            BOSH_VCLOUD_CPI_NETMASK:               {{BOSH_VCLOUD_CPI_NETMASK}}
-            BOSH_VCLOUD_CPI_DNS:                   {{BOSH_VCLOUD_CPI_DNS}}
-            BOSH_VCLOUD_CPI_GATEWAY:               {{BOSH_VCLOUD_CPI_GATEWAY}}
+            VCLOUD_HOST:     {{VCLOUD_HOST}}
+            VCLOUD_USER:     {{VCLOUD_USER}}
+            VCLOUD_PASSWORD: {{VCLOUD_PASSWORD}}
+            VCLOUD_VLAN:     {{VCLOUD_VLAN}}
+            VCLOUD_VDC:      {{VCLOUD_VDC}}
+            NETWORK_NETMASK: {{NETWORK_NETMASK}}
+            NETWORK_DNS:     {{NETWORK_DNS}}
+            NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
+            LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
+            LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
 
   - name: promote-candidate
     serial: true

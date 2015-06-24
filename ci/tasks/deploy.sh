@@ -8,16 +8,14 @@ print_git_state bosh-cpi-release
 
 check_param base_os
 check_param network_type_to_test
-check_param BAT_DIRECTOR
-check_param BOSH_VCLOUD_CPI_NETWORK_CIDR
-check_param BOSH_VCLOUD_CPI_GATEWAY
-check_param BOSH_VCLOUD_CPI_NET_ID
-check_param BOSH_VCLOUD_CPI_URL
-check_param BOSH_VCLOUD_CPI_USER
-check_param BOSH_VCLOUD_CPI_PASSWORD
-check_param BOSH_VCLOUD_CPI_ORG_AND_VDC
-check_param bats_BOSH_VCLOUD_CPI_CATALOG
-check_param bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY
+check_param VCLOUD_VLAN
+check_param VCLOUD_HOST
+check_param VCLOUD_USER
+check_param VCLOUD_PASSWORD
+check_param VCLOUD_VDC
+check_param NETWORK_CIDR
+check_param NETWORK_GATEWAY
+check_param BATS_DIRECTOR_IP
 
 source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 
@@ -61,10 +59,10 @@ networks:
   - name: private
     type: manual
     subnets:
-      - range: ${BOSH_VCLOUD_CPI_NETWORK_CIDR}
-        gateway: ${BOSH_VCLOUD_CPI_GATEWAY}
+      - range: ${NETWORK_CIDR}
+        gateway: ${NETWORK_GATEWAY}
         dns: [8.8.8.8]
-        cloud_properties: {name: ${BOSH_VCLOUD_CPI_NET_ID}}
+        cloud_properties: {name: ${VCLOUD_VLAN}}
 
 jobs:
   - name: bosh
@@ -83,7 +81,7 @@ jobs:
     persistent_disk_pool: disks
 
     networks:
-      - {name: private, static_ips: [${BAT_DIRECTOR}]}
+      - {name: private, static_ips: [${BATS_DIRECTOR_IP}]}
 
     properties:
       nats:
@@ -104,7 +102,7 @@ jobs:
         adapter: postgres
 
       blobstore:
-        address: ${BAT_DIRECTOR}
+        address: ${BATS_DIRECTOR_IP}
         port: 25250
         provider: dav
         director: {user: director, password: director-password}
@@ -118,16 +116,16 @@ jobs:
         max_threads: 1
 
       vcd: &vcd # <--- Replace values below
-        url: ${BOSH_VCLOUD_CPI_URL}
-        user: ${BOSH_VCLOUD_CPI_USER}
-        password: ${BOSH_VCLOUD_CPI_PASSWORD}
+        url: ${VCLOUD_HOST}
+        user: ${VCLOUD_USER}
+        password: ${VCLOUD_PASSWORD}
         entities:
-          organization: ${BOSH_VCLOUD_CPI_ORG_AND_VDC}
-          virtual_datacenter: ${BOSH_VCLOUD_CPI_ORG_AND_VDC}
-          vapp_catalog: ${bats_BOSH_VCLOUD_CPI_CATALOG}
-          media_catalog: ${bats_BOSH_VCLOUD_CPI_CATALOG}
+          organization: ${VCLOUD_VDC}
+          virtual_datacenter: ${VCLOUD_VDC}
+          vapp_catalog: bosh-concourse-director-catalog
+          media_catalog: bosh-concourse-director-catalog
           media_storage_profile: '*'
-          vm_metadata_key: ${bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY}
+          vm_metadata_key: vm-metadata-key
         control: {wait_max: 900}
 
       hm:
@@ -135,14 +133,14 @@ jobs:
         director_account: {user: admin, password: admin}
         resurrector_enabled: true
 
-      agent: {mbus: "nats://nats:nats-password@${BAT_DIRECTOR}:4222"}
+      agent: {mbus: "nats://nats:nats-password@${BATS_DIRECTOR_IP}:4222"}
 
       ntp: &ntp [0.pool.ntp.org, 1.pool.ntp.org]
 
 cloud_provider:
   template: {name: cpi, release: ${cpi_release_name}}
 
-  mbus: "https://mbus:mbus-password@${BAT_DIRECTOR}:6868"
+  mbus: "https://mbus:mbus-password@${BATS_DIRECTOR_IP}:6868"
 
   properties:
     vcd: *vcd
@@ -157,12 +155,11 @@ cp bosh-concourse-ci/pipelines/${cpi_release_name}/${manifest_prefix}-state.json
 set -e
 
 initver=$(cat bosh-init/version)
-bosh-init="${working_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
-chmod +x $bosh-init
+bosh_init="${working_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
+chmod +x $bosh_init
 
 echo "deleting existing BOSH Director VM..."
-$bosh-init delete ${manifest_dir}/${manifest_filename}
-
-echo "deploying BOSH..."
-$bosh-init deploy ${manifest_dir}/${manifest_filename}
-
+$bosh_init delete ${manifest_dir}/${manifest_filename}
+#
+#echo "deploying BOSH..."
+#$bosh_init deploy ${manifest_dir}/${manifest_filename}

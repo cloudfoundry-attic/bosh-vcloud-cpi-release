@@ -8,58 +8,58 @@ print_git_state bosh-cpi-release
 
 check_param base_os
 check_param BAT_NETWORKING
-check_param BAT_DIRECTOR
-check_param BOSH_VCLOUD_CPI_NETWORK_CIDR
-check_param BOSH_VCLOUD_CPI_GATEWAY
-check_param BOSH_VCLOUD_CPI_NET_ID
-check_param BOSH_VCLOUD_BAT_STEMCELL_NAME
-check_param BOSH_VCLOUD_FIRST_BAT_IP
-check_param BOSH_VCLOUD_SECOND_BAT_IP
-check_param BOSH_VCLOUD_NETWORK_RESERVED_1
-check_param BOSH_VCLOUD_NETWORK_RESERVED_2
-check_param BOSH_VCLOUD_NETWORK_STATIC
+check_param VCLOUD_VLAN
+check_param NETWORK_CIDR
+check_param NETWORK_GATEWAY
+check_param BATS_DIRECTOR_IP
+check_param BATS_STEMCELL_NAME
+check_param BATS_IP1
+check_param BATS_IP2
+check_param BATS_RESERVED_RANGE1
+check_param BATS_RESERVED_RANGE2
+check_param BATS_STATIC_RANGE
 
 source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 
 echo "using bosh CLI version..."
 bosh version
-bosh -n target $BAT_DIRECTOR
+bosh -n target $BATS_DIRECTOR_IP
 
-export BAT_VCAP_PASSWORD=c1oudc0w
 export BAT_INFRASTRUCTURE=vcloud
-cpi_release_name=bosh-${BAT_INFRASTRUCTURE}-cpi
-export BAT_DNS_HOST=$BAT_DIRECTOR
+export BAT_VCAP_PASSWORD=c1oudc0w
+export BAT_DNS_HOST=$BATS_DIRECTOR_IP
+export BAT_DIRECTOR=$BATS_DIRECTOR_IP
 export BAT_STEMCELL="${PWD}/stemcell/stemcell.tgz"
 export BAT_DEPLOYMENT_SPEC="${PWD}/${base_os}-${BAT_NETWORKING}-bats-config.yml"
-
-ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
-eval $(ssh-agent)
-ssh-add ~/.ssh/id_rsa
 
 cat > $BAT_DEPLOYMENT_SPEC <<EOF
 ---
 cpi: vcloud
 properties:
   uuid: $(bosh status --uuid)
-  second_static_ip: ${BOSH_VCLOUD_SECOND_BAT_IP}
+  second_static_ip: ${BATS_IP2}
   pool_size: 1
   stemcell:
-    name: ${BOSH_VCLOUD_BAT_STEMCELL_NAME}
+    name: ${BATS_STEMCELL_NAME}
     version: latest
   instances: 1
   networks:
     - name: static
-      static_ip: ${BOSH_VCLOUD_FIRST_BAT_IP}
+      static_ip: ${BATS_IP1}
       type: manual
-      cidr: ${BOSH_VCLOUD_CPI_NETWORK_CIDR}
+      cidr: ${NETWORK_CIDR}
       reserved:
-        - ${BOSH_VCLOUD_NETWORK_RESERVED_1}
-        - ${BOSH_VCLOUD_NETWORK_RESERVED_2}
-      static: [${BOSH_VCLOUD_NETWORK_STATIC}]
-      gateway: ${BOSH_VCLOUD_CPI_GATEWAY}
-      vlan: ${BOSH_VCLOUD_CPI_NET_ID}
+        - ${BATS_RESERVED_RANGE1}
+        - ${BATS_RESERVED_RANGE2}
+      static: [${BATS_STATIC_RANGE}]
+      gateway: ${NETWORK_GATEWAY}
+      vlan: ${VCLOUD_VLAN}
   vapp_name: bats-concourse-${base_os}-vapp
 EOF
+
+ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+eval $(ssh-agent)
+ssh-add ~/.ssh/id_rsa
 
 cd bats
 bundle install

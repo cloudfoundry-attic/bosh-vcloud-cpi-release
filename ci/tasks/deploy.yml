@@ -13,15 +13,13 @@ inputs:
 run:
   path: bosh-cpi-release/ci/tasks/deploy.sh
 params:
-  base_os:                              replace-me
-  network_type_to_test:                 replace-me
-  BAT_DIRECTOR:                         replace-me
-  BOSH_VCLOUD_CPI_NETWORK_CIDR:         replace-me
-  BOSH_VCLOUD_CPI_GATEWAY:              replace-me
-  BOSH_VCLOUD_CPI_NET_ID:               replace-me
-  BOSH_VCLOUD_CPI_URL:                  replace-me
-  BOSH_VCLOUD_CPI_USER:                 replace-me
-  BOSH_VCLOUD_CPI_PASSWORD:             replace-me
-  BOSH_VCLOUD_CPI_ORG_AND_VDC:          replace-me
-  bats_BOSH_VCLOUD_CPI_CATALOG:         replace-me
-  bats_BOSH_VCLOUD_CPI_VM_METADATA_KEY: replace-me
+  base_os:              replace-me
+  network_type_to_test: replace-me
+  VCLOUD_VLAN:          replace-me
+  VCLOUD_HOST:          replace-me
+  VCLOUD_USER:          replace-me
+  VCLOUD_PASSWORD:      replace-me
+  VCLOUD_VDC:           replace-me
+  NETWORK_CIDR:         replace-me
+  NETWORK_GATEWAY:      replace-me
+  BATS_DIRECTOR_IP:     replace-me
