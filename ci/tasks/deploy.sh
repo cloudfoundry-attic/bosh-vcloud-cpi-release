@@ -160,6 +160,6 @@ chmod +x $bosh_init
 
 echo "deleting existing BOSH Director VM..."
 $bosh_init delete ${manifest_dir}/${manifest_filename}
-#
-#echo "deploying BOSH..."
-#$bosh_init deploy ${manifest_dir}/${manifest_filename}
+
+echo "deploying BOSH..."
+$bosh_init deploy ${manifest_dir}/${manifest_filename}
