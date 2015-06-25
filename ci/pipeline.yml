@@ -46,8 +46,8 @@ jobs:
             base_os:              ubuntu
             network_type_to_test: manual
             VCLOUD_HOST:          {{VCLOUD_HOST}}
-            VCLOUD_USER:          {{VCLOUD_HOST}}
-            VCLOUD_PASSWORD:      {{VCLOUD_HOST}}
+            VCLOUD_USER:          {{VCLOUD_USER}}
+            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD}}
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
             VCLOUD_VDC:           {{VCLOUD_VDC}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
