@@ -159,7 +159,7 @@ bosh_init="${working_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
 chmod +x $bosh_init
 
 echo "deleting existing BOSH Director VM..."
-BOSH_INIT_LOG_LEVEL=debug $bosh_init delete ${manifest_dir}/${manifest_filename}
+$bosh_init delete ${manifest_dir}/${manifest_filename}
 
 echo "deploying BOSH..."
-BOSH_INIT_LOG_LEVEL=debug $bosh_init deploy ${manifest_dir}/${manifest_filename}
+$bosh_init deploy ${manifest_dir}/${manifest_filename}
