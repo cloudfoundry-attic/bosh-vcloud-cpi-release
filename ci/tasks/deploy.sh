@@ -162,4 +162,4 @@ echo "deleting existing BOSH Director VM..."
 $bosh_init delete ${manifest_dir}/${manifest_filename}
 
 echo "deploying BOSH..."
-$bosh_init deploy ${manifest_dir}/${manifest_filename}
+BOSH_INIT_LOG_LEVEL=debug $bosh_init deploy ${manifest_dir}/${manifest_filename}
