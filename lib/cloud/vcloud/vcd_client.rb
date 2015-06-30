@@ -1,6 +1,7 @@
 require 'base64'
 require 'uri'
 require 'rest_client'
+require 'common/common'
 
 require_relative 'cache'
 require_relative 'file_uploader'
@@ -238,8 +239,12 @@ module VCloudCloud
       params[:cookies] = @cookie if !options[:login] && cookie_available?
       params[:payload] = options[:payload].to_s if options[:payload]
       params[:headers].merge! options[:headers] if options[:headers]
-      response = retry_for_network_issue do
+
+      errors = [RestClient::Exception, OpenSSL::SSL::SSLError, OpenSSL::X509::StoreError]
+      Bosh::Common.retryable(sleep: @retry_delay, tries: 20, on: errors) do |tries, error|
         @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
+        @logger.warn "Attempting to retry #{method.to_s.upcase} request against #{params[:url]} after #{tries} unsuccessful attempts. Latest error: #{error.inspect}" if tries > 1
+
         RestClient::Request.execute params do |response, request, result, &block|
           @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
           response.return! request, result, &block
@@ -274,25 +279,6 @@ module VCloudCloud
         wrapped_response.exception
       end
       wrapped_response
-    end
-
-    def retry_for_network_issue
-      retries = 0
-      delay = @retry_delay
-      result = nil
-      loop do
-        begin
-          result = yield
-          break
-        rescue RestClient::Exception => ex
-          raise ex if retries >= @retry_max
-          @logger.error "RestClient exception (retry after #{delay}ms): #{ex}"
-          sleep(delay / 1000)
-          delay *= 2
-          retries += 1
-        end
-      end
-      result
     end
   end
 end
