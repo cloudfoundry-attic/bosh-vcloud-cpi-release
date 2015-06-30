@@ -69,6 +69,36 @@ module VCloudCloud
 
         client.invoke :get, "/info"
       end
+
+      context "when receiving an error response" do
+        it "throws a vm exists error" do
+          error_xml = '<Error majorErrorCode="400" message="[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named &quot;18369d52-151a-4fa3-87ee-c5dad9288f9f&quot;." minorErrorCode="BAD_REQUEST"></Error>'
+          error_wrapper = VCloudSdk::Xml::WrapperFactory.wrap_document error_xml
+
+          response = double("info response")
+          response.should_receive(:code).and_return :code
+
+          client.should_receive(:session).and_return nil
+          client.should_receive(:send_request).and_return response
+          VCloudSdk::Xml::WrapperFactory.should_receive(:wrap_document).and_return(error_wrapper)
+
+          expect{client.invoke(:method, :path)}.to raise_error(ObjectExistsError)
+        end
+
+        it "throws a generic response error" do
+          error_xml = '<Error majorErrorCode="500" message=" 98843fff-33c4-4ef8-b1eb-d1f9a54b63d7 ] Unable to perform this action. Contact your cloud administrator." minorErrorCode="INTERNAL_SERVER_ERROR"></Error>'
+          error_wrapper = VCloudSdk::Xml::WrapperFactory.wrap_document error_xml
+
+          response = double("info response")
+          response.should_receive(:code).and_return :code
+
+          client.should_receive(:session).and_return nil
+          client.should_receive(:send_request).and_return response
+          VCloudSdk::Xml::WrapperFactory.should_receive(:wrap_document).and_return(error_wrapper)
+
+          expect{client.invoke(:method, :path)}.to raise_error(ResponseError)
+        end
+      end
     end
 
     describe "trivia methods" do

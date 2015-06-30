@@ -13,9 +13,24 @@ module VCloudSdk
       end
 
       describe :wrap_document do
-        it "successfully creates a specialized wrapper" do
+        it "successfully creates a admin catalog wrapper" do
           wrapper = WrapperFactory.wrap_document @valid_xml
           wrapper.should be_an_instance_of AdminCatalog
+        end
+
+        it "successfully creates an error wrapper" do
+          error_xml = "<Error/>"
+          wrapper = WrapperFactory.wrap_document error_xml
+          wrapper.should be_an_instance_of Error
+        end
+
+        it "returns the error number and the error message" do
+          error_xml = '<Error majorErrorCode="400" message="[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named &quot;18369d52-151a-4fa3-87ee-c5dad9288f9f&quot;." minorErrorCode="BAD_REQUEST"></Error>'
+          wrapper = WrapperFactory.wrap_document error_xml
+          wrapper.should be_an_instance_of Error
+          expect(wrapper.major_error).to eq('400')
+          expect(wrapper.minor_error).to eq('BAD_REQUEST')
+          expect(wrapper.error_msg).to eq('[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named "18369d52-151a-4fa3-87ee-c5dad9288f9f".')
         end
 
         it "fails to create specialized wrapper and creates a generic wrapper instead" do

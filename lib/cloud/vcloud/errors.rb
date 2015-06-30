@@ -6,4 +6,12 @@ module VCloudCloud
 
   class TimeoutError < StandardError
   end
+
+  class ResponseError < StandardError
+
+  end
+
+  class ObjectExistsError < StandardError
+
+  end
 end

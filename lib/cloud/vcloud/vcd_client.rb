@@ -269,7 +269,10 @@ module VCloudCloud
     end
 
     def wrap_response(response)
-      VCloudSdk::Xml::WrapperFactory.wrap_document response
+      wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response
+      if wrapped_response.is_a?VCloudSdk::Xml::Error
+        wrapped_response.exception
+      end
     end
 
     def retry_for_network_issue

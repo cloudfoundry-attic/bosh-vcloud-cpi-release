@@ -96,6 +96,10 @@ module VCloudSdk
         href.split('/')[-1]
       end
 
+      def error
+         @root["Error"]
+      end
+
       def name
         @root["name"]
       end
@@ -311,3 +315,4 @@ require_relative "wrapper_classes/vdc"
 require_relative "wrapper_classes/vdc_storage_profile"
 require_relative "wrapper_classes/virtual_hardware_section"
 require_relative "wrapper_classes/vm"
+require_relative "wrapper_classes/error_wrapper"
