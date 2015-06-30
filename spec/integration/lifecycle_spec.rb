@@ -2,14 +2,6 @@ require 'spec_helper'
 
 describe VCloudCloud::Cloud do
   before(:all) do
-
-=begin
-    File.readlines("./spec/integration/env.txt").each do |line|
-      values = line.split("=")
-      ENV[values[0].strip] = values[1].strip
-    end
-=end
-
     @host          = ENV['BOSH_VCLOUD_CPI_URL']     || raise("Missing BOSH_VCLOUD_CPI_URL")
     @user          = ENV['BOSH_VCLOUD_CPI_USER']     || raise("Missing BOSH_VCLOUD_CPI_USER")
     @password      = ENV['BOSH_VCLOUD_CPI_PASSWORD'] || raise("Missing BOSH_VCLOUD_CPI_PASSWORD")
@@ -28,6 +20,9 @@ describe VCloudCloud::Cloud do
     @netmask       = ENV['BOSH_VCLOUD_CPI_NETMASK'] || raise("Missing BOSH_VCLOUD_CPI_NETMASK")
     @dns           = ENV['BOSH_VCLOUD_CPI_DNS']         || raise("Missing BOSH_VCLOUD_CPI_DNS")
     @gateway       = ENV['BOSH_VCLOUD_CPI_GATEWAY']     || raise("Missing BOSH_VCLOUD_CPI_GATEWAY")
+
+    # not required
+    @ntp           = ENV['BOSH_VCLOUD_CPI_NTP_SERVER'] || '0.us.pool.ntp.org'
   end
 
   before(:all) do
@@ -38,7 +33,7 @@ describe VCloudCloud::Cloud do
 
     @cpi = described_class.new(
       'agent' => {
-        'ntp' => ENV['BOSH_VCLOUD_CPI_NTP_SERVER'],
+        'ntp' => @ntp,
       },
       'vcds' => [{
         'url' => @host,
@@ -52,7 +47,7 @@ describe VCloudCloud::Cloud do
           'media_storage_profile' => @media_storage_prof,
           'vapp_storage_profile' => @vapp_storage_prof,
           'vm_metadata_key' => @metadata_key,
-          'description' => 'MicroBosh on vCloudDirector',
+          'description' => 'BOSH on vCloudDirector',
         }
       }]
     )
