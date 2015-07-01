@@ -189,7 +189,7 @@ module VCloudCloud
     WAIT_DELAY     = 5      # delay in seconds for pooling next task status
     COOKIE_TIMEOUT = 600    # default timeout in seconds, if not specified in configuration file, after which session must be re-created
     RETRY_MAX      = 3      # maximum attempts
-    RETRY_DELAY    = 100    # delay of first retry, the next is * 2
+    RETRY_DELAY    = 0.1    # wait time before retrying
 
     def cookie_available?
       @cookie && Time.now < @cookie_expiration
