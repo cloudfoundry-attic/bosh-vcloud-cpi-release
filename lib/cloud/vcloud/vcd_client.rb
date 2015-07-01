@@ -273,6 +273,7 @@ module VCloudCloud
       if wrapped_response.is_a?VCloudSdk::Xml::Error
         wrapped_response.exception
       end
+      wrapped_response
     end
 
     def retry_for_network_issue

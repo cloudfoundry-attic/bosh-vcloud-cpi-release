@@ -71,7 +71,6 @@ module VCloudCloud
         storage_profiles = client.vdc.storage_profiles || []
         storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['vapp_storage_profile'] }
 
-        sleep rand(10)
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality, storage_profile
         client.flush_cache  # flush cached vdc which contains vapp list
@@ -107,7 +106,11 @@ module VCloudCloud
 
             if container_vapp
               existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
-              s.next Steps::Recompose, container_vapp.name, container_vapp, vm
+              begin
+                s.next Steps::Recompose, container_vapp.name, container_vapp, vm
+              rescue ObjectExistsError
+                @logger.warn 'Vm already exists in vapp'
+              end
               client.flush_cache
               vapp = client.reload vapp
               client.wait_entity vapp
@@ -154,6 +157,7 @@ module VCloudCloud
             save_agent_env s
             s.next Steps::PowerOn, :vm
             rescue Exception => e
+              puts "#{e.class}: #{e.backtrace}"
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
               @logger.warn "Exception trace ex.backtrace.join('\n')"
               @logger.warn 'critical block 1'
