@@ -168,6 +168,7 @@ module VCloudCloud
             s.next Steps::PowerOn, :vm
               @logger.debug "Power On successfully"
             rescue Exception => e
+              puts "#{e.class}: #{e.backtrace}"
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
               @logger.warn "Exception trace #{e.backtrace.join('\n')}"
               @logger.warn 'critical block 1'

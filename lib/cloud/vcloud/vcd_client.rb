@@ -302,6 +302,7 @@ module VCloudCloud
       if wrapped_response.is_a?VCloudSdk::Xml::Error
         wrapped_response.exception
       end
+      wrapped_response
     end
   end
 end
