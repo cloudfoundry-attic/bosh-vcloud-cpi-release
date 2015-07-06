@@ -46,6 +46,8 @@ resource_pools:
       cpu: 2
       ram: 4_096
       disk: 20_000
+    env:
+      vapp: bosh-concourse-director-${base_os}
 
 disk_pools:
   - name: disks
@@ -118,8 +120,8 @@ jobs:
         entities:
           organization: ${VCLOUD_VDC}
           virtual_datacenter: ${VCLOUD_VDC}
-          vapp_catalog: bosh-concourse-director-catalog
-          media_catalog: bosh-concourse-director-catalog
+          vapp_catalog: bosh-concourse-director-${base_os}-catalog
+          media_catalog: bosh-concourse-director-${base_os}-catalog
           media_storage_profile: '*'
           vm_metadata_key: vm-metadata-key
         control: {wait_max: 900}
