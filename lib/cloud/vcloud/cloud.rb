@@ -87,58 +87,67 @@ module VCloudCloud
         # if the target vApp exists, creates a temp vApp, and then recomposes its VM to the target vApp.
         if requested_name
           container_vapp = nil
-          vm_href = nil
-          existing_vm_hrefs = []
 
-          # VM is added to the target vApp sequentially.
           errors = [RuntimeError]
-          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do |tries, error |
+          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 10, on: errors) do |tries, error |
             begin
-          #@vapp_lock.synchronize do
-            # critical block 0
-            begin
-              @logger.debug "Requesting container vApp: #{requested_name}"
-              container_vapp = client.vapp_by_name requested_name
-            rescue ObjectNotFoundError
-              # ignored, keep container_vapp nil
-              @logger.debug "Invalid container vApp: #{requested_name}"
-            end
-
-            if container_vapp
-              existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
               begin
-                s.next Steps::Recompose, container_vapp.name, container_vapp, vm
-              rescue ObjectExistsError
-                @logger.warn 'Vm already exists in vapp'
+                @logger.debug "Requesting container vApp: #{requested_name}"
+                container_vapp = client.vapp_by_name requested_name
+              rescue ObjectNotFoundError
+                # ignored, keep container_vapp nil
+                @logger.debug "Invalid container vApp: #{requested_name}"
               end
-              client.flush_cache
-              vapp = client.reload vapp
-              client.wait_entity vapp
-              begin
-                s.next Steps::Delete, vapp, true
-              rescue => ex
-                @logger.warn "Caught exception when trying to delete tmp vapp #{vapp.name}: #{ex.to_s}"
-              end
-            else
-              # just rename the vApp
-              @logger.warn "attempting to rename vapp #{container_vapp} to #{requested_name}"
-              container_vapp = vapp
-              s.next Steps::Recompose, requested_name, container_vapp
-            end
 
-            # reload all the stuff
-            client.flush_cache
-            vapp = client.reload container_vapp
-            client.wait_entity vapp
-            vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
+              if container_vapp
+
+                @logger.debug "Enter recompose, container_vapp: #{container_vapp.name}"
+                begin
+                  s.next Steps::Recompose, container_vapp.name, container_vapp, vm
+                rescue VCloudCloud::ObjectExistsError => e
+                  @logger.debug "VM already exists, skip the error"
+                end
+              else
+                    # just rename the vApp
+                    @logger.warn "attempting to rename vapp #{container_vapp} to #{requested_name}"
+                    container_vapp = vapp
+                    s.next Steps::Recompose, requested_name, container_vapp
+              end
             rescue Exception => e
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
-              @logger.warn "Exception trace ex.backtrace.join('\n')"
+              @logger.warn "Exception trace #{e.backtrace.join('\n')}"
               @logger.warn "Number of elapsed tries: #{tries}"
-              @logger.warn 'critical block 0'
+              @logger.warn 'critical block recompose rename'
               raise "re raising exception #{e.message} in create_vm"
             end
           end
+
+          # delete tmp vapp only if the name is different from requested
+          @logger.debug "container_vapp.name: #{container_vapp.name}"
+          @logger.debug "vapp.name: #{vapp.name}"
+          client.flush_cache
+          vapp = client.reload vapp
+          client.wait_entity vapp, true
+          @logger.debug "container_vapp.name: #{container_vapp.name}"
+          @logger.debug "vapp.name: #{vapp.name}"
+          if vapp.name != requested_name
+            begin
+              s.next Steps::Delete, vapp, true
+            rescue Exception => ex
+              @logger.warn "Caught exception when trying to delete tmp vapp #{vapp.name}: #{ex.to_s}"
+            end
+          end
+
+          # Wait for Delete/Recompose step to finish, retry if fails
+          # reload all the stuff
+          client.flush_cache
+          vapp = client.reload container_vapp
+          client.wait_entity vapp, true
+
+          @logger.debug "vm.name: #{vm.name}"
+          vapp.vms.map { |v| @logger.debug "v.name: #{v.name}, v.href: #{v.href}" }
+          vm_href = vapp.vms.select { |v| v.href if v.name == vm.name }
+          @logger.debug "vm_href: #{vm_href}"
 
           raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
           s.state[:vm] = client.resolve_link vm_href[0]
@@ -155,11 +164,12 @@ module VCloudCloud
             begin
             # critical block 1
             save_agent_env s
+            @logger.debug ""
             s.next Steps::PowerOn, :vm
+              @logger.debug "Power On successfully"
             rescue Exception => e
-              puts "#{e.class}: #{e.backtrace}"
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
-              @logger.warn "Exception trace ex.backtrace.join('\n')"
+              @logger.warn "Exception trace #{e.backtrace.join('\n')}"
               @logger.warn 'critical block 1'
               raise "re raising exception #{e.message} in create_vm"
             end

@@ -95,8 +95,13 @@ module VCloudCloud
     end
 
     def vapp_by_name(name)
-      node = vdc.get_vapp name
+      # @logger.debug "VAPP_BY_NAME - org.vdc_link: #{org.vdc_link}"
+      vdc_link = org.vdc_link vdc_name
+      raise ObjectNotFoundError, "Invalid virtual datacenter name: #{vdc_name}" unless vdc_link
+      vdc_obj = resolve_link vdc_link
+      node = vdc_obj.get_vapp name
       raise ObjectNotFoundError, "vApp #{name} does not exist" unless node
+      @logger.debug "VAPP_BY_NAME - get a vapp name"
       resolve_link node.href
     end
 
@@ -119,7 +124,7 @@ module VCloudCloud
       session
 
       response = send_request method, path, options
-      (options[:no_wrap] || response.code == 204) ? nil : wrap_response(response)
+      (options[:no_wrap] || response.code == 204) ? response : wrap_response(response)
     end
 
     def upload_stream(url, size, stream, options = {})
@@ -241,13 +246,31 @@ module VCloudCloud
       params[:headers].merge! options[:headers] if options[:headers]
 
       errors = [RestClient::Exception, OpenSSL::SSL::SSLError, OpenSSL::X509::StoreError]
-      Bosh::Common.retryable(sleep: @retry_delay, tries: 20, on: errors) do |tries, error|
+      Bosh::Common.retryable(sleep: @retry_delay, tries: 10, on: errors) do |tries, error|
         @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
         @logger.warn "Attempting to retry #{method.to_s.upcase} request against #{params[:url]} after #{tries} unsuccessful attempts. Latest error: #{error.inspect}" if tries > 1
 
         RestClient::Request.execute params do |response, request, result, &block|
           @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
-          response.return! request, result, &block
+          begin
+            response.return! request, result, &block
+          rescue RestClient::BadRequest => ex
+            @logger.debug "attempting to wrap response: #{response.inspect} due to error"
+            begin
+              wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document(response)
+            rescue Exception => e
+              @logger.debug "could not wrap response, received exception: #{e.inspect}"
+              raise e
+            end
+            @logger.debug "successfully wrapped response: #{wrapped_response.inspect}"
+            if wrapped_response.is_a?VCloudSdk::Xml::Error
+              @logger.debug "Get an error #{wrapped_response.error_msg} from vcloud SDK"
+              if wrapped_response.error_msg.include? "There is already a VM named"
+                raise VCloudCloud::ObjectExistsError
+              end
+            end
+            raise ex
+          end
         end
       end
     end
@@ -274,8 +297,16 @@ module VCloudCloud
     end
 
     def wrap_response(response)
-      wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response
+      @logger.debug "attempting to wrap response: #{response.inspect} due to error"
+      begin
+        wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document(response)
+      rescue Exception => e
+        @logger.debug "could not wrap response, received exception: #{e.inspect}"
+        raise e
+      end
+      @logger.debug "successfully wrapped response: #{wrapped_response.inspect}"
       if wrapped_response.is_a?VCloudSdk::Xml::Error
+        @logger.debug "Get an error #{wrapped_response.error_msg} from vcloud SDK"
         wrapped_response.exception
       end
       wrapped_response
