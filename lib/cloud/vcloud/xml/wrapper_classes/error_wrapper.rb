@@ -16,11 +16,11 @@ module VCloudSdk
         @root["message"]
       end
 
-      def exception
+      def exception(e)
         if error_msg.include? "There is already a VM named" and major_error == "400"
           raise VCloudCloud::ObjectExistsError
         else
-          raise VCloudCloud::ResponseError
+          raise e
         end
       end
     end

@@ -220,6 +220,21 @@ module VCloudCloud
       end
     end
 
+    def raise_specific_error(response, e)
+      begin
+        wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response.body
+      rescue => ex
+        @logger.debug "Wrap document raise error: #{ex.message}"
+      end
+
+      unless wrapped_response.nil?
+        if wrapped_response.is_a?VCloudSdk::Xml::Error
+          wrapped_response.exception(e)
+        end
+      end
+      raise e
+    end
+
     def send_request(method, path, options = {})
       path = path.href unless path.is_a?(String)
 
@@ -247,7 +262,11 @@ module VCloudCloud
 
         RestClient::Request.execute params do |response, request, result, &block|
           @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
-          response.return! request, result, &block
+          begin
+            response.return! request, result, &block
+          rescue => e
+            raise_specific_error(response, e)
+          end
         end
       end
     end
@@ -274,10 +293,7 @@ module VCloudCloud
     end
 
     def wrap_response(response)
-      wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response
-      if wrapped_response.is_a?VCloudSdk::Xml::Error
-        wrapped_response.exception
-      end
+      VCloudSdk::Xml::WrapperFactory.wrap_document response
     end
   end
 end
