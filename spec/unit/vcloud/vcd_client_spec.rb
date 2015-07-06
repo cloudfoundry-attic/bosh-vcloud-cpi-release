@@ -71,32 +71,40 @@ module VCloudCloud
       end
 
       context "when receiving an error response" do
+        let(:response) { double('RestClient::Response') }
+
+        before :each do
+          allow_any_instance_of(RestClient::Request).to receive(:execute).and_yield(response, nil, nil)
+          allow(response).to receive(:code)
+          allow(response).to receive(:headers)
+        end
+
         it "throws a vm exists error" do
           error_xml = '<Error majorErrorCode="400" message="[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named &quot;18369d52-151a-4fa3-87ee-c5dad9288f9f&quot;." minorErrorCode="BAD_REQUEST"></Error>'
-          error_wrapper = VCloudSdk::Xml::WrapperFactory.wrap_document error_xml
-
-          response = double("info response")
-          response.should_receive(:code).and_return :code
-
-          client.should_receive(:session).and_return nil
-          client.should_receive(:send_request).and_return response
-          VCloudSdk::Xml::WrapperFactory.should_receive(:wrap_document).and_return(error_wrapper)
-
-          expect{client.invoke(:method, :path)}.to raise_error(ObjectExistsError)
+          allow(response).to receive(:body).and_return(error_xml)
+          allow(response).to receive(:return!).and_raise(RestClient::BadRequest)
+          expect{client.invoke(:method, "/something")}.to raise_error(ObjectExistsError)
         end
 
         it "throws a generic response error" do
-          error_xml = '<Error majorErrorCode="500" message=" 98843fff-33c4-4ef8-b1eb-d1f9a54b63d7 ] Unable to perform this action. Contact your cloud administrator." minorErrorCode="INTERNAL_SERVER_ERROR"></Error>'
-          error_wrapper = VCloudSdk::Xml::WrapperFactory.wrap_document error_xml
+           error_xml = '<Error majorErrorCode="400" message="[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] Other error message." minorErrorCode="BAD_REQUEST"></Error>'
+           allow(response).to receive(:body).and_return(error_xml)
+           allow(response).to receive(:return!).and_raise(RestClient::BadRequest)
+           expect{client.invoke(:method, "/something")}.to raise_error(RestClient::BadRequest)
+        end
 
-          response = double("info response")
-          response.should_receive(:code).and_return :code
+        it "throws a internal server error" do
+          error_xml = '<Error majorErrorCode="500" message="[ 98843fff-33c4-4ef8-b1eb-d1f9a54b63d7 ] Unable to perform this action. Contact your cloud administrator." minorErrorCode="INTERNAL_SERVER_ERROR"></Error>'
+          allow(response).to receive(:body).and_return(error_xml)
+          allow(response).to receive(:return!).and_raise(RestClient::InternalServerError)
+          expect{client.invoke(:method, "/something")}.to raise_error(RestClient::InternalServerError)
+        end
 
-          client.should_receive(:session).and_return nil
-          client.should_receive(:send_request).and_return response
-          VCloudSdk::Xml::WrapperFactory.should_receive(:wrap_document).and_return(error_wrapper)
-
-          expect{client.invoke(:method, :path)}.to raise_error(ResponseError)
+        it "throws a runtime error" do
+          error_xml = ''
+          allow(response).to receive(:body).and_return(error_xml)
+          allow(response).to receive(:return!).and_raise(RuntimeError)
+          expect{client.invoke(:method, "/something")}.to raise_error(RuntimeError)
         end
       end
     end

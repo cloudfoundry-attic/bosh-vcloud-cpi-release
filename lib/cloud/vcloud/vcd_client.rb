@@ -225,6 +225,21 @@ module VCloudCloud
       end
     end
 
+    def raise_specific_error(response, e)
+      begin
+        wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response.body
+      rescue => ex
+        @logger.debug "Wrap document raise error: #{ex.message}"
+      end
+
+      unless wrapped_response.nil?
+        if wrapped_response.is_a?VCloudSdk::Xml::Error
+          wrapped_response.exception(e)
+        end
+      end
+      raise e
+    end
+
     def send_request(method, path, options = {})
       path = path.href unless path.is_a?(String)
 
@@ -254,22 +269,8 @@ module VCloudCloud
           @logger.debug "REST RES #{response.code} #{response.headers.inspect} #{response.body}"
           begin
             response.return! request, result, &block
-          rescue RestClient::BadRequest => ex
-            @logger.debug "attempting to wrap response: #{response.inspect} due to error"
-            begin
-              wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document(response)
-            rescue Exception => e
-              @logger.debug "could not wrap response, received exception: #{e.inspect}"
-              raise e
-            end
-            @logger.debug "successfully wrapped response: #{wrapped_response.inspect}"
-            if wrapped_response.is_a?VCloudSdk::Xml::Error
-              @logger.debug "Get an error #{wrapped_response.error_msg} from vcloud SDK"
-              if wrapped_response.error_msg.include? "There is already a VM named"
-                raise VCloudCloud::ObjectExistsError
-              end
-            end
-            raise ex
+          rescue => e
+            raise_specific_error(response, e)
           end
         end
       end
@@ -297,10 +298,7 @@ module VCloudCloud
     end
 
     def wrap_response(response)
-      wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response
-      if wrapped_response.is_a?VCloudSdk::Xml::Error
-        wrapped_response.exception
-      end
+      VCloudSdk::Xml::WrapperFactory.wrap_document response
     end
   end
 end
