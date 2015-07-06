@@ -261,7 +261,7 @@ module VCloudCloud
       params[:headers].merge! options[:headers] if options[:headers]
 
       errors = [RestClient::Exception, OpenSSL::SSL::SSLError, OpenSSL::X509::StoreError]
-      Bosh::Common.retryable(sleep: @retry_delay, tries: 20, on: errors) do |tries, error|
+      Bosh::Common.retryable(sleep: @retry_delay, tries: 10, on: errors) do |tries, error|
         @logger.debug "REST REQ #{method.to_s.upcase} #{params[:url]} #{params[:headers].inspect} #{params[:cookies].inspect} #{params[:payload]}"
         @logger.warn "Attempting to retry #{method.to_s.upcase} request against #{params[:url]} after #{tries} unsuccessful attempts. Latest error: #{error.inspect}" if tries > 1
 
@@ -298,8 +298,16 @@ module VCloudCloud
     end
 
     def wrap_response(response)
-      wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document response
+      @logger.debug "attempting to wrap response: #{response.inspect} due to error"
+      begin
+        wrapped_response = VCloudSdk::Xml::WrapperFactory.wrap_document(response)
+      rescue Exception => e
+        @logger.debug "could not wrap response, received exception: #{e.inspect}"
+        raise e
+      end
+      @logger.debug "successfully wrapped response: #{wrapped_response.inspect}"
       if wrapped_response.is_a?VCloudSdk::Xml::Error
+        @logger.debug "Get an error #{wrapped_response.error_msg} from vcloud SDK"
         wrapped_response.exception
       end
       wrapped_response
