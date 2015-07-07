@@ -366,11 +366,7 @@ module VCloudCloud
 
       vm = s.state[:vm]
 
-    #begin
       s.next Steps::AddCatalog, @client.catalog_name(:media)
-    #rescue RestClient::Exception => e
-    #  @logger.warn "Catalog already exists: #{e.message}"
-    #end
 
       # eject and delete old env ISO
       s.next Steps::EjectCatalogMedia, vm.name
