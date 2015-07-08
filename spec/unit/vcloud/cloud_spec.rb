@@ -11,7 +11,11 @@ module VCloudCloud
       before do
         subject.client = client
         subject.stub(:steps).and_yield(trx).and_return(state)
+        allow(Bosh::Retryable).to receive(:new).and_return(retryable)
+        allow(retryable).to receive(:retryer).and_yield
       end
+
+      let(:retryable) { double('Bosh::Retryable') }
 
       let(:trx) do
         trx = double("Transaction")
@@ -37,7 +41,7 @@ module VCloudCloud
       let(:state) { {} }
       let(:vapp_id) { "vapp_id" }
       let(:vapp_link) { "vapp_link" }
-      let(:vapp) { vapp = double(vapp_id) }
+      let(:vapp) { double(vapp_id) }
 
       let(:vm_id) { "vm_id" }
       let(:vm_link) { "vm_link" }
@@ -145,7 +149,9 @@ module VCloudCloud
       end
 
       it "should reuse existing vapp" do
+
         vapp_name = "existing_vapp"
+        vm_name = "created_vm"
         environment = {"vapp" => vapp_name}
         agent_id = "agent_id"
         catalog_vapp_id = "catalog_vapp_id"
@@ -154,11 +160,15 @@ module VCloudCloud
         networks = double("networks")
         existing_vapp = double("existing_vapp")
         existing_vapp.stub(:name).and_return vapp_name
-        existing_vapp.should_receive(:vms).and_return []
+        #existing_vapp.should_receive(:vms).and_return []
         # after recompose
+
+
         existing_vapp.should_receive(:vms).and_return [vm]
         vm.stub_chain("hardware_section.hard_disks").and_return []
         vm.stub(:href) { vm_link }
+        vm.stub(:name) { vm_name }
+        vapp.stub(:name) { vapp_id }
         vapp.stub_chain("vms.[]").and_return vm
         result = "urn"
         trx.should_receive(:next).once.ordered.with(

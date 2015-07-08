@@ -95,8 +95,13 @@ module VCloudCloud
     end
 
     def vapp_by_name(name)
-      node = vdc.get_vapp name
+      # @logger.debug "VAPP_BY_NAME - org.vdc_link: #{org.vdc_link}"
+      vdc_link = org.vdc_link vdc_name
+      raise ObjectNotFoundError, "Invalid virtual datacenter name: #{vdc_name}" unless vdc_link
+      vdc_obj = resolve_link vdc_link
+      node = vdc_obj.get_vapp name
       raise ObjectNotFoundError, "vApp #{name} does not exist" unless node
+      @logger.debug "VAPP_BY_NAME - get a vapp name"
       resolve_link node.href
     end
 
@@ -119,7 +124,7 @@ module VCloudCloud
       session
 
       response = send_request method, path, options
-      (options[:no_wrap] || response.code == 204) ? nil : wrap_response(response)
+      (options[:no_wrap] || response.code == 204) ? response : wrap_response(response)
     end
 
     def upload_stream(url, size, stream, options = {})

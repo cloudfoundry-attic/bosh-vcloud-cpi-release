@@ -15,8 +15,9 @@ describe VCloudCloud::Cloud do
     @media_storage_prof  = ENV['BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_MEDIA_STORAGE_PROFILE")
     @vapp_storage_prof  = ENV['BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE']     || raise("Missing BOSH_VCLOUD_CPI_VAPP_STORAGE_PROFILE")
     @metadata_key  = ENV['BOSH_VCLOUD_CPI_VM_METADATA_KEY']     || raise("Missing BOSH_VCLOUD_CPI_VM_METADATA_KEY")
-    @target_ip     = ENV['BOSH_VCLOUD_CPI_IP']     || raise("Missing BOSH_VCLOUD_CPI_IP")
+    @target_ip1     = ENV['BOSH_VCLOUD_CPI_IP']     || raise("Missing BOSH_VCLOUD_CPI_IP")
     @target_ip2     = ENV['BOSH_VCLOUD_CPI_IP2']     || raise("Missing BOSH_VCLOUD_CPI_IP2")
+    @target_ips     = [@target_ip1, @target_ip2]
     @netmask       = ENV['BOSH_VCLOUD_CPI_NETMASK'] || raise("Missing BOSH_VCLOUD_CPI_NETMASK")
     @dns           = ENV['BOSH_VCLOUD_CPI_DNS']         || raise("Missing BOSH_VCLOUD_CPI_DNS")
     @gateway       = ENV['BOSH_VCLOUD_CPI_GATEWAY']     || raise("Missing BOSH_VCLOUD_CPI_GATEWAY")
@@ -31,30 +32,53 @@ describe VCloudCloud::Cloud do
     @vapp_catalog = "#{@vapp_catalog}_#{Process.pid}_#{rand(1000)}"
     @media_catalog = "#{@media_catalog}_#{Process.pid}_#{rand(1000)}"
 
-    @cpi = described_class.new(
-      'agent' => {
-        'ntp' => @ntp,
-      },
-      'vcds' => [{
-        'url' => @host,
-        'user' => @user,
-        'password' => @password,
-        'entities' => {
-          'organization' => @org,
-          'virtual_datacenter' => @vdc,
-          'vapp_catalog' => @vapp_catalog,
-          'media_catalog' => @media_catalog,
-          'media_storage_profile' => @media_storage_prof,
-          'vapp_storage_profile' => @vapp_storage_prof,
-          'vm_metadata_key' => @metadata_key,
-          'description' => 'BOSH on vCloudDirector',
-        }
-      }]
-    )
+    @cpis = []
+    @network_specs = []
 
+    @target_ips.each do |ip|
+      @cpis << described_class.new(
+        'agent' => {
+          'ntp' => @ntp,
+        },
+        'vcds' => [{
+            'url' => @host,
+            'user' => @user,
+            'password' => @password,
+            'entities' => {
+              'organization' => @org,
+              'virtual_datacenter' => @vdc,
+              'vapp_catalog' => @vapp_catalog,
+              'media_catalog' => @media_catalog,
+              'media_storage_profile' => @media_storage_prof,
+              'vapp_storage_profile' => @vapp_storage_prof,
+              'vm_metadata_key' => @metadata_key,
+              'description' => 'BOSH on vCloudDirector',
+            }
+          }]
+      )
+
+      @network_specs << {
+        "static" => {
+          "ip" => ip,
+          "netmask" => @netmask,
+          "cloud_properties" => {"name" => @vlan},
+          "default" => ["dns", "gateway"],
+          "dns" => @dns,
+          "gateway" => @gateway
+        }
+      }
+    end
+
+    @cpi = @cpis[0]
   end
 
-  let(:cpi) { @cpi }
+    let(:resource_pool) {
+    {
+      'ram' => 1024,
+      'disk' => 2048,
+      'cpu' => 1,
+    }
+  }
 
   before(:all) do
     Dir.mktmpdir do |temp_dir|
@@ -65,37 +89,29 @@ describe VCloudCloud::Cloud do
   end
 
   after(:all) do
-    cpi.delete_stemcell(@stemcell_id) if @stemcell_id
-    client = cpi.client
+    @cpi.delete_stemcell(@stemcell_id) if @stemcell_id
+    client = @cpi.client
     VCloudCloud::Test::delete_catalog_if_exists(client, @vapp_catalog)
     VCloudCloud::Test::delete_catalog_if_exists(client, @media_catalog)
   end
 
-  before {
-    @vm_id = nil
-    @vm_id2 = nil
-  }
+  before { @vm_ids = [] }
 
   after {
-    cpi.delete_vm(@vm_id) if @vm_id
-    cpi.delete_vm(@vm_id2) if @vm_id2
+    @vm_ids.each do |vm_id|
+      @cpi.delete_vm(vm_id) if vm_id
+    end
   }
 
-
-  before { @disk_id, @disk_id2 = nil, nil }
+  before { @disk_ids = [] }
   after {
-    cpi.delete_disk(@disk_id) if @disk_id
-    cpi.delete_disk(@disk_id2) if @disk_id2
+    @disk_ids.each do |disk_id|
+      @cpi.delete_disk(disk_id) if disk_id
+    end
   }
 
-  def vm_lifecycle(network_spec, disk_locality)
-    resource_pool = {
-      'ram' => 1024,
-      'disk' => 2048,
-      'cpu' => 1,
-    }
-
-    @vm_id = cpi.create_vm(
+  def vm_lifecycle(cpi, network_spec, resource_pool, disk_locality)
+    vm_id = cpi.create_vm(
       "#{@vapp_name}_#{Process.pid}_#{rand(1000)}",
       @stemcell_id,
       resource_pool,
@@ -104,65 +120,41 @@ describe VCloudCloud::Cloud do
       {'vapp' => @vapp_name}
     )
 
-    @vm_id.should_not be_nil
-    cpi.has_vm?(@vm_id).should be(true)
+    vm_id.should_not be_nil
+    @vm_ids << vm_id
+    cpi.has_vm?(vm_id).should be(true)
 
-    @disk_id = cpi.create_disk(2048, {}, @vm_id)
-    @disk_id.should_not be_nil
+    disk_id = cpi.create_disk(2048, {}, vm_id)
+    disk_id.should_not be_nil
+    @disk_ids << disk_id
 
-    cpi.attach_disk(@vm_id, @disk_id)
-
-    cpi.detach_disk(@vm_id, @disk_id)
-
-    #now use the same vapp name and different vm name to create vm again
-
-    network_spec["static"]["ip"] = @target_ip2
-    @vm_id2 = cpi.create_vm(
-        "#{@vapp_name}_#{Process.pid}_#{rand(1000)}",
-        @stemcell_id,
-        resource_pool,
-        network_spec,
-        disk_locality,
-        {'vapp' => @vapp_name}
-    )
-
-    cpi.has_vm?(@vm_id2).should be(true)
-
-    @disk_id2 = cpi.create_disk(2048, {}, @vm_id2)
-    @disk_id2.should_not be_nil
-
-    cpi.attach_disk(@vm_id2, @disk_id2)
-
-    cpi.detach_disk(@vm_id2, @disk_id2)
-
+    cpi.attach_disk(vm_id, disk_id)
+    cpi.detach_disk(vm_id, disk_id)
   end
 
-  describe 'vcloud' do
-    let(:network_spec) do
-      {
-        "static" => {
-          "ip" => @target_ip,
-          "netmask" => @netmask,
-          "cloud_properties" => {"name" => @vlan},
-          "default" => ["dns", "gateway"],
-          "dns" => @dns,
-          "gateway" => @gateway
-        }
-      }
+  def vm_lifecycle_concurrent(resource_pool, disk_locality)
+    arr = []
+    @target_ips.each_index do |i|
+      arr << Thread.new { vm_lifecycle(@cpis[i], @network_specs[i], resource_pool, disk_locality) }
     end
+    arr.each {|t| t.join }
+  end
+
+
+  describe 'vcloud' do
 
     context 'without existing disks' do
       it 'should exercise the vm lifecycle' do
-        vm_lifecycle(network_spec, [])
+        vm_lifecycle_concurrent(resource_pool, [])
       end
     end
 
     context 'with existing disks' do
-      before { @existing_volume_id = cpi.create_disk(2048, {}) }
-      after { cpi.delete_disk(@existing_volume_id) if @existing_volume_id }
+      before { @existing_volume_id = @cpi.create_disk(2048, {}) }
+      after { @cpi.delete_disk(@existing_volume_id) if @existing_volume_id }
 
       it 'should exercise the vm lifecycle' do
-        vm_lifecycle(network_spec, [@existing_volume_id])
+        vm_lifecycle_concurrent(resource_pool, [@existing_volume_id])
       end
     end
   end

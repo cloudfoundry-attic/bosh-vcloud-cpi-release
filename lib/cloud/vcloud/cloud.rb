@@ -1,5 +1,6 @@
 require 'securerandom'
 require 'logger'
+require 'common/common'
 
 require_relative 'errors'
 require_relative 'vcd_client'
@@ -22,8 +23,7 @@ module VCloudCloud
       @entities = @vcd['entities']
       raise ArgumentError, 'Invalid entities in VCD settings' unless @entities && @entities.is_a?(Hash)
 
-      @client_lock = Mutex.new # lock for establishing client connection
-      @vapp_lock   = Mutex.new # lock for recompose vApp and delete vm from vApp
+      @client = VCloudClient.new(@vcd, @logger)
     end
 
     def create_stemcell(image, _)
@@ -47,6 +47,8 @@ module VCloudCloud
       end
     end
 
+    def cpi_call_wait_time; 2; end
+
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
       (steps "create_vm(#{agent_id}, #{catalog_vapp_id}, #{resource_pool}, ...)" do |s|
         # disk_locality should be an array of disk ids
@@ -60,6 +62,7 @@ module VCloudCloud
 
         storage_profiles = client.vdc.storage_profiles || []
         storage_profile = storage_profiles.find { |sp| sp['name'] == @entities['vapp_storage_profile'] }
+
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality, storage_profile
         client.flush_cache  # flush cached vdc which contains vapp list
@@ -76,45 +79,61 @@ module VCloudCloud
         # if the target vApp exists, creates a temp vApp, and then recomposes its VM to the target vApp.
         if requested_name
           container_vapp = nil
-          vm_href = nil
-          existing_vm_hrefs = []
 
-          # VM is added to the target vApp sequentially.
-          @vapp_lock.synchronize do
+          errors = [RuntimeError]
+          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 10, on: errors) do
             begin
-              @logger.debug "Requesting container vApp: #{requested_name}"
-              container_vapp = client.vapp_by_name requested_name
-            rescue ObjectNotFoundError
-              # ignored, keep container_vapp nil
-              @logger.debug "Invalid container vApp: #{requested_name}"
-            end
-
-            if container_vapp
-              existing_vm_hrefs = container_vapp.vms.map { |v| v.href }
-              s.next Steps::Recompose, container_vapp.name, container_vapp, vm
-              client.flush_cache
-              vapp = client.reload vapp
-              client.wait_entity vapp
               begin
-                s.next Steps::Delete, vapp, true
-              rescue => ex
-                @logger.warn "Caught exception when trying to delete tmp vapp #{vapp.name}: #{ex.to_s}"
+                @logger.debug "Requesting container vApp: #{requested_name}"
+                container_vapp = client.vapp_by_name requested_name
+              rescue ObjectNotFoundError
+                # ignored, keep container_vapp nil
+                @logger.debug "Invalid container vApp: #{requested_name}"
               end
-            else
-              # just rename the vApp
-              container_vapp = vapp
-              s.next Steps::Recompose, requested_name, container_vapp
-            end
 
-            # reload all the stuff
-            client.flush_cache
-            vapp = client.reload container_vapp
-            client.wait_entity vapp
-            vm_href = vapp.vms.map { |v| v.href } - existing_vm_hrefs
+              if container_vapp
+                @logger.debug "Enter recompose, container_vapp: #{container_vapp.name}"
+                begin
+                  s.next Steps::Recompose, container_vapp.name, container_vapp, vm
+                rescue VCloudCloud::ObjectExistsError => e
+                  @logger.debug "VM already exists, skip the error"
+                end
+              else
+                # just rename the vApp
+                @logger.warn "attempting to rename vapp #{container_vapp} to #{requested_name}"
+                container_vapp = vapp
+                s.next Steps::Recompose, requested_name, container_vapp
+              end
+            rescue Exception => e
+              @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
+              @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+              @logger.warn 'critical block recompose rename'
+              raise "re raising exception #{e.message} in create_vm"
+            end
           end
 
-          raise "New virtual machine not found in recomposed vApp" if vm_href.empty?
-          s.state[:vm] = client.resolve_link vm_href[0]
+          # delete tmp vapp only if the name is different from requested
+          client.flush_cache
+          vapp = client.reload vapp
+          client.wait_entity vapp, true
+          if vapp.name != requested_name
+            begin
+              s.next Steps::Delete, vapp, true
+            rescue Exception => ex
+              @logger.warn "Caught exception when trying to delete tmp vapp #{vapp.name}: #{ex.to_s}"
+            end
+          end
+
+          # Wait for Delete/Recompose step to finish, retry if fails
+          # reload all the stuff
+          client.flush_cache
+          vapp = client.reload container_vapp
+          client.wait_entity vapp, true
+
+          vms = vapp.vms.select { |v| v.name == vm.name }
+
+          raise "New virtual machine not found in recomposed vApp" if vms.empty?
+          s.state[:vm] = client.resolve_link vms[0].href
         end
 
         # create env and generate env ISO image
@@ -123,17 +142,23 @@ module VCloudCloud
 
         # TODO refact this
         if requested_name
-          @vapp_lock.synchronize do
-            save_agent_env s
-            s.next Steps::PowerOn, :vm
+          errors = [RuntimeError]
+          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+            begin
+              save_agent_env s
+              s.next Steps::PowerOn, :vm
+              @logger.debug "Power On successfully"
+            rescue Exception => e
+              @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
+              @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+              raise "re raising exception #{e.message} in create_vm"
+            end
           end
         else
           save_agent_env s
           s.next Steps::PowerOn, :vm
         end
 
-        # Update state to point to the correct vapp instead of the newly created temporary vapp for transition
-        # We do this as the final step to avoid problems such as rollback of Steps::Instantiate, which deletes state[:vapp]
         s.state[:vapp] = vapp
         s.state
       end)[:vm].urn
@@ -143,21 +168,28 @@ module VCloudCloud
       steps "reboot_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity(vm_id)
 
-        @vapp_lock.synchronize do
-          if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-            s.next Steps::DiscardSuspendedState, :vm
-            s.next Steps::PowerOn, :vm
-          elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
-            s.next Steps::PowerOn, :vm
-          else
-            begin
-              s.next Steps::Reboot, :vm
-            rescue => ex
-              @logger.warn "Caught exception when trying to Reboot vm #{vm_id}: #{ex.to_s}"
-              @logger.debug 'Force a hard-reboot when failed to perform a soft-reboot'
-              s.next Steps::PowerOff, :vm, true
+        errors = [RuntimeError]
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+          begin
+            if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+              s.next Steps::DiscardSuspendedState, :vm
               s.next Steps::PowerOn, :vm
+            elsif vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
+              s.next Steps::PowerOn, :vm
+            else
+              begin
+                s.next Steps::Reboot, :vm
+              rescue => ex
+                @logger.warn "Caught exception when trying to Reboot vm #{vm_id}: #{ex.to_s}"
+                @logger.debug 'Force a hard-reboot when failed to perform a soft-reboot'
+                s.next Steps::PowerOff, :vm, true
+                s.next Steps::PowerOn, :vm
+              end
             end
+          rescue Exception => e
+            @logger.warn "Caught an exception during reboot_vm Exception #{e}, Type #{e.class} Message #{e.message}"
+            @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+            raise "re raising exception #{e.message} in reboot_vm"
           end
         end
       end
@@ -176,7 +208,9 @@ module VCloudCloud
       steps "delete_vm(#{vm_id})" do |s|
         vm = s.state[:vm] = client.resolve_entity vm_id
 
-        @vapp_lock.synchronize do
+        errors = [RuntimeError]
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+          begin
           # poweroff vm before we are able to delete it
           s.next Steps::PowerOff, :vm, true
 
@@ -190,6 +224,11 @@ module VCloudCloud
           else
             s.next Steps::Undeploy, :vm
             s.next Steps::Delete, s.state[:vm], true
+          end
+          rescue Exception => e
+            @logger.warn "Caught an exception during delete_vm Exception #{e}, Type #{e.class} Message #{e.message}"
+            @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+            raise "re raising exception #{e.message} in delete_vm"
           end
         end
 
@@ -220,17 +259,24 @@ module VCloudCloud
 
         s.state[:disk]  = client.resolve_entity disk_id
 
-        @vapp_lock.synchronize do
-          s.next Steps::AttachDetachDisk, :attach
+        errors = [RuntimeError]
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+          begin
+            s.next Steps::AttachDetachDisk, :attach
 
-          # update environment
-          s.state[:env_metadata_key] = @entities['vm_metadata_key']
-          s.next Steps::LoadAgentEnv
+            # update environment
+            s.state[:env_metadata_key] = @entities['vm_metadata_key']
+            s.next Steps::LoadAgentEnv
 
-          vm = s.state[:vm] = client.reload vm
-          Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
+            vm = s.state[:vm] = client.reload vm
+            Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
 
-          save_agent_env s
+            save_agent_env s
+          rescue Exception => e
+            @logger.warn "Caught an exception during attach_disk Exception #{e}, Type #{e.class} Message #{e.message}"
+            @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+            raise "re raising exception #{e.message} in attach_disk"
+          end
         end
       end
     end
@@ -242,21 +288,28 @@ module VCloudCloud
         # if disk is not attached, just ignore
         next unless vm.find_attached_disk s.state[:disk]
 
-        @vapp_lock.synchronize do
-          if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
-            s.next Steps::DiscardSuspendedState, :vm
-          end
-          s.next Steps::AttachDetachDisk, :detach
+        errors = [RuntimeError]
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+          begin
+            if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
+              s.next Steps::DiscardSuspendedState, :vm
+            end
+            s.next Steps::AttachDetachDisk, :detach
 
-          # update environment
-          s.state[:env_metadata_key] = @entities['vm_metadata_key']
-          s.next Steps::LoadAgentEnv
-          env = s.state[:env]
-          if env['disks'] && env['disks']['persistent'].is_a?(Hash)
-            env['disks']['persistent'].delete disk_id
-          end
+            # update environment
+            s.state[:env_metadata_key] = @entities['vm_metadata_key']
+            s.next Steps::LoadAgentEnv
+            env = s.state[:env]
+            if env['disks'] && env['disks']['persistent'].is_a?(Hash)
+              env['disks']['persistent'].delete disk_id
+            end
 
-          save_agent_env s
+            save_agent_env s
+          rescue Exception => e
+            @logger.warn "Caught an exception during detach_disk Exception #{e}, Type #{e.class} Message #{e.message}"
+            @logger.warn "Exception trace #{e.backtrace.join('\n')}"
+            raise "re raising exception #{e.message} in detach_disk"
+          end
         end
       end
     end
@@ -276,9 +329,6 @@ module VCloudCloud
     end
 
     def client
-      @client_lock.synchronize do
-        @client = VCloudClient.new(@vcd, @logger) if @client.nil?
-      end
       @client
     end
 
