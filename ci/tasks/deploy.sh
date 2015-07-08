@@ -111,7 +111,7 @@ jobs:
         name: my-bosh
         db: *db
         cpi_job: cpi
-        max_threads: 1
+        max_threads: 10
 
       vcd: &vcd # <--- Replace values below
         url: ${VCLOUD_HOST}
