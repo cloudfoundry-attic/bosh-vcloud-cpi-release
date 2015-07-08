@@ -160,10 +160,6 @@ module VCloudCloud
         networks = double("networks")
         existing_vapp = double("existing_vapp")
         existing_vapp.stub(:name).and_return vapp_name
-        #existing_vapp.should_receive(:vms).and_return []
-        # after recompose
-
-
         existing_vapp.should_receive(:vms).and_return [vm]
         vm.stub_chain("hardware_section.hard_disks").and_return []
         vm.stub(:href) { vm_link }

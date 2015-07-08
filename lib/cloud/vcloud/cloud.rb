@@ -100,14 +100,12 @@ module VCloudCloud
                 end
               else
                 # just rename the vApp
-                @logger.warn "attempting to rename vapp #{container_vapp} to #{requested_name}"
                 container_vapp = vapp
                 s.next Steps::Recompose, requested_name, container_vapp
               end
             rescue Exception => e
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
               @logger.warn "Exception trace #{e.backtrace.join('\n')}"
-              @logger.warn 'critical block recompose rename'
               raise "re raising exception #{e.message} in create_vm"
             end
           end
@@ -147,7 +145,6 @@ module VCloudCloud
             begin
               save_agent_env s
               s.next Steps::PowerOn, :vm
-              @logger.debug "Power On successfully"
             rescue Exception => e
               @logger.warn "Caught an exception during create_vm Exception #{e}, Type #{e.class} Message #{e.message}"
               @logger.warn "Exception trace #{e.backtrace.join('\n')}"
