@@ -168,7 +168,8 @@ module VCloudCloud
         failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
         unless failed_tasks.empty?
           @logger.error "Failed tasks: #{failed_tasks}"
-          raise "Some tasks failed"
+          failed_tasks_info = failed_tasks.map {|t| "Task #{t.urn} #{t.operation}"}
+          raise "Some tasks failed: #{failed_tasks_info.join('; ')}"
         end
       end
 
