@@ -109,10 +109,9 @@ module VCloudCloud
         subject.delete_stemcell vapp_id
       end
 
-      it "raise error if vapp is not found" do
+      it "do not raise error if vapp is not found" do
         client.stub(:resolve_entity).with(vapp_id).and_return nil
-
-        expect { subject.delete_stemcell(vapp_id)}.to raise_error /not found/
+        expect { subject.delete_stemcell(vapp_id)}.to_not raise_error
       end
     end
 
@@ -292,6 +291,11 @@ module VCloudCloud
         )
 
         subject.delete_vm vm_id
+      end
+
+      it 'should not raise error to delete nonexistent vm' do
+        client.should_receive(:resolve_entity).and_raise ObjectNotFoundError.new
+        expect{ subject.delete_vm vm_id }.to_not raise_error
       end
 
       it "delete vm" do

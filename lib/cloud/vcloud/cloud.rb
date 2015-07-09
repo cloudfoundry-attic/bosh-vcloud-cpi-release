@@ -39,7 +39,11 @@ module VCloudCloud
     def delete_stemcell(catalog_vapp_id)
       steps "delete_stemcell(#{catalog_vapp_id})" do |s|
         catalog_vapp = client.resolve_entity catalog_vapp_id
-        raise "Catalog vApp #{catalog_vapp_id} not found" unless catalog_vapp
+        if catalog_vapp.nil?
+          @logger.warn "Catalog vApp #{catalog_vapp_id} not found, skip the error"
+          return
+        end
+
         vapp = client.resolve_link catalog_vapp.entity
         client.wait_entity vapp, true
         client.invoke :delete, vapp.remove_link
@@ -203,7 +207,12 @@ module VCloudCloud
 
     def delete_vm(vm_id)
       steps "delete_vm(#{vm_id})" do |s|
-        vm = s.state[:vm] = client.resolve_entity vm_id
+        begin
+          vm = s.state[:vm] = client.resolve_entity vm_id
+        rescue RestClient::Exception, ObjectNotFoundError  # invalid ID will get 403
+          @logger.warn "Trying to delete nonexistent vm #{vm_id}, skip the error"
+          return
+        end
 
         errors = [RuntimeError]
         Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
