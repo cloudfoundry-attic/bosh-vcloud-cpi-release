@@ -51,7 +51,9 @@ module VCloudCloud
       end
     end
 
-    def cpi_call_wait_time; 2; end
+    def cpi_call_wait_time;
+      2;
+    end
 
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
       (steps "create_vm(#{agent_id}, #{catalog_vapp_id}, #{resource_pool}, ...)" do |s|
@@ -69,7 +71,7 @@ module VCloudCloud
 
 
         s.next Steps::Instantiate, catalog_vapp_id, vapp_name, description, disk_locality, storage_profile
-        client.flush_cache  # flush cached vdc which contains vapp list
+        client.flush_cache # flush cached vdc which contains vapp list
         vapp = s.state[:vapp]
         vm = s.state[:vm] = vapp.vms[0]
 
@@ -199,7 +201,7 @@ module VCloudCloud
     def has_vm?(vm_id)
       vm = client.resolve_entity vm_id
       vm.type == VCloudSdk::Xml::MEDIA_TYPE[:VM]
-    rescue RestClient::Exception  # invalid ID will get 403
+    rescue RestClient::Exception # invalid ID will get 403
       false
     rescue ObjectNotFoundError
       false
@@ -209,7 +211,7 @@ module VCloudCloud
       steps "delete_vm(#{vm_id})" do |s|
         begin
           vm = s.state[:vm] = client.resolve_entity vm_id
-        rescue RestClient::Exception, ObjectNotFoundError  # invalid ID will get 403
+        rescue RestClient::Exception, ObjectNotFoundError # invalid ID will get 403
           @logger.warn "Trying to delete nonexistent vm #{vm_id}, skip the error"
           return
         end
@@ -217,20 +219,20 @@ module VCloudCloud
         errors = [RuntimeError]
         Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
           begin
-          # poweroff vm before we are able to delete it
-          s.next Steps::PowerOff, :vm, true
+            # poweroff vm before we are able to delete it
+            s.next Steps::PowerOff, :vm, true
 
-          vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
-          if vapp.vms.size == 1
-            # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
-            # even from dashboard. So if there's only one VM, just stop and delete the vApp
-            s.next Steps::PowerOff, :vapp, true
-            s.next Steps::Undeploy, :vapp
-            s.next Steps::Delete, s.state[:vapp], true
-          else
-            s.next Steps::Undeploy, :vm
-            s.next Steps::Delete, s.state[:vm], true
-          end
+            vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
+            if vapp.vms.size == 1
+              # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
+              # even from dashboard. So if there's only one VM, just stop and delete the vApp
+              s.next Steps::PowerOff, :vapp, true
+              s.next Steps::Undeploy, :vapp
+              s.next Steps::Delete, s.state[:vapp], true
+            else
+              s.next Steps::Undeploy, :vm
+              s.next Steps::Delete, s.state[:vm], true
+            end
           rescue Exception => e
             @logger.warn "Caught an exception during delete_vm Exception #{e}, Type #{e.class} Message #{e.message}"
             @logger.warn "Exception trace #{e.backtrace.join('\n')}"
@@ -263,7 +265,7 @@ module VCloudCloud
         # vm.hardware_section will change, save current state of disks
         previous_disks_list = Array.new(vm.hardware_section.hard_disks)
 
-        s.state[:disk]  = client.resolve_entity disk_id
+        s.state[:disk] = client.resolve_entity disk_id
 
         errors = [RuntimeError]
         Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
@@ -275,7 +277,7 @@ module VCloudCloud
             s.next Steps::LoadAgentEnv
 
             vm = s.state[:vm] = client.reload vm
-            Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id , previous_disks_list
+            Steps::CreateOrUpdateAgentEnv.update_persistent_disk s.state[:env], vm, disk_id, previous_disks_list
 
             save_agent_env s
           rescue Exception => e
@@ -357,7 +359,7 @@ module VCloudCloud
     end
 
     def network_names(networks)
-      networks.map { |k,v| v['cloud_properties']['name'] }.uniq
+      networks.map { |k, v| v['cloud_properties']['name'] }.uniq
     end
 
     def reconfigure_vm(s, name, description, resource_pool, networks)
