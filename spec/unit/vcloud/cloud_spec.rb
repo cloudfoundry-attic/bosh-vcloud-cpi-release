@@ -109,9 +109,21 @@ module VCloudCloud
         subject.delete_stemcell vapp_id
       end
 
-      it "do not raise error if vapp is not found" do
-        client.stub(:resolve_entity).with(vapp_id).and_return nil
-        expect { subject.delete_stemcell(vapp_id)}.to_not raise_error
+      context 'when the stemcell does not exist' do
+        it 'continues if the vapp_id is not found' do
+          allow(client).to receive(:resolve_entity).with(vapp_id).and_return nil
+          expect { subject.delete_stemcell(vapp_id)}.to_not raise_error
+        end
+
+        it 'continues if ObjectNotFoundError is raised' do
+          allow(client).to receive(:resolve_entity).with(vapp_id).and_raise ObjectNotFoundError.new
+          expect { subject.delete_stemcell(vapp_id) }.to_not raise_error
+        end
+
+        it 'continues if RestClient::Forbidden is raised' do
+          allow(client).to receive(:resolve_entity).with(vapp_id).and_raise RestClient::Forbidden.new
+          expect { subject.delete_stemcell(vapp_id) }.to_not raise_error
+        end
       end
     end
 
@@ -293,11 +305,6 @@ module VCloudCloud
         subject.delete_vm vm_id
       end
 
-      it 'should not raise error to delete nonexistent vm' do
-        client.should_receive(:resolve_entity).and_raise ObjectNotFoundError.new
-        expect{ subject.delete_vm vm_id }.to_not raise_error
-      end
-
       it "delete vm" do
         vm2 = double("vm2")
         vm.stub(:name)
@@ -316,6 +323,26 @@ module VCloudCloud
         )
 
         subject.delete_vm vm_id
+      end
+
+      context 'when the vm does not exist' do
+        it 'continues if ObjectNotFoundError is raised' do
+          allow(client).to receive(:resolve_entity).and_raise ObjectNotFoundError.new
+          expect{ subject.delete_vm vm_id }.to_not raise_error
+        end
+
+        it 'continues if RestClient::Forbidden is raised' do
+          allow(client).to receive(:resolve_entity).and_raise RestClient::Forbidden.new
+          expect{ subject.delete_vm vm_id }.to_not raise_error
+        end
+
+        it 'continues if RestClient::Forbidden is raised in deletion stage' do
+          allow(client).to receive(:resolve_entity).and_return vm
+          allow(trx).to receive(:next).once.ordered.with(
+              Steps::PowerOff, anything, anything
+          ).and_raise RestClient::Forbidden.new
+          expect{ subject.delete_vm vm_id }.to_not raise_error
+        end
       end
     end
 
@@ -432,9 +459,24 @@ module VCloudCloud
         subject.delete_disk(disk_id)
       end
 
-      it "does not raise error deleting nonexistant disk" do
-        client.stub(:resolve_entity).with(disk_id).and_raise ObjectNotFoundError
-        expect { subject.delete_disk(disk_id) }.to_not raise_error
+      context 'when the disk does not exist' do
+        it 'continues if ObjectNotFoundError is raised' do
+          allow(client).to receive(:resolve_entity).with(disk_id).and_raise ObjectNotFoundError.new
+          expect { subject.delete_disk(disk_id) }.to_not raise_error
+        end
+
+        it 'continues if RestClient::Forbidden if raised' do
+          allow(client).to receive(:resolve_entity).with(disk_id).and_raise RestClient::Forbidden.new
+          expect { subject.delete_disk(disk_id) }.to_not raise_error
+        end
+
+        it 'continues if RestClient::Forbidden if raised in deletion stage' do
+          allow(client).to receive(:resolve_entity).with(disk_id).and_return vm
+          allow(trx).to receive(:next).once.ordered.with(
+              Steps::Delete, anything, anything
+          ).and_raise RestClient::Forbidden.new
+          expect { subject.delete_disk(disk_id) }.to_not raise_error
+        end
       end
     end
 

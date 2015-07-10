@@ -38,21 +38,26 @@ module VCloudCloud
 
     def delete_stemcell(catalog_vapp_id)
       steps "delete_stemcell(#{catalog_vapp_id})" do |s|
-        catalog_vapp = client.resolve_entity catalog_vapp_id
-        if catalog_vapp.nil?
-          @logger.warn "Catalog vApp #{catalog_vapp_id} not found, skip the error"
+        begin
+          catalog_vapp = client.resolve_entity catalog_vapp_id
+          if catalog_vapp.nil?
+            @logger.warn "Catalog vApp #{catalog_vapp_id} not found, skip the error"
+            return
+          end
+
+          vapp = client.resolve_link catalog_vapp.entity
+          client.wait_entity vapp, true
+          client.invoke :delete, vapp.remove_link
+          client.invoke :delete, catalog_vapp.href
+        rescue RestClient::Forbidden, ObjectNotFoundError => e
+          @logger.warn "get #{e.message} error while deleting Catalog vApp #{catalog_vapp_id} in #delete_stemcell, skip the error"
           return
         end
-
-        vapp = client.resolve_link catalog_vapp.entity
-        client.wait_entity vapp, true
-        client.invoke :delete, vapp.remove_link
-        client.invoke :delete, catalog_vapp.href
       end
     end
 
-    def cpi_call_wait_time;
-      2;
+    def cpi_call_wait_time
+      2
     end
 
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
@@ -211,36 +216,27 @@ module VCloudCloud
       steps "delete_vm(#{vm_id})" do |s|
         begin
           vm = s.state[:vm] = client.resolve_entity vm_id
-        rescue RestClient::Exception, ObjectNotFoundError # invalid ID will get 403
-          @logger.warn "Trying to delete nonexistent vm #{vm_id}, skip the error"
+
+          # poweroff vm before we are able to delete it
+          s.next Steps::PowerOff, :vm, true
+
+          vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
+          if vapp.vms.size == 1
+            # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
+            # even from dashboard. So if there's only one VM, just stop and delete the vApp
+            s.next Steps::PowerOff, :vapp, true
+            s.next Steps::Undeploy, :vapp
+            s.next Steps::Delete, s.state[:vapp], true
+          else
+            s.next Steps::Undeploy, :vm
+            s.next Steps::Delete, s.state[:vm], true
+          end
+
+          s.next Steps::DeleteCatalogMedia, vm.name
+        rescue RestClient::Forbidden, ObjectNotFoundError => e
+          @logger.warn "get #{e.message} error while deleting vm #{vm_id} likely due to non-existence, skip the error"
           return
         end
-
-        errors = [RuntimeError]
-        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
-          begin
-            # poweroff vm before we are able to delete it
-            s.next Steps::PowerOff, :vm, true
-
-            vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
-            if vapp.vms.size == 1
-              # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
-              # even from dashboard. So if there's only one VM, just stop and delete the vApp
-              s.next Steps::PowerOff, :vapp, true
-              s.next Steps::Undeploy, :vapp
-              s.next Steps::Delete, s.state[:vapp], true
-            else
-              s.next Steps::Undeploy, :vm
-              s.next Steps::Delete, s.state[:vm], true
-            end
-          rescue Exception => e
-            @logger.warn "Caught an exception during delete_vm Exception #{e}, Type #{e.class} Message #{e.message}"
-            @logger.warn "Exception trace #{e.backtrace.join('\n')}"
-            raise "re raising exception #{e.message} in delete_vm"
-          end
-        end
-
-        s.next Steps::DeleteCatalogMedia, vm.name
       end
     end
 
@@ -326,11 +322,11 @@ module VCloudCloud
       steps "delete_disk(#{disk_id})" do |s|
         begin
           disk = client.resolve_entity disk_id
-        rescue RestClient::Exception, ObjectNotFoundError # invalid ID will get 403
-          @logger.warn "Trying to delete nonexistent disk #{disk_id}, skip the error"
+          s.next Steps::Delete, disk, true
+        rescue RestClient::Forbidden, ObjectNotFoundError => e
+          @logger.warn "got #{e.message} error while deleting disk #{disk_id}, skip the error"
           return
         end
-        s.next Steps::Delete, disk, true
       end
     end
 
