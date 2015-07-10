@@ -324,7 +324,12 @@ module VCloudCloud
 
     def delete_disk(disk_id)
       steps "delete_disk(#{disk_id})" do |s|
-        disk = client.resolve_entity disk_id
+        begin
+          disk = client.resolve_entity disk_id
+        rescue RestClient::Exception, ObjectNotFoundError # invalid ID will get 403
+          @logger.warn "Trying to delete nonexistent disk #{disk_id}, skip the error"
+          return
+        end
         s.next Steps::Delete, disk, true
       end
     end

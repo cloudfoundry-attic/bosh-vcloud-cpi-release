@@ -420,14 +420,21 @@ module VCloudCloud
     describe ".delete_disk" do
       include_context "base"
 
-      it "delete a disk" do
+      before do
         client = double("client")
+        client.stub(:logger) { Bosh::Clouds::Config.logger }
+      end
+
+      it "delete a disk" do
         trx.should_receive(:next).once.ordered.with(
           Steps::Delete, disk, true)
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
         client.stub(:resolve_entity).with(disk_id).and_return disk
-
         subject.delete_disk(disk_id)
+      end
+
+      it "does not raise error deleting nonexistant disk" do
+        client.stub(:resolve_entity).with(disk_id).and_raise ObjectNotFoundError
+        expect { subject.delete_disk(disk_id) }.to_not raise_error
       end
     end
 
