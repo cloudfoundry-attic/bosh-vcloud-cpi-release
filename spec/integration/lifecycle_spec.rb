@@ -132,6 +132,12 @@ describe VCloudCloud::Cloud do
     cpi.detach_disk(vm_id, disk_id)
   end
 
+  def vm_lifecycle_sequential(resource_pool, disk_locality)
+    @target_ips.each_index do |i|
+      vm_lifecycle(@cpis[i], @network_specs[i], resource_pool, disk_locality)
+    end
+  end
+
   def vm_lifecycle_concurrent(resource_pool, disk_locality)
     arr = []
     @target_ips.each_index do |i|
@@ -140,11 +146,15 @@ describe VCloudCloud::Cloud do
     arr.each {|t| t.join }
   end
 
-
   describe 'vcloud' do
 
     context 'without existing disks' do
-      it 'should exercise the vm lifecycle' do
+
+      it 'should exercise the vm lifecycle sequentially' do
+        vm_lifecycle_sequential(resource_pool, [])
+      end
+
+      it 'should exercise the vm lifecycle concurrently' do
         vm_lifecycle_concurrent(resource_pool, [])
       end
     end
