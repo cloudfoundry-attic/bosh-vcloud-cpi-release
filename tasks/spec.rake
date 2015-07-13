@@ -20,6 +20,6 @@ namespace :spec do
 
   desc 'lifecycle test'
   RSpec::Core::RakeTask.new :lifecycle do |t|
-    t.pattern = 'spec/integration/lifecycle_spec.rb'
+    t.pattern = 'spec/integration/**/*_spec.rb'
   end
 end
