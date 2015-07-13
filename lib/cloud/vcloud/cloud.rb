@@ -60,6 +60,10 @@ module VCloudCloud
       2
     end
 
+    def cpi_retries
+      10
+    end
+
     def create_vm(agent_id, catalog_vapp_id, resource_pool, networks, disk_locality = nil, environment = nil)
       (steps "create_vm(#{agent_id}, #{catalog_vapp_id}, #{resource_pool}, ...)" do |s|
         # disk_locality should be an array of disk ids
@@ -92,7 +96,7 @@ module VCloudCloud
           container_vapp = nil
 
           errors = [RuntimeError]
-          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 10, on: errors) do
+          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
             begin
               begin
                 @logger.debug "Requesting container vApp: #{requested_name}"
@@ -152,7 +156,7 @@ module VCloudCloud
         # TODO refact this
         if requested_name
           errors = [RuntimeError]
-          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+          Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
             begin
               save_agent_env s
               s.next Steps::PowerOn, :vm
@@ -177,7 +181,7 @@ module VCloudCloud
         vm = s.state[:vm] = client.resolve_entity(vm_id)
 
         errors = [RuntimeError]
-        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
           begin
             if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
               s.next Steps::DiscardSuspendedState, :vm
@@ -264,7 +268,7 @@ module VCloudCloud
         s.state[:disk] = client.resolve_entity disk_id
 
         errors = [RuntimeError]
-        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
           begin
             s.next Steps::AttachDetachDisk, :attach
 
@@ -293,7 +297,7 @@ module VCloudCloud
         next unless vm.find_attached_disk s.state[:disk]
 
         errors = [RuntimeError]
-        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: 20, on: errors) do
+        Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
           begin
             if vm['status'] == VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
               s.next Steps::DiscardSuspendedState, :vm

@@ -12,7 +12,7 @@ module VCloudCloud
         subject.client = client
         subject.stub(:steps).and_yield(trx).and_return(state)
         allow(Bosh::Retryable).to receive(:new).and_return(retryable)
-        allow(retryable).to receive(:retryer).and_yield
+        allow(retryable).to receive(:retryer).and_yield(:tries, :error)
       end
 
       let(:retryable) { double('Bosh::Retryable') }
