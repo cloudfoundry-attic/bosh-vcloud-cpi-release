@@ -68,6 +68,7 @@ module VCloudCloud
       end
 
       def delete_catalog_if_exists(client, catalog_name)
+        client.flush_cache  # flush cached org which contains catalog list
         raw_catalog_link = client.org.catalog_link(catalog_name)
         return if raw_catalog_link.nil?
         catalog_link = VCloudSdk::Xml::Link.new(raw_catalog_link)

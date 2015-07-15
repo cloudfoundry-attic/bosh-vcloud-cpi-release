@@ -80,10 +80,6 @@ describe VCloudCloud::Cloud do
     {'vapp' => @vapp_name}
   }
 
-  let(:random_vm_name) {
-    "#{@vapp_name}_intergration_#{Process.pid}_#{rand(1000)}"
-  }
-
   let(:client) {
     @cpi.client
   }
@@ -117,6 +113,24 @@ describe VCloudCloud::Cloud do
       @cpi.delete_disk(disk_id) if disk_id
     end
   }
+
+  def random_vm_name
+    "#{@vapp_name}_intergration_#{Process.pid}_#{rand(1000)}"
+  end
+
+  def vm_number_by_vappname (name)
+    vapp_name = name
+    client.flush_cache  # flush cached vdc which contains vapp list
+    vapp = client.vapp_by_name vapp_name
+    expect(vapp.name).to eq vapp_name
+    vapp.vms.size
+  end
+
+  def expect_vapp_not_exist (name)
+    vapp_name = name
+    client.flush_cache  # flush cached vdc which contains vapp list
+    expect { client.vapp_by_name vapp_name }.to raise_error VCloudCloud::ObjectNotFoundError
+  end
 
   context "when there is no error in create_vm" do
     it 'should create vm and reconfigure network' do
@@ -165,11 +179,10 @@ describe VCloudCloud::Cloud do
         end
 
         # The target vapp should exist despite that the tmp vapp is deleted
-        vapp_name = @vapp_name
-        client.flush_cache  # flush cached vdc which contains vapp list
-        vapp = client.vapp_by_name vapp_name
-        vapp.name.should eq vapp_name
-        vapp.vms.size.should eq 1
+        expect(vm_number_by_vappname(@vapp_name)).to eq 1
+
+        @cpi.delete_vm vm_id
+        expect_vapp_not_exist(@vapp_name)
       end
 
       it 'concurrent config should remove the tmp vapps' do
@@ -187,17 +200,10 @@ describe VCloudCloud::Cloud do
         end
 
         # The target vapp should exist despite that the tmp vapps are deleted
-        vapp_name = @vapp_name
-        client.flush_cache  # flush cached vdc which contains vapp list
-        vapp = client.vapp_by_name vapp_name
-        vapp.name.should eq vapp_name
-        vapp.vms.size.should eq 1
+        expect(vm_number_by_vappname(@vapp_name)).to eq 1
 
-        client.invoke_and_wait :post, vapp.power_off_link
-        params = VCloudSdk::Xml::WrapperFactory.create_instance 'UndeployVAppParams'
-        client.invoke_and_wait :post, vapp.undeploy_link, :payload => params
-        link = vapp.remove_link true
-        client.invoke_and_wait :delete, link
+        @cpi.delete_vm vm_id
+        expect_vapp_not_exist(@vapp_name)
       end
     end
 
@@ -231,6 +237,24 @@ describe VCloudCloud::Cloud do
         rescue => ex
           expect(ex.to_s).to match(Regexp.new(exceptionMsg))
         end
+        expect_vapp_not_exist(@vapp_name)
+      end
+
+      it 'should clean up the media when create_vm fail to PowerOn' do
+        exceptionMsg = 'PowerOn Failed!'
+        VCloudCloud::Steps::PowerOn.any_instance.stub(:perform).and_raise(exceptionMsg)
+        begin
+          @cpi.create_vm random_vm_name, @stemcell_id, resource_pool, @network_specs[0], [], vm_env
+          fail 'create_vm should fail'
+        rescue => ex
+          expect(ex.to_s).to match(Regexp.new(exceptionMsg))
+        end
+
+        # Delete will raise error and fail the test if media leaks in the media_catalog
+        expect {
+          client = @cpi.client
+          VCloudCloud::Test::delete_catalog_if_exists(client, @media_catalog)
+        }.to_not raise_error
       end
     end
   end
