@@ -15,6 +15,12 @@ module VCloudSdk
         self["operation"]
       end
 
+      def details
+        details = get_nodes("Details")
+        return nil if details.nil?
+        return details.collect {|d| d.content}.join
+      end
+
       # Short form name of the operation
       def operation_name
         self["operationName"]

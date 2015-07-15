@@ -206,6 +206,8 @@ module VCloudCloud
     describe ".wait_entity" do
       let(:task_id) { 'fake_task_id' }
       let(:task_operation) { 'fake_task_operation' }
+      let(:task_details) { 'fake_task_details' }
+
 
       it "wait for running tasks" do
         entity = double("entity")
@@ -229,14 +231,17 @@ module VCloudCloud
           args
         end
         task = double("task")
-        task.stub(:urn).and_return "urn"
-        task.stub(:operation).and_return "update"
+        task.stub(:urn).and_return(task_id)
+        task.stub(:operation).and_return(task_operation)
+        task.stub(:details).and_return(task_details)
         task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
+
         entity.stub(:running_tasks) {[task]}
         entity.stub(:prerunning_tasks) {[]}
         entity.stub(:tasks) {[task]}
 
-        expect{client.wait_entity(entity)}.to raise_error /unsuccessful/
+        raise_error_info =Regexp.new("Task #{task_id} #{task_operation} completed unsuccessfully, Details:#{task_details}")
+        expect{client.wait_entity(entity)}.to raise_error raise_error_info
       end
 
       it "raise error when completed task failed" do
@@ -248,11 +253,14 @@ module VCloudCloud
         task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
         task.stub(:urn).and_return(task_id)
         task.stub(:operation).and_return(task_operation)
+        task.stub(:details).and_return(task_details)
+
         entity.stub(:running_tasks) {[]}
         entity.stub(:prerunning_tasks) {[]}
         entity.stub(:tasks) {[task, task]}
 
-        raise_error_info =Regexp.new(/^Some tasks failed: Task fake_task_id fake_task_operation; Task fake_task_id fake_task_operation$/)
+        task_info = "Task #{task_id} #{task_operation}, Details:#{task_details}"
+        raise_error_info =Regexp.new("Some tasks failed: #{task_info}; #{task_info}")
         expect{client.wait_entity(entity)}.to raise_error raise_error_info
       end
     end

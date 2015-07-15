@@ -144,7 +144,7 @@ module VCloudCloud
         return task if status == VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
         if [:ABORTED, :ERROR, :CANCELED].any? { |s| status == VCloudSdk::Xml::TASK_STATUS[s] }
           return task if accept_failure
-          raise "Task #{task.urn} #{task.operation} completed unsuccessfully"
+          raise "Task #{task.urn} #{task.operation} completed unsuccessfully, Details:#{task.details}"
         end
       end
       task
@@ -164,12 +164,14 @@ module VCloudCloud
       entity = reload entity
 
       # verify all tasks succeeded
-      unless accept_failure || entity.tasks.nil? || entity.tasks.empty?
+      unless entity.tasks.nil? || entity.tasks.empty?
         failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
         unless failed_tasks.empty?
-          @logger.error "Failed tasks: #{failed_tasks}"
-          failed_tasks_info = failed_tasks.map {|t| "Task #{t.urn} #{t.operation}"}
-          raise "Some tasks failed: #{failed_tasks_info.join('; ')}"
+          @logger.debug "Failed tasks: #{failed_tasks}"
+          unless accept_failure
+            failed_tasks_info = failed_tasks.map { |t| "Task #{t.urn} #{t.operation}, Details:#{t.details}" }
+            raise "Some tasks failed: #{failed_tasks_info.join('; ')}"
+          end
         end
       end
 
