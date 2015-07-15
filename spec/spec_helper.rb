@@ -69,6 +69,7 @@ module VCloudCloud
 
       def delete_catalog_if_exists(client, catalog_name)
         raw_catalog_link = client.org.catalog_link(catalog_name)
+        return if raw_catalog_link.nil?
         catalog_link = VCloudSdk::Xml::Link.new(raw_catalog_link)
         return unless catalog_link
         catalog_id = catalog_link.href_id
