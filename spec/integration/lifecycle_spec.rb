@@ -164,7 +164,7 @@ describe VCloudCloud::Cloud do
       after { @cpi.delete_disk(@existing_volume_id) if @existing_volume_id }
 
       it 'should exercise the vm lifecycle' do
-        vm_lifecycle_concurrent(resource_pool, [@existing_volume_id])
+        vm_lifecycle_sequential(resource_pool, [@existing_volume_id])
       end
     end
   end
