@@ -72,6 +72,9 @@ module VCloudCloud
 
     describe ".create_stemcell" do
       include_context "base"
+      before do
+        Kernel.stub(:sleep)
+      end
 
       it "uses a transaction with the expected steps to create a stemcell" do
         image = "stemcell_name"
@@ -88,6 +91,44 @@ module VCloudCloud
         catalog_item.stub(:urn).and_return result
 
         subject.create_stemcell(image, nil).should == result
+      end
+
+      it "retry after upload stemcell Timeout" do
+        image = "stemcell_name"
+        result = "urn"
+        template = double('template')
+        catalog_item = double('catalog_item')
+        allow(Bosh::Retryable).to receive(:new).and_call_original
+        trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
+        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
+        times_called = 0
+        trx.should_receive(:next).twice.ordered.with(Steps::UploadTemplateFiles).and_return do
+          times_called += 1
+          if times_called == 1
+            raise Timeout::Error
+          end
+          'fake_result'
+        end
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
+        trx.stub_chain('state.[]').with(:vapp_template).and_return template
+        trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item
+        catalog_item.stub(:urn).and_return result
+        subject.create_stemcell(image, nil).should == result
+      end
+
+      it "raise Timeout error after retry count exceeded" do
+        image = "stemcell_name"
+        result = "urn"
+        template = double('template')
+        catalog_item = double('catalog_item')
+        allow(Bosh::Retryable).to receive(:new).and_call_original
+        trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
+        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
+        trx.stub_chain(:next).with(Steps::UploadTemplateFiles).and_raise Timeout::Error
+        trx.stub_chain('state.[]').with(:vapp_template).and_return template
+        trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item
+        expect { subject.create_stemcell(image, nil).should == result }.to raise_error(Timeout::Error)
       end
     end
 
