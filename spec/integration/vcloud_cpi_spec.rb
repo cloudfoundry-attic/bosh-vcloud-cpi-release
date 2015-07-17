@@ -132,6 +132,49 @@ describe VCloudCloud::Cloud do
     expect { client.vapp_by_name vapp_name }.to raise_error VCloudCloud::ObjectNotFoundError
   end
 
+  context "when create stemcell" do
+
+    before do
+      @retried_stemcell_id = nil
+    end
+
+    after do
+      @cpi.delete_stemcell(@retried_stemcell_id) if @retried_stemcell_id
+    end
+
+    it "should retry if get Timeout::Error while uploading files" do
+      should_timeout = true
+      original_upload = VCloudCloud::FileUploader.method(:upload)
+      VCloudCloud::FileUploader.any_instance.stub(:upload) do |*args, &block|
+        if should_timeout
+          should_timeout = false
+          raise Timeout::Error
+        else
+          original_upload(*args, &block)
+        end
+      end
+
+      expect {
+        Dir.mktmpdir do |temp_dir|
+          output = `tar -C #{temp_dir} -xzf #{@stemcell_path} 2>&1`
+          raise "Corrupt image, tar exit status: #{$?.exitstatus} output: #{output}" if $?.exitstatus != 0
+          @retried_stemcell_id = @cpi.create_stemcell("#{temp_dir}/image", nil)
+        end
+      }.to_not raise_error
+
+      expect(@retried_stemcell_id).not_to eql(nil)
+
+      # create a vm to ensure that the stemcell is valid
+      vm_id = @cpi.create_vm random_vm_name, @retried_stemcell_id, resource_pool, @network_specs[0], [], vm_env
+      vm_id.should_not be_nil
+      @vm_ids << vm_id
+      has_vm = @cpi.has_vm? vm_id
+      has_vm.should be_true
+
+      expect { @cpi.delete_stemcell(@retried_stemcell_id) }.to_not raise_error
+    end
+  end
+
   context "when there is no error in create_vm" do
     it 'should create vm and reconfigure network' do
       vm_id = @cpi.create_vm random_vm_name, @stemcell_id, resource_pool, @network_specs[0], [], vm_env
