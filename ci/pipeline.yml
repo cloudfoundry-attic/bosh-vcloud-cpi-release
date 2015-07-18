@@ -33,6 +33,7 @@ jobs:
         - {trigger: false, passed: [build-candidate], get: version-semver}
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
         - {trigger: false,                            get: bosh-concourse-ci }
+        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file}
         - {trigger: false,                            get: bosh-init}
         - {trigger: false,                            get: bosh-release}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
@@ -53,18 +54,9 @@ jobs:
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
 
       - conditions: [success, failure]
-        task: save-deployment
-        file: bosh-cpi-release/ci/tasks/save-deployment.yml
-        config:
-          params:
-            base_os: ubuntu
-            network_type_to_test: manual
-
-      - put: bosh-concourse-ci
-        params:
-          repository: save-deployment/deploy/bosh-concourse-ci
-          rebase: true
-
+        put: ubuntu-manual-director-state-file
+        params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
+        
   - name: bats-ubuntu-manual
     serial_groups: [ubuntu-director-manual] # can't run while deploying
     plan:
@@ -72,7 +64,7 @@ jobs:
         - {trigger: true,  passed: [deploy-ubuntu-manual], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-cpi-release}
         - {trigger: false, passed: [deploy-ubuntu-manual], get: stemcell, resource: vcloud-ubuntu-stemcell}
-        - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-concourse-ci}
+        - {trigger: false,                                 get: bosh-concourse-ci}
         - {trigger: false,                                 get: bats}
 
       - task: test
@@ -142,6 +134,15 @@ resources:
       region_name: us-east-1
       access_key_id:     {{s3_vcloud_cpi_access_key}}
       secret_access_key: {{s3_vcloud_cpi_secret_key}}
+
+  - name: ubuntu-manual-director-state-file
+    type: s3
+    source:
+      bucket: bosh-vcloud-cpi-ubuntu-state-files
+      versioned_file: ubuntu-manual-director-manifest-state.json
+      region_name: us-east-1
+      access_key_id:     {{s3_vcloud_cpi_ubuntu_state_file_access_key}}
+      secret_access_key: {{s3_vcloud_cpi_ubuntu_state_file_secret_key}}
 
   - name: bosh-cpi-release
     type: git

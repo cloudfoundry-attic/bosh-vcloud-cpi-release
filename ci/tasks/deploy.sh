@@ -22,11 +22,11 @@ source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 semver=`cat version-semver/number`
 cpi_release_name="bosh-vcloud-cpi"
 working_dir=$PWD
-manifest_dir="${working_dir}/tmp"
-manifest_prefix=${base_os}-${network_type_to_test}-director-manifest
-manifest_filename=${manifest_prefix}.yml
 
-mkdir $manifest_dir
+manifest_prefix=${base_os}-${network_type_to_test}-director
+manifest_dir="${working_dir}/${manifest_prefix}-state-file"
+manifest_filename=${manifest_prefix}-manifest.yml
+
 cat > "${manifest_dir}/${manifest_filename}" <<EOF
 ---
 name: bosh
@@ -146,11 +146,6 @@ cloud_provider:
     blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
     ntp: *ntp
 EOF
-
-set +e
-echo "if previous runs state file exists, copy into: ${manifest_dir}"
-cp bosh-concourse-ci/pipelines/${cpi_release_name}/${manifest_prefix}-state.json ${manifest_dir}/
-set -e
 
 initver=$(cat bosh-init/version)
 bosh_init="${working_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
