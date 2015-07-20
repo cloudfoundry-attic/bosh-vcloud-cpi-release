@@ -4,7 +4,7 @@ image: docker:///bosh/vcloud-cpi-release
 tags: ["vcloud"]
 inputs:
   - name: bosh-cpi-release       # --- location of task script to run
-  - name: ubuntu-manual-director-state-file
+  - name: director-state-file
   - name: bosh-init              # --- bosh-init executable to do deploy
   - name: bosh-release
   - name: bosh-cpi-dev-artifacts
