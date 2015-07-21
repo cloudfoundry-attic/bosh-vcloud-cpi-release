@@ -6,7 +6,7 @@ bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
 tar xvf bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar
 (
   cd smake-1.2.4
-  make -j
+  make
 )
 if [[ $? != 0 ]] ; then
   echo "Cannot install smake"
