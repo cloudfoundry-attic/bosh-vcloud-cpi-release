@@ -282,7 +282,7 @@ module VCloudCloud
     def session
       unless cookie_available?
         auth = "#{@user}@#{@entities['organization']}:#{@pass}"
-        auth_header = "Basic #{Base64.encode64(auth)}"
+        auth_header = "Basic #{Base64.strict_encode64(auth)}"
         response = send_request :post, login_url,
                     :headers => { :Authorization => auth_header, :content_type => 'application/x-www-form-urlencoded' },
                     :payload => URI.encode_www_form({ :Authorization => auth_header, :Accept => "application/*+xml;version=#{VCLOUD_VERSION_NUMBER}" }),
