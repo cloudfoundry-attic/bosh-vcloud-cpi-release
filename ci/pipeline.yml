@@ -5,8 +5,10 @@ groups:
       - build-candidate
       - deploy-ubuntu-v5.5
       - deploy-ubuntu-v5.6
-      - bats-ubuntu-manual
-      - lifecycle
+      - bats-ubuntu-v5.5
+      - bats-ubuntu-v5.6
+      - lifecycle-v5.5
+      - lifecycle-v5.6
       - promote-candidate
 
 jobs:
@@ -58,7 +60,7 @@ jobs:
       - conditions: [success, failure]
         put: ubuntu-manual-director-state-file-v5-5
         params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
-        
+
   - name: deploy-ubuntu-v5.6
     serial_groups: [vcloud-v5.6-serial-group]
     plan:
@@ -92,7 +94,7 @@ jobs:
         put: ubuntu-manual-director-state-file-v5-6
         params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
 
-  - name: bats-ubuntu-manual
+  - name: bats-ubuntu-v5.5
     serial_groups: [vcloud-v5.5-serial-group] # can't run while deploying
     plan:
       - aggregate:
@@ -120,7 +122,35 @@ jobs:
             BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
             BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
 
-  - name: lifecycle
+  - name: bats-ubuntu-v5.6
+    serial_groups: [vcloud-v5.6-serial-group] # can't run while deploying
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [deploy-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: bosh-cpi-release}
+        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: false,                                 get: bosh-concourse-ci}
+        - {trigger: false,                                 get: bats}
+
+      - task: test
+        file: bosh-cpi-release/ci/tasks/run-bats.yml
+        config:
+          tags: ["vcloud-v5.6"]
+          params:
+            base_os:              ubuntu
+            BAT_NETWORKING:       manual
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
+            BATS_STEMCELL_NAME:   {{BATS_STEMCELL_NAME_ubuntu}}
+            BATS_IP1:             {{BATS_IP1_ubuntu}}
+            BATS_IP2:             {{BATS_IP2_ubuntu}}
+            BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
+            BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
+            BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
+
+  - name: lifecycle-v5.5
     serial: true
     plan:
       - aggregate:
@@ -144,12 +174,37 @@ jobs:
             LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
             LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
 
+  - name: lifecycle-v5.6
+    serial: true
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
+        - {trigger: false,                            get: bosh-cpi-src}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+
+      - task: test
+        file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        config:
+          params:
+            VCLOUD_HOST:     {{VCLOUD_HOST_V5_6}}
+            VCLOUD_USER:     {{VCLOUD_USER_V5_6}}
+            VCLOUD_PASSWORD: {{VCLOUD_PASSWORD_V5_6}}
+            VCLOUD_VLAN:     {{VCLOUD_VLAN}}
+            VCLOUD_VDC:      {{VCLOUD_VDC_V5_6}}
+            NETWORK_NETMASK: {{NETWORK_NETMASK}}
+            NETWORK_DNS:     {{NETWORK_DNS}}
+            NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
+            LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
+            LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
+
+
   - name: promote-candidate
     serial: true
     plan:
     - aggregate:
-      - {trigger: true,  passed: [lifecycle, bats-ubuntu-manual], get: bosh-cpi-dev-artifacts}
-      - {trigger: false, passed: [lifecycle, bats-ubuntu-manual], get: bosh-cpi-release}
+      - {trigger: true,  passed: [lifecycle, bats-ubuntu-v5.5, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
+      - {trigger: false, passed: [lifecycle, bats-ubuntu-v5.5, bats-ubuntu-v5.6], get: bosh-cpi-release}
 
     - task: promote
       file: bosh-cpi-release/ci/tasks/promote-candidate.yml
