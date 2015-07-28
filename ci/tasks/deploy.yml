@@ -1,7 +1,6 @@
 ---
 platform: linux
 image: docker:///bosh/vcloud-cpi-release
-tags: ["vcloud"]
 inputs:
   - name: bosh-cpi-release       # --- location of task script to run
   - name: director-state-file
@@ -23,3 +22,4 @@ params:
   NETWORK_CIDR:         replace-me
   NETWORK_GATEWAY:      replace-me
   BATS_DIRECTOR_IP:     replace-me
+  BOSH_INIT_LOG_LEVEL:

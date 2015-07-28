@@ -3,7 +3,8 @@ groups:
   - name: bosh-vcloud-cpi-release
     jobs:
       - build-candidate
-      - deploy-ubuntu-manual
+      - deploy-ubuntu-v5.5
+      - deploy-ubuntu-v5.6
       - bats-ubuntu-manual
       - lifecycle
       - promote-candidate
@@ -25,15 +26,15 @@ jobs:
       - put: bosh-cpi-dev-artifacts
         params: {from: build/out/.*\.tgz}
 
-  - name: deploy-ubuntu-manual
-    serial_groups: [ubuntu-director-manual]
+  - name: deploy-ubuntu-v5.5
+    serial_groups: [vcloud-v5.5-serial-group]
     plan:
       - aggregate:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [build-candidate], get: version-semver}
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
         - {trigger: false,                            get: bosh-concourse-ci }
-        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file}
+        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-5}
         - {trigger: false,                            get: bosh-init}
         - {trigger: false,                            get: bosh-release}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
@@ -41,35 +42,70 @@ jobs:
       - task: deploy
         file: bosh-cpi-release/ci/tasks/deploy.yml
         config:
+          tags: ["vcloud-v5.5"]
           params:
             base_os:              ubuntu
             network_type_to_test: manual
-            VCLOUD_HOST:          {{VCLOUD_HOST}}
-            VCLOUD_USER:          {{VCLOUD_USER}}
-            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD}}
+            VCLOUD_HOST:          {{VCLOUD_HOST_V5_5}}
+            VCLOUD_USER:          {{VCLOUD_USER_V5_5}}
+            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_5}}
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
-            VCLOUD_VDC:           {{VCLOUD_VDC}}
+            VCLOUD_VDC:           {{VCLOUD_VDC_V5_5}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
 
       - conditions: [success, failure]
-        put: ubuntu-manual-director-state-file
+        put: ubuntu-manual-director-state-file-v5-5
         params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
         
-  - name: bats-ubuntu-manual
-    serial_groups: [ubuntu-director-manual] # can't run while deploying
+  - name: deploy-ubuntu-v5.6
+    serial_groups: [vcloud-v5.6-serial-group]
     plan:
       - aggregate:
-        - {trigger: true,  passed: [deploy-ubuntu-manual], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [deploy-ubuntu-manual], get: bosh-cpi-release}
-        - {trigger: false, passed: [deploy-ubuntu-manual], get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [build-candidate], get: version-semver}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
+        - {trigger: false,                            get: bosh-concourse-ci }
+        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-6}
+        - {trigger: false,                            get: bosh-init}
+        - {trigger: false,                            get: bosh-release}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+
+      - task: deploy
+        file: bosh-cpi-release/ci/tasks/deploy.yml
+        config:
+          tags: ["vcloud-v5.6"]
+          params:
+            base_os:              ubuntu
+            network_type_to_test: manual
+            VCLOUD_HOST:          {{VCLOUD_HOST_V5_6}}
+            VCLOUD_USER:          {{VCLOUD_USER_V5_6}}
+            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_6}}
+            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            VCLOUD_VDC:           {{VCLOUD_VDC_V5_6}}
+            NETWORK_CIDR:         {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
+
+      - conditions: [success, failure]
+        put: ubuntu-manual-director-state-file-v5-6
+        params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
+
+  - name: bats-ubuntu-manual
+    serial_groups: [vcloud-v5.5-serial-group] # can't run while deploying
+    plan:
+      - aggregate:
+        - {trigger: true,  passed: [deploy-ubuntu-v5.5], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: bosh-cpi-release}
+        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: stemcell, resource: vcloud-ubuntu-stemcell}
         - {trigger: false,                                 get: bosh-concourse-ci}
         - {trigger: false,                                 get: bats}
 
       - task: test
         file: bosh-cpi-release/ci/tasks/run-bats.yml
         config:
+          tags: ["vcloud-v5.5"]
           params:
             base_os:              ubuntu
             BAT_NETWORKING:       manual
@@ -97,11 +133,11 @@ jobs:
         file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
         config:
           params:
-            VCLOUD_HOST:     {{VCLOUD_HOST}}
-            VCLOUD_USER:     {{VCLOUD_USER}}
-            VCLOUD_PASSWORD: {{VCLOUD_PASSWORD}}
+            VCLOUD_HOST:     {{VCLOUD_HOST_V5_5}}
+            VCLOUD_USER:     {{VCLOUD_USER_V5_5}}
+            VCLOUD_PASSWORD: {{VCLOUD_PASSWORD_V5_5}}
             VCLOUD_VLAN:     {{VCLOUD_VLAN}}
-            VCLOUD_VDC:      {{VCLOUD_VDC}}
+            VCLOUD_VDC:      {{VCLOUD_VDC_V5_5}}
             NETWORK_NETMASK: {{NETWORK_NETMASK}}
             NETWORK_DNS:     {{NETWORK_DNS}}
             NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
@@ -135,10 +171,19 @@ resources:
       access_key_id:     {{s3_vcloud_cpi_access_key}}
       secret_access_key: {{s3_vcloud_cpi_secret_key}}
 
-  - name: ubuntu-manual-director-state-file
+  - name: ubuntu-manual-director-state-file-v5-5
     type: s3
     source:
-      bucket: bosh-vcloud-cpi-ubuntu-state-files
+      bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-5
+      versioned_file: ubuntu-manual-director-manifest-state.json
+      region_name: us-east-1
+      access_key_id:     {{s3_vcloud_cpi_ubuntu_state_file_access_key}}
+      secret_access_key: {{s3_vcloud_cpi_ubuntu_state_file_secret_key}}
+
+  - name: ubuntu-manual-director-state-file-v5-6
+    type: s3
+    source:
+      bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-6
       versioned_file: ubuntu-manual-director-manifest-state.json
       region_name: us-east-1
       access_key_id:     {{s3_vcloud_cpi_ubuntu_state_file_access_key}}
