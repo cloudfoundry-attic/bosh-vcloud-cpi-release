@@ -15,6 +15,9 @@ groups:
 jobs:
   - name: create-jumpbox
     plan:
+      - aggregate:
+          - {trigger: false,  get: bosh-cpi-release}
+
       - task: sleep
         file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
 
