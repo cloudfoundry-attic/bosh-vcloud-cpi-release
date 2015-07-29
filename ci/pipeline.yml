@@ -2,6 +2,7 @@
 groups:
   - name: bosh-vcloud-cpi-release
     jobs:
+      - create-jumpbox
       - build-candidate
       - deploy-ubuntu-v5.5
       - deploy-ubuntu-v5.6
@@ -12,6 +13,11 @@ groups:
       - promote-candidate
 
 jobs:
+  - name: create-jumpbox
+    plan:
+      - task: sleep
+        file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+
   - name: build-candidate
     serial: true
     plan:
