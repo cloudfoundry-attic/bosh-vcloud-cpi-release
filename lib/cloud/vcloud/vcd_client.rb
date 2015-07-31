@@ -12,7 +12,7 @@ module VCloudCloud
   class VCloudClient
     attr_reader :logger
 
-    VCLOUD_VERSION_NUMBER = '5.1'
+    VCLOUD_VERSION_NUMBER = '5.5'
 
     def initialize(vcd_settings, logger)
       @logger = logger
