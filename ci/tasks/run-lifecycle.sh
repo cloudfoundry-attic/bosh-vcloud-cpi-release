@@ -36,8 +36,8 @@ export BOSH_VCLOUD_CPI_GATEWAY=NETWORK_GATEWAY
 
 source /etc/profile.d/chruby-with-ruby-2.1.2.sh
 
-mkdir /tmp/vcd-cpi-test                                    # So that fly intercepts can tail it without waiting for
-echo "Awating first test run..." > /tmp/vcd-cpi-test/debug # the tests to start outputting to it
+mkdir /tmp/vcd-cpi-test                                     # So that fly intercepts can tail it without waiting for
+echo "Awaiting first test run..." > /tmp/vcd-cpi-test/debug # the tests to start outputting to it
 
 pushd bosh-cpi-release
   echo "using bosh CLI version..."
