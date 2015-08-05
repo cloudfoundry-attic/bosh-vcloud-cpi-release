@@ -65,10 +65,9 @@ jobs:
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-
-      - conditions: [success, failure]
-        put: ubuntu-manual-director-state-file-v5-5
-        params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
+        ensure:
+          put: ubuntu-manual-director-state-file-v5-5
+          params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
 
   - name: deploy-ubuntu-v5.6
     serial_groups: [vcloud-v5.6-serial-group]
@@ -98,10 +97,9 @@ jobs:
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-
-      - conditions: [success, failure]
-        put: ubuntu-manual-director-state-file-v5-6
-        params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
+        ensure:
+          put: ubuntu-manual-director-state-file-v5-6
+          params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
 
   - name: bats-ubuntu-v5.5
     serial_groups: [vcloud-v5.5-serial-group] # can't run while deploying
