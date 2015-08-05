@@ -72,7 +72,7 @@ describe VCloudCloud::Cloud do
     @cpi = @cpis[0]
   end
 
-    let(:resource_pool) {
+  let(:resource_pool) {
     {
       'ram' => 1024,
       'disk' => 2048,
@@ -147,24 +147,22 @@ describe VCloudCloud::Cloud do
   end
 
   describe 'vcloud' do
-
-    context 'without existing disks' do
-
-      it 'should exercise the vm lifecycle sequentially' do
-        vm_lifecycle_sequential(resource_pool, [])
-      end
-
-      it 'should exercise the vm lifecycle concurrently' do
-        vm_lifecycle_concurrent(resource_pool, [])
-      end
-    end
-
     context 'with existing disks' do
       before { @existing_volume_id = @cpi.create_disk(2048, {}) }
       after { @cpi.delete_disk(@existing_volume_id) if @existing_volume_id }
 
       it 'should exercise the vm lifecycle' do
         vm_lifecycle_sequential(resource_pool, [@existing_volume_id])
+      end
+    end
+
+    context 'without existing disks' do
+      it 'should exercise the vm lifecycle sequentially' do
+        vm_lifecycle_sequential(resource_pool, [])
+      end
+
+      it 'should exercise the vm lifecycle concurrently' do
+        vm_lifecycle_concurrent(resource_pool, [])
       end
     end
   end
