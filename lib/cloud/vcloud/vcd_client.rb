@@ -249,13 +249,14 @@ module VCloudCloud
       params = {
           :method => method,
           :url => if path.start_with?('/')
-                    @url + path
-                  else
-                    path
-                  end,
+            @url + path
+          else
+            path
+          end,
           :headers => {
-              :Accept => "application/*+xml;version=#{VCLOUD_VERSION_NUMBER}",
-              :content_type => '*/*'
+            :Accept => "application/*+xml;version=#{VCLOUD_VERSION_NUMBER}",
+            :content_type => '*/*',
+            'X-VMWARE-VCLOUD-CLIENT-REQUEST-ID' => SecureRandom.uuid
           }
       }
       params[:headers][:x_vcloud_authorization] = @auth_token if !options[:login] && @auth_token

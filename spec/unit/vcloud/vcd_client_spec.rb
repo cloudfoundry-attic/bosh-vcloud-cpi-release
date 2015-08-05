@@ -30,8 +30,8 @@ module VCloudCloud
       end
     end
 
-    describe ".invoke" do
-      it "fetch auth header" do
+    describe '.invoke' do
+      it 'fetches auth header' do
         version_response = double('version_response')
         url_node = double('login url node')
         url_node.stub_chain('login_url.content').and_return '/api/sessions'
@@ -68,6 +68,26 @@ module VCloudCloud
         end.and_return info_response
 
         client.invoke :get, "/info"
+      end
+
+      it 'puts a request identifier in the request' do
+        wrapped_entity_double = double(
+          'wrapped entity',
+          entity_resolver: nil,
+          login_url: double(
+            'login_url',
+            content: 'http://example.com/login/url'
+          ),
+          org_link: nil
+        )
+        allow(client).to receive(:wrap_response).and_return(wrapped_entity_double)
+        prevous_request_id = nil
+        expect(RestClient::Request).to receive(:execute).at_least(:once) do |args|
+          args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID'].should_not be_nil
+          args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID'].should_not eq(prevous_request_id)
+          prevous_request_id = args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID']
+        end.and_return(double(RestClient::Response, code: 204, headers: {x_vcloud_authorization: 'fake token'}, cookies: nil))
+        client.invoke :get, '/info', no_wrap: true
       end
 
       context "when receiving an error response" do
