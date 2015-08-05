@@ -16,9 +16,11 @@ module VCloudCloud
         env_path = File.join tmpdir, 'env'
         iso_path = File.join tmpdir, 'env.iso'
         File.open(env_path, 'w') { |f| f.write env_json }
-        output = `#{genisoimage} -o #{iso_path} #{env_path} 2>&1`
-        @logger.debug "GENISOIMAGE #{output}"
-        raise "genisoimage: #{$?.exitstatus}: #{output}" unless $?.success?
+        command = "#{create_iso_cmd} -o #{iso_path} #{env_path} 2>&1"
+        output = `#{command}`
+        message = "command `#{command}`: exited with stats: `#{$?.exitstatus}`: and output `#{output}`"
+        @logger.debug message
+        raise message unless $?.success?
 
         metadata = VCloudSdk::Xml::WrapperFactory.create_instance 'MetadataValue'
         metadata.value = env_json
@@ -35,8 +37,13 @@ module VCloudCloud
 
       private
 
-      def genisoimage  # TODO: this should exist in bosh_common, eventually
-        @genisoimage ||= Bosh::Common.which(%w{genisoimage mkisofs})
+      def create_iso_cmd # TODO: this should exist in bosh_common, eventually
+        @create_iso_cmd ||= begin
+          possibilities = %w{genisoimage mkisofs}
+          cmd = Bosh::Common.which(possibilities)
+          raise("Unable to find a iso creation utility `#{possibilities.inspect}`") unless cmd
+          cmd
+        end
       end
     end
   end

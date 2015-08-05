@@ -53,7 +53,6 @@ module VCloudCloud
           described_class.any_instance.should_receive(:`) {"Running genisoimage command"}
           allow_message_expectations_on_nil
           $?.should_receive(:success?).once {true}
-          $?.stub(:exitstatus) {raise "Should not be getting exit status on success"}
           client.should_receive(:invoke_and_wait).once.ordered.with(:put, "#{meta_data_link_href}/#{env_metadata_key_value}", kind_of(Hash))
           client.should_receive(:reload).once.ordered.with(vm)
 
