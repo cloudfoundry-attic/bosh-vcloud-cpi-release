@@ -35,8 +35,7 @@ module VCloudSdk
           end
         end
 
-        def create_instance(type_name, ns = nil, namespace_defintions = nil,
-            *args)
+        def create_instance(type_name, ns = nil, namespace_defintions = nil, *args)
           xml = @@xml_dictionary[type_name]
           if (xml)
             wrap_document(xml, ns, namespace_defintions, *args)
