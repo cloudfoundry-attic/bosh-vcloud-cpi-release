@@ -2,12 +2,9 @@ require 'spec_helper'
 
 module VCloudCloud
   module Steps
-
     describe SaveAgentEnv do
-
       let(:env_metadata_key_value) {"env_metadata"}
       let(:meta_data_link_href) {"http://meta_data/link/href"}
-      let(:tmp_dir) {"/tmp/eerrtds"}
 
       let(:env) do
         env = double("vcloud env")
@@ -32,54 +29,42 @@ module VCloudCloud
       let(:client) do
         client = double("vcloud client")
         client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) do |arg|
-          arg
-        end
+        client.stub(:reload) { |arg| arg }
         client
       end
 
       describe ".perform" do
         it "invokes method successfully" do
-          #setup the test input
           state = {:vm => vm, :env_metadata_key => env_metadata_key_value}
 
-          #configure mock expectations
+          step = described_class.new state, client
           client.should_receive(:reload).once.ordered.with(vm)
-          Yajl::Encoder.should_receive(:encode).once do |env|
-            env.to_s
-          end
-          Dir.should_receive(:mktmpdir).once { tmp_dir }
-          File.should_receive(:open).once.ordered.with("#{tmp_dir}/env", "w") {save_file}
-          described_class.any_instance.should_receive(:`) {"Running genisoimage command"}
-          allow_message_expectations_on_nil
+          step.stub(:create_iso_cmd) { 'myIsoCreationUtil' }
+          actual_exec_param = nil
+          step.stub(:`) { |arg| actual_exec_param = arg }
           $?.should_receive(:success?).once {true}
           client.should_receive(:invoke_and_wait).once.ordered.with(:put, "#{meta_data_link_href}/#{env_metadata_key_value}", kind_of(Hash))
           client.should_receive(:reload).once.ordered.with(vm)
 
-          #execute the test
-          step = described_class.new state, client
           step.perform
-          expect(state[:iso]).to eql "#{tmp_dir}/env.iso"
+          expect(actual_exec_param).to eq("myIsoCreationUtil -o #{state[:tmpdir]}/env.iso #{state[:tmpdir]}/env 2>&1")
+          expect(state[:iso]).to eql "#{state[:tmpdir]}/env.iso"
         end
 
         it "raises exception due to failed cmd" do
           #setup the test input
           state = {:vm => vm, :env_metadata_key => env_metadata_key_value}
 
+          step = described_class.new state, client
           #configure mock expectations
           client.should_receive(:reload).once.ordered.with(vm)
-          Yajl::Encoder.should_receive(:encode).once do |env|
-            env.to_s
-          end
-          Dir.should_receive(:mktmpdir).once { tmp_dir }
-          File.should_receive(:open).once.ordered.with("#{tmp_dir}/env", "w") {save_file}
-          described_class.any_instance.should_receive(:`) {"Failed to run genisoimage command"}
+          step.stub(:create_iso_cmd) { 'myIsoCreationUtil' }
+          step.should_receive(:`) {"Failed to run genisoimage command"}
           allow_message_expectations_on_nil
-          $?.should_receive(:success?).once {false}
+          $?.stub(:success?) {false}
           $?.stub(:exitstatus) {"2"}
 
           #execute the test
-          step = described_class.new state, client
           expect{step.perform}.to raise_exception RuntimeError
           expect(state[:iso]).to be_nil
         end
@@ -88,6 +73,7 @@ module VCloudCloud
       describe ".cleanup" do
         it ".deletes temp folder" do
           #setup the test input
+          tmp_dir = '/tmp/foo'
           state = {:tmpdir => tmp_dir}
 
           #configure mock expectations
@@ -110,9 +96,6 @@ module VCloudCloud
           step.cleanup
         end
       end
-
     end
-
   end
 end
-
