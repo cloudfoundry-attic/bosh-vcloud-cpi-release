@@ -1,0 +1,8 @@
+---
+platform: linux
+image: docker:///bosh/vcloud-cpi-release
+inputs:
+  - name: bosh-cpi-src
+  - name: bosh-cpi-release
+run:
+  path: bosh-cpi-release/ci/tasks/run-unit.sh
