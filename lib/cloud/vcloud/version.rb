@@ -2,7 +2,7 @@ module Bosh
   module Clouds
 
     class VCloud
-      VERSION = '0.5.5'
+      VERSION = '0.7.13'
     end
 
   end

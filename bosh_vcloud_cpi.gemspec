@@ -1,9 +1,11 @@
 # -*- encoding: utf-8 -*-
 # Copyright (c) 2009-2012 VMware, Inc.
 
+require File.expand_path('../lib/cloud/vcloud/version.rb', __FILE__)
+version = Bosh::Clouds::VCloud::VERSION
 Gem::Specification.new do |s|
   s.name         = "bosh_vcloud_cpi"
-  s.version      = "0.7.12"
+  s.version      = version
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud CPI"
   s.description  = "BOSH vCloud CPI\n#{`git rev-parse HEAD`[0, 6]}"
