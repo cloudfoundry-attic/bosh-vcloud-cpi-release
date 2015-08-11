@@ -82,10 +82,9 @@ module VCloudCloud
         template = double('template')
         catalog_item = double('catalog_item')
         trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
-        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
-        trx.should_receive(:next).once.ordered.with(Steps::UploadTemplateFiles)
         trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
-        trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything, :vapp)
+        trx.should_receive(:next).once.ordered.with(Steps::UploadTemplateFiles)
         trx.stub_chain('state.[]').with(:vapp_template).and_return template
         trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item
         catalog_item.stub(:urn).and_return result
@@ -100,7 +99,8 @@ module VCloudCloud
         catalog_item = double('catalog_item')
         allow(Bosh::Retryable).to receive(:new).and_call_original
         trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
-        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
+        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything, :vapp)
         times_called = 0
         trx.should_receive(:next).twice.ordered.with(Steps::UploadTemplateFiles).and_return do
           times_called += 1
@@ -109,8 +109,6 @@ module VCloudCloud
           end
           'fake_result'
         end
-        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
-        trx.should_receive(:next).once.ordered.with(Steps::AddCatalogItem, anything, anything)
         trx.stub_chain('state.[]').with(:vapp_template).and_return template
         trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item
         catalog_item.stub(:urn).and_return result
@@ -124,7 +122,8 @@ module VCloudCloud
         catalog_item = double('catalog_item')
         allow(Bosh::Retryable).to receive(:new).and_call_original
         trx.should_receive(:next).once.ordered.with(Steps::StemcellInfo, image)
-        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything)
+        trx.should_receive(:next).once.ordered.with(Steps::AddCatalog, "my_bosh_catalog")
+        trx.should_receive(:next).once.ordered.with(Steps::CreateTemplate, anything, :vapp)
         trx.stub_chain(:next).with(Steps::UploadTemplateFiles).and_raise Timeout::Error
         trx.stub_chain('state.[]').with(:vapp_template).and_return template
         trx.stub_chain('state.[]').with(:catalog_item).and_return catalog_item

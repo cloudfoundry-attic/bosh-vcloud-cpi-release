@@ -1,7 +1,7 @@
 module VCloudCloud
   module Steps
     class CreateDisk < Step
-      def perform(name, size_mb, vm, storage_profile, &block)
+      def perform(name, size_mb, vm, storage_profile, &_block)
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'DiskCreateParams'
         params.name         = name
         params.size_bytes   = size_mb << 20 # VCD expects bytes

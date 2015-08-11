@@ -2,41 +2,43 @@ require 'spec_helper'
 
 module VCloudCloud
   module Steps
-
     describe CreateTemplate do
-
-      let(:template_name) {"my template"}
-
-      let(:template) do
-        app = double("vapp template")
-        app
-      end
-
-      let(:vdc_upload_link_value) {"http://vdc/upload_link"}
+      let(:template_name) { "my template" }
+      let(:template) { double("vapp template") }
+      let(:add_vapp_template_link) { double('XML Node', type: 'my custom type', content: 'http://example.com/catalog/upload/endpoint') }
+      let(:catalog) { double(VCloudSdk::Xml::Catalog, add_vapp_template_link: add_vapp_template_link) }
       let(:client) do
-        client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub_chain(:vdc, :upload_link) {vdc_upload_link_value}
-        client.stub(:invoke) {template}
-        client.stub(:reload) do |arg|
-          arg
-        end
+        client = double(VCloudCloud::VCloudClient,
+          catalog: catalog,
+          logger: Bosh::Clouds::Config.logger
+        )
+        client.stub(:reload) { |arg| arg }
         client
       end
 
       describe ".perform" do
         it "creates a vapp template" do
-          # setup test data
           state = {}
+          catalog_type = :catalog_type_name
+          catalog_item = double(VCloudSdk::Xml::CatalogItem, entity: double('my_entity', href: 'http://example.com/catalog_item'))
+          expected_params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
+          expected_params.name = template_name
 
-          # configure mock expectations
-          client.should_receive(:vdc).once.ordered
-          client.should_receive(:invoke).once.ordered.with(:post, vdc_upload_link_value, kind_of(Hash))
+          client.should_receive(:invoke).with(
+            :post,
+            add_vapp_template_link,
+            {payload: expected_params, headers: {:content_type => 'my custom type'}}
+          ).and_return(catalog_item)
 
-          # run test
+          client.should_receive(:invoke).with(:get, 'http://example.com/catalog_item').and_return(template)
+
           step = described_class.new state, client
-          step.perform template_name
-          expect(state[:vapp_template]).to be template
+          expect {
+            step.perform template_name, catalog_type
+          }.to change { state }.from({}).to({
+            catalog_item: catalog_item,
+            vapp_template: template
+          })
         end
       end
 

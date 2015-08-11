@@ -29,16 +29,15 @@ module VCloudCloud
     def create_stemcell(image, _)
       (steps "create_stemcell(#{image}, _)" do |s|
         s.next Steps::StemcellInfo, image
-        s.next Steps::CreateTemplate, "sc-#{unique_name}"
+        catalog_type = :vapp
+        s.next Steps::AddCatalog, @client.catalog_name(catalog_type)
+        s.next Steps::CreateTemplate, "sc-#{unique_name}", catalog_type
 
         # Retry upload template file in case of timeout
         errors = [Timeout::Error]
         Bosh::Common.retryable(sleep: cpi_call_wait_time, tries: cpi_retries, on: errors) do |tries, error|
           s.next Steps::UploadTemplateFiles
         end
-
-        s.next Steps::AddCatalog, @client.catalog_name(:vapp)
-        s.next Steps::AddCatalogItem, :vapp, s.state[:vapp_template]
       end)[:catalog_item].urn
     end
 

@@ -1,12 +1,23 @@
 module VCloudCloud
   module Steps
     class CreateTemplate < Step
-      def perform(name, &block)
+      def perform(name, catalog_type, &block)
+        catalog = client.catalog catalog_type
+
         params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
         params.name = name
-        template = client.invoke :post, client.vdc.upload_link, :payload => params
+        upload_link = catalog.add_vapp_template_link
+        catalog_item = client.invoke(
+          :post,
+          upload_link,
+          :payload => params,
+          :headers => {:content_type => upload_link.type}
+        )
+
+        template = client.invoke :get, catalog_item.entity.href
 
         # commit states
+        state[:catalog_item] = catalog_item
         state[:vapp_template] = template
       end
 
