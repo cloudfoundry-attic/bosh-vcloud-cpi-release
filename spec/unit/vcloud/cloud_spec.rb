@@ -326,25 +326,6 @@ module VCloudCloud
     describe ".delete_vm" do
       include_context "base"
 
-      it "delete vapp if there is only one vm" do
-        vm.stub(:name)
-        vapp.stub(:vms) { [vm] }
-        trx.should_receive(:next).twice.ordered.with(
-          Steps::PowerOff, anything, anything
-        )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::Undeploy, anything
-        )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::Delete, anything, anything
-        )
-        trx.should_receive(:next).once.ordered.with(
-          Steps::DeleteCatalogMedia, anything
-        )
-
-        subject.delete_vm vm_id
-      end
-
       it "delete vm" do
         vm2 = double("vm2")
         vm.stub(:name)

@@ -228,18 +228,8 @@ module VCloudCloud
 
           # poweroff vm before we are able to delete it
           s.next Steps::PowerOff, :vm, true
-
-          vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
-          if vapp.vms.size == 1
-            # Hack: if vApp is running, and the last VM is deleted, it is no longer stoppable and removable
-            # even from dashboard. So if there's only one VM, just stop and delete the vApp
-            s.next Steps::PowerOff, :vapp, true
-            s.next Steps::Undeploy, :vapp
-            s.next Steps::Delete, s.state[:vapp], true
-          else
-            s.next Steps::Undeploy, :vm
-            s.next Steps::Delete, s.state[:vm], true
-          end
+          s.next Steps::Undeploy, :vm
+          s.next Steps::Delete, s.state[:vm], true
 
           s.next Steps::DeleteCatalogMedia, vm.name
         rescue RestClient::Forbidden, ObjectNotFoundError => e
