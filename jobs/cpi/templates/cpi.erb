@@ -23,7 +23,7 @@ BOSH_JOBS_DIR=${BOSH_JOBS_DIR:-/var/vcap/jobs}
 export PATH=$BOSH_PACKAGES_DIR/ruby_vcloud_cpi/bin:$BOSH_PACKAGES_DIR/bosh_vcloud_cpi_mkisofs/bin:$PATH
 
 export BUNDLE_GEMFILE=$BOSH_PACKAGES_DIR/bosh_vcloud_cpi/Gemfile
-export GEM_HOME=$BOSH_PACKAGES_DIR/bosh_vcloud_cpi/gem_home/ruby/2.1.0
+export GEM_HOME=$BOSH_PACKAGES_DIR/bosh_vcloud_cpi/gem_home/ruby/1.9.1
 
 bundle_cmd="$BOSH_PACKAGES_DIR/ruby_vcloud_cpi/bin/bundle"
 
