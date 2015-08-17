@@ -95,6 +95,9 @@ module VCloudCloud
 
         vapp, vm =[s.state[:vapp], s.state[:vm]]
 
+        #set agent id of vm
+        vm.agent_id=agent_id
+
         # To handle concurrent create_vm requests,
         # if the target vApp exists, creates a temp vApp, and then recomposes its VM to the target vApp.
         if requested_name
@@ -228,8 +231,18 @@ module VCloudCloud
 
           # poweroff vm before we are able to delete it
           s.next Steps::PowerOff, :vm, true
-          s.next Steps::Undeploy, :vm
-          s.next Steps::Delete, s.state[:vm], true
+
+          vapp = s.state[:vapp] = client.resolve_link vm.container_vapp_link
+          #remove vapp if it is temporary vapp
+          #vapp is temporary vapp if vapp name is same as agent id
+          if vapp.name == vm.agent_id
+            s.next Steps::PowerOff, :vapp, true
+            s.next Steps::Undeploy, :vapp
+            s.next Steps::Delete, s.state[:vapp], true
+          else
+            s.next Steps::Undeploy, :vm
+            s.next Steps::Delete, s.state[:vm], true
+          end
 
           s.next Steps::DeleteCatalogMedia, vm.name
         rescue RestClient::Forbidden, ObjectNotFoundError => e

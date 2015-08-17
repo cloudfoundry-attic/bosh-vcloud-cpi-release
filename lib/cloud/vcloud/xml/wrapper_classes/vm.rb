@@ -96,6 +96,14 @@ module VCloudSdk
          @root["name"]= value
       end
 
+      def agent_id
+         @root["agent_id"]
+      end
+
+      def agent_id=(value)
+         @root["agent_id"]= value
+      end
+
       def hardware_section
         get_nodes("VirtualHardwareSection", nil, false,
           "http://schemas.dmtf.org/ovf/envelope/1").first

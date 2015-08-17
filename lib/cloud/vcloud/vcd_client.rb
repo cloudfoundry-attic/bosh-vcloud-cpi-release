@@ -95,7 +95,6 @@ module VCloudCloud
     end
 
     def vapp_by_name(name)
-      # @logger.debug "VAPP_BY_NAME - org.vdc_link: #{org.vdc_link}"
       vdc_link = org.vdc_link vdc_name
       raise ObjectNotFoundError, "Invalid virtual datacenter name: #{vdc_name}" unless vdc_link
       vdc_obj = resolve_link vdc_link

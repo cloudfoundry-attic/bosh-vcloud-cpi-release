@@ -48,6 +48,8 @@ module VCloudCloud
       let(:vm) do
         vm = {}
         vm.stub(:container_vapp_link) { vapp_link }
+        vm.stub(:agent_id) {"fake-agent-id"}
+        vm.stub(:agent_id=) { }
         vm
       end
 
@@ -324,7 +326,52 @@ module VCloudCloud
     end
 
     describe ".delete_vm" do
+
+      before(:each) do
+        allow(vapp).to receive(:name)
+      end
+
       include_context "base"
+
+      it "delete vapp if the vapp name matches vm.agent_id" do
+        vm.stub(:name)
+        vapp.stub(:vms) { [vm] }
+        expect(vapp).to receive(:name).and_return("fake-agent-id")
+        trx.should_receive(:next).twice.ordered.with(
+          Steps::PowerOff, anything, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::Undeploy, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::Delete, anything, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::DeleteCatalogMedia, anything
+        )
+
+        subject.delete_vm vm_id
+      end
+
+      it "should not delete vapp if the vapp name does match vm.agent_id" do
+        vm.stub(:name)
+        vapp.stub(:vms) { [vm] }
+        expect(vapp).to receive(:name).and_return("fake-agent-id-2")
+        trx.should_receive(:next).once.ordered.with(
+          Steps::PowerOff, anything, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::Undeploy, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::Delete, anything, anything
+        )
+        trx.should_receive(:next).once.ordered.with(
+          Steps::DeleteCatalogMedia, anything
+        )
+
+        subject.delete_vm vm_id
+      end
 
       it "delete vm" do
         vm2 = double("vm2")
