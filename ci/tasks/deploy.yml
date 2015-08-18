@@ -22,4 +22,3 @@ params:
   NETWORK_CIDR:         replace-me
   NETWORK_GATEWAY:      replace-me
   BATS_DIRECTOR_IP:     replace-me
-  BOSH_INIT_LOG_LEVEL:
