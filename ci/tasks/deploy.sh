@@ -4,8 +4,6 @@ set -e
 
 source bosh-cpi-release/ci/tasks/utils.sh
 
-print_git_state bosh-cpi-release
-
 check_param base_os
 check_param network_type_to_test
 check_param VCLOUD_VLAN
