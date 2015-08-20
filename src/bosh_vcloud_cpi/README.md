@@ -1,5 +1,4 @@
 # BOSH VCloud Cloud Provider Interface
-Copyright (c) VMware, Inc.
 
 ## Introduction
 
