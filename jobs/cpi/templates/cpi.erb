@@ -27,7 +27,7 @@ export BUNDLE_GEMFILE=$BOSH_PACKAGES_DIR/bosh_vcloud_cpi/Gemfile
 bundle_cmd="$BOSH_PACKAGES_DIR/ruby_vcloud_cpi/bin/bundle"
 $bundle_cmd install --local
 
-echo $INPUT | $bundle_cmd exec $BOSH_JOBS_DIR/cpi/bin/vcloud_cpi \
+echo $INPUT | $bundle_cmd exec $BOSH_PACKAGES_DIR/bosh_vcloud_cpi/bin/vcloud_cpi \
 $BOSH_JOBS_DIR/cpi/config/cpi.json
 
 exit 0
