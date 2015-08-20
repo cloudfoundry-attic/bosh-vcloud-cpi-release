@@ -1,0 +1,2 @@
+export STRESS_REDIS_OPTS="-h <%= properties.redis.host %> -p <%= properties.redis.port %> <%= properties.redis.password ? "-a #{properties.redis.password}" : "" %>"
+export STRESS_NAME=<%= properties.stress.name %>

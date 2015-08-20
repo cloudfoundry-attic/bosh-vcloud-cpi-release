@@ -1,0 +1,4 @@
+set -e
+cp -rf stress/* ${BOSH_INSTALL_TARGET}/
+chmod a+rx ${BOSH_INSTALL_TARGET}/stress-server
+chmod a+rx ${BOSH_INSTALL_TARGET}/scripts/*

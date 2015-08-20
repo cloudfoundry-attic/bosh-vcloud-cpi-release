@@ -1,0 +1,4 @@
+set -e
+cp -rf bosh-cli/* ${BOSH_INSTALL_TARGET}/
+cd ${BOSH_INSTALL_TARGET}
+bundle install --local --path vendor/bundle

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+base=$(readlink -nf $(dirname $0))
+
+export PATH="/var/vcap/packages/redis/bin:$PATH"
+
+STRESS_IP=$(ifconfig eth0 | grep 'inet addr:' | sed -r 's/^\s*inet addr:(\S+)\s+.*$/\1/')
+STRESS_KEY=${STRESS_IP//./_}
+export STRESS_IP STRESS_KEY
+
+Q_CMD=c-$STRESS_KEY
+Q_PND=p-$STRESS_KEY
+Q_RES=r-$STRESS_KEY
+K_STA=s-$STRESS_KEY
+
+exec_cmd() {
+    local id output encoded ret
+    while read ; do
+        test -z $REPLY 2>/dev/null && continue
+        id=$(date '+%s.%N')
+        echo "EVAL[$id]: $REPLY"
+        redis-cli $STRESS_REDIS_OPTS HSET $K_STA "$id:cmd" "$REPLY"
+        output=$($REPLY 2>&1)
+        ret=$?
+        echo -e "RETN[$id]: $ret\n"
+        echo "$output"
+        encoded=$(echo "$output" | gzip -c -9 | base64 -w 0)
+        echo "$encoded"
+        redis-cli $STRESS_REDIS_OPTS HSET $K_STA "${id}:out" "$encoded"
+        cat <<EOF | redis-cli $STRESS_REDIS_OPTS
+MULTI
+HSET $K_STA "${id}:ret" $ret
+LPUSH $Q_RES "$id"
+EXEC
+EOF
+    done
+}
+
+cd $base
+echo "Stress server (PID: $$) started"
+
+while true; do
+    redis-cli $STRESS_REDIS_OPTS --raw LRANGE $Q_PND 0 -1 | tac | exec_cmd
+    redis-cli $STRESS_REDIS_OPTS DEL $Q_PND >/dev/null
+    redis-cli $STRESS_REDIS_OPTS --raw BRPOPLPUSH $Q_CMD $Q_PND 5 >/dev/null
+done

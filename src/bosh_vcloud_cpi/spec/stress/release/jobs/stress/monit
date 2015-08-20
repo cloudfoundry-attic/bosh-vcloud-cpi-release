@@ -1,0 +1,5 @@
+check process stress
+  with pidfile /var/vcap/sys/run/stress/stress.pid
+  start program "/var/vcap/jobs/stress/bin/stress_ctl start"
+  stop program "/var/vcap/jobs/stress/bin/stress_ctl stop"
+  group vcap
