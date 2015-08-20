@@ -4,7 +4,6 @@ groups:
     jobs:
       - create-jumpbox-v5.5
       - create-jumpbox-v5.6
-      - unit
       - build-candidate
       - deploy-ubuntu-v5.5
       - deploy-ubuntu-v5.6
@@ -34,15 +33,6 @@ jobs:
           file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
           config:
             tags: ["vcloud-v5.6"]
-
-  - name: unit
-    plan:
-      - aggregate:
-        - {trigger: true, get: bosh-cpi-src}
-        - {trigger: false,  get: bosh-cpi-release}
-
-      - task: unit
-        file: bosh-cpi-release/ci/tasks/run-unit.yml
 
   - name: build-candidate
     serial: true
