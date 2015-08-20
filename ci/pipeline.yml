@@ -221,7 +221,7 @@ jobs:
     serial: true
     plan:
     - aggregate:
-      - {trigger: true,  passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
+      - {trigger: false,  passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
       - {trigger: false, passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-release}
 
     - task: promote
