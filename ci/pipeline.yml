@@ -186,7 +186,6 @@ jobs:
       - aggregate:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: bosh-cpi-src}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
 
       - task: test
@@ -210,7 +209,6 @@ jobs:
       - aggregate:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: bosh-cpi-src}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
 
       - task: test
@@ -280,12 +278,6 @@ resources:
       uri: git@github.com:cloudfoundry-incubator/bosh-vcloud-cpi-release.git
       branch: master
       private_key: {{github_deployment_key__bosh-vcloud-cpi-release}}
-
-  - name: bosh-cpi-src
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry/bosh_vcloud_cpi.git
-      branch: master
 
   - name: version-semver
     type: semver
