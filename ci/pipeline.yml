@@ -2,7 +2,8 @@
 groups:
   - name: bosh-vcloud-cpi-release
     jobs:
-      - create-jumpbox
+      - create-jumpbox-v5.5
+      - create-jumpbox-v5.6
       - unit
       - build-candidate
       - deploy-ubuntu-v5.5
@@ -14,12 +15,25 @@ groups:
       - promote-candidate
 
 jobs:
-  - name: create-jumpbox
+  - name: create-jumpbox-v5.5
     plan:
-      - {trigger: false,  get: bosh-cpi-release}
+      - aggregate:
+        - {trigger: false,  get: bosh-cpi-release}
 
       - task: sleep
         file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+        config:
+          tags: ["vcloud-v5.5"]
+
+  - name: create-jumpbox-v5.6
+    plan:
+      - aggregate:
+        - {trigger: false,  get: bosh-cpi-release}
+
+        - task: sleep
+          file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+          config:
+            tags: ["vcloud-v5.6"]
 
   - name: unit
     plan:
