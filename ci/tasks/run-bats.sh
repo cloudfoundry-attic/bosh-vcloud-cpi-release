@@ -62,5 +62,7 @@ eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa
 
 cd bats
+./write_gemfile
+
 bundle install
 bundle exec rspec spec
