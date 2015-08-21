@@ -29,10 +29,10 @@ jobs:
       - aggregate:
         - {trigger: false,  get: bosh-cpi-release}
 
-        - task: sleep
-          file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
-          config:
-            tags: ["vcloud-v5.6"]
+      - task: sleep
+        file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+        config:
+          tags: ["vcloud-v5.6"]
 
   - name: build-candidate
     serial: true
