@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    bosh_vcloud_cpi (0.11.0)
+    bosh_vcloud_cpi (0.12.0)
       bosh_common
       bosh_cpi
       builder (~> 3.1.4)
