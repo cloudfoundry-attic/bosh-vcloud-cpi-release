@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.email        = "support@cloudfoundry.com"
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
 
-  s.files        = Dir['lib/ *.rb'] + Dir['bin/*'] + %w(README.md) 
+  s.files        = `git ls-files -- lib/*`.split("\n") + %w(README.md) 
   s.require_path = "lib"
 
   s.add_dependency "bosh_common"
