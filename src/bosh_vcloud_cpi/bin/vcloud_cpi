@@ -4,9 +4,9 @@ require 'yaml'
 require 'ostruct'
 require 'cloud'
 require 'bosh/cpi'
-require 'bosh/cpi/cli'
+require 'bundler'
 
-require 'bundler/setup'
+Bundler.setup(:default)
 require 'cloud/vcloud'
 
 cpi_config = YAML.load_file(ARGV.shift)

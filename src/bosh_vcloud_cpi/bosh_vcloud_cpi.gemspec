@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-# Copyright (c) 2009-2012 VMware, Inc.
 
 require File.expand_path('../lib/cloud/vcloud/version.rb', __FILE__)
 version = Bosh::Clouds::VCloud::VERSION

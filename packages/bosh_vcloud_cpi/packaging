@@ -10,4 +10,5 @@ cd ${BOSH_INSTALL_TARGET}
 
 $bundle_cmd install \
   --local           \
-  --no-prune
+  --no-prune        \
+  --deployment
