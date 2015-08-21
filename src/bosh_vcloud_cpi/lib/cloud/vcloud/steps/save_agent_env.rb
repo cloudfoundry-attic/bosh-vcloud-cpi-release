@@ -1,9 +1,12 @@
 require 'common/common'
 require 'yajl'
+require 'open3'
 
 module VCloudCloud
   module Steps
     class SaveAgentEnv < Step
+      NO_ERROR_SHELL_OUTPUT_HACK = 'no-error'
+
       def perform(&block)
         vm = client.reload state[:vm]
         metadata_link = "#{vm.metadata_link.href}/#{state[:env_metadata_key]}"
@@ -16,11 +19,11 @@ module VCloudCloud
         env_path = File.join tmpdir, 'env'
         iso_path = File.join tmpdir, 'env.iso'
         File.open(env_path, 'w') { |f| f.write env_json }
-        command = "#{create_iso_cmd} -o #{iso_path} #{env_path} 2>&1"
-        output = `#{command}`
-        message = "command `#{command}`: exited with stats: `#{$?.exitstatus}`: and output `#{output}`"
+        command = "#{create_iso_cmd} -o #{iso_path} #{env_path} 2>&1 && >&2 printf #{NO_ERROR_SHELL_OUTPUT_HACK}"
+        _, stdout, stderr = Open3.popen3("#{command}")
+        message = "command `#{command}`: output `#{stdout.readlines}`"
         @logger.debug message
-        raise message unless $?.success?
+        raise message unless stderr.readlines.include? NO_ERROR_SHELL_OUTPUT_HACK
 
         metadata = VCloudSdk::Xml::WrapperFactory.create_instance 'MetadataValue'
         metadata.value = env_json

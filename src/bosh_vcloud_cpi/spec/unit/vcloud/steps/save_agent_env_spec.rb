@@ -33,21 +33,28 @@ module VCloudCloud
         client
       end
 
+
       describe ".perform" do
+        let(:none_response) { double("none response") }
+        let(:empty_response) { double("empty response") }
+
+        before do
+          allow(empty_response).to receive(:readlines).and_return([])
+          allow(none_response).to receive(:readlines).and_return([ VCloudCloud::Steps::SaveAgentEnv::NO_ERROR_SHELL_OUTPUT_HACK ])
+        end
+
         it "invokes method successfully" do
           state = {:vm => vm, :env_metadata_key => env_metadata_key_value}
 
           step = described_class.new state, client
-          client.should_receive(:reload).once.ordered.with(vm)
-          step.stub(:create_iso_cmd) { 'myIsoCreationUtil' }
-          actual_exec_param = nil
-          step.stub(:`) { |arg| actual_exec_param = arg }
-          $?.should_receive(:success?).once {true}
-          client.should_receive(:invoke_and_wait).once.ordered.with(:put, "#{meta_data_link_href}/#{env_metadata_key_value}", kind_of(Hash))
-          client.should_receive(:reload).once.ordered.with(vm)
+          expect(client).to receive(:reload).once.ordered.with(vm)
+          allow(step).to receive(:create_iso_cmd).and_return('myIsoCreationUtil')
+          allow(Open3).to receive(:popen3).and_return([nil, empty_response, none_response])
+
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:put, "#{meta_data_link_href}/#{env_metadata_key_value}", kind_of(Hash))
+          expect(client).to receive(:reload).once.ordered.with(vm)
 
           step.perform
-          expect(actual_exec_param).to eq("myIsoCreationUtil -o #{state[:tmpdir]}/env.iso #{state[:tmpdir]}/env 2>&1")
           expect(state[:iso]).to eql "#{state[:tmpdir]}/env.iso"
         end
 
@@ -56,13 +63,10 @@ module VCloudCloud
           state = {:vm => vm, :env_metadata_key => env_metadata_key_value}
 
           step = described_class.new state, client
-          #configure mock expectations
           client.should_receive(:reload).once.ordered.with(vm)
-          step.stub(:create_iso_cmd) { 'myIsoCreationUtil' }
-          step.should_receive(:`) {"Failed to run genisoimage command"}
+          allow(stub).to receive(:create_iso_cmd).and_return('myIsoCreationUtil')
+          allow(Open3).to receive(:popen3).and_return([nil, empty_response, empty_response])
           allow_message_expectations_on_nil
-          $?.stub(:success?) {false}
-          $?.stub(:exitstatus) {"2"}
 
           #execute the test
           expect{step.perform}.to raise_exception RuntimeError
