@@ -57,7 +57,6 @@ jobs:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [build-candidate], get: version-semver}
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: bosh-concourse-ci }
         - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-5}
         - {trigger: false,                            get: bosh-init}
         - {trigger: false,                            get: bosh-release}
@@ -89,7 +88,6 @@ jobs:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [build-candidate], get: version-semver}
         - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: bosh-concourse-ci }
         - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-6}
         - {trigger: false,                            get: bosh-init}
         - {trigger: false,                            get: bosh-release}
@@ -121,7 +119,6 @@ jobs:
         - {trigger: true,  passed: [deploy-ubuntu-v5.5], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [deploy-ubuntu-v5.5], get: bosh-cpi-release}
         - {trigger: false, passed: [deploy-ubuntu-v5.5], get: stemcell, resource: vcloud-ubuntu-stemcell}
-        - {trigger: false,                                 get: bosh-concourse-ci}
         - {trigger: false,                                 get: bats}
 
       - task: test
@@ -131,11 +128,11 @@ jobs:
           params:
             base_os:              ubuntu
             BAT_NETWORKING:       manual
+            BATS_STEMCELL_NAME:   bosh-vcloud-esxi-ubuntu-trusty-go_agent
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-            BATS_STEMCELL_NAME:   {{BATS_STEMCELL_NAME_ubuntu}}
             BATS_IP1:             {{BATS_IP1_ubuntu}}
             BATS_IP2:             {{BATS_IP2_ubuntu}}
             BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
@@ -149,7 +146,6 @@ jobs:
         - {trigger: true,  passed: [deploy-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
         - {trigger: false, passed: [deploy-ubuntu-v5.6], get: bosh-cpi-release}
         - {trigger: false, passed: [deploy-ubuntu-v5.6], get: stemcell, resource: vcloud-ubuntu-stemcell}
-        - {trigger: false,                                 get: bosh-concourse-ci}
         - {trigger: false,                                 get: bats}
 
       - task: test
@@ -159,11 +155,11 @@ jobs:
           params:
             base_os:              ubuntu
             BAT_NETWORKING:       manual
+            BATS_STEMCELL_NAME:   bosh-vcloud-esxi-ubuntu-trusty-go_agent
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-            BATS_STEMCELL_NAME:   {{BATS_STEMCELL_NAME_ubuntu}}
             BATS_IP1:             {{BATS_IP1_ubuntu}}
             BATS_IP2:             {{BATS_IP2_ubuntu}}
             BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
@@ -276,13 +272,6 @@ resources:
       bucket:            bosh-vcloud-cpi-release
       access_key_id:     {{s3_vcloud_cpi_access_key}}
       secret_access_key: {{s3_vcloud_cpi_secret_key}}
-
-  - name: bosh-concourse-ci
-    type: git
-    source:
-      uri: git@github.com:cloudfoundry/bosh-concourse-ci.git
-      branch: master
-      private_key: {{github_deployment_key__bosh-concourse-ci}}
 
   - name: bosh-init
     type: s3
