@@ -246,8 +246,8 @@ resources:
       bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-5
       versioned_file: ubuntu-manual-director-manifest-state.json
       region_name: us-east-1
-      access_key_id:     {{s3_vcloud_cpi_ubuntu_state_file_access_key}}
-      secret_access_key: {{s3_vcloud_cpi_ubuntu_state_file_secret_key}}
+      access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
+      secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
   - name: ubuntu-manual-director-state-file-v5-6
     type: s3
@@ -255,8 +255,8 @@ resources:
       bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-6
       versioned_file: ubuntu-manual-director-manifest-state.json
       region_name: us-east-1
-      access_key_id:     {{s3_vcloud_cpi_ubuntu_state_file_access_key}}
-      secret_access_key: {{s3_vcloud_cpi_ubuntu_state_file_secret_key}}
+      access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
+      secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
   - name: bosh-cpi-release
     type: git
