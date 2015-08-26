@@ -2,9 +2,9 @@
 
 set -e
 
-DOCKER_IMAGE=${DOCKER_IMAGE:-bosh/vcloud-cpi-release}
+DOCKER_IMAGE=${DOCKER_IMAGE:-boshcpi/vcloud-cpi-release}
 
-docker login --username=bosh --email=cf-bosh-eng@pivotal.io
+docker login
 
 echo "Building docker image..."
 docker build -t $DOCKER_IMAGE .

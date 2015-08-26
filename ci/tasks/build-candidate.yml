@@ -1,6 +1,6 @@
 ---
 platform: linux
-image: docker:///bosh/vcloud-cpi-release
+image: docker:///boshcpi/vcloud-cpi-release
 inputs:
   - name: bosh-cpi-release
   - name: version-semver
