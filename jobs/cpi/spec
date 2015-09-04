@@ -22,6 +22,8 @@ properties:
     description: TODO
   vcd.entities.media_storage_profile:
     description: TODO
+  vcd.entities.vapp_storage_profile:
+    description: Storage profile for each vm in a vapp
   vcd.entities.vapp_catalog:
     description: TODO
   vcd.entities.media_catalog:
