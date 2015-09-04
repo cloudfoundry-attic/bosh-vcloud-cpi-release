@@ -15,6 +15,7 @@
               "vapp_catalog" => p('vcd.entities.vapp_catalog'),
               "media_catalog" => p('vcd.entities.media_catalog'),
               "media_storage_profile" => p('vcd.entities.media_storage_profile'),
+              "vapp_storage_profile" => p('vcd.entities.vapp_storage_profile', nil),
               "vm_metadata_key" => p('vcd.entities.vm_metadata_key'),
               "description" => p('vcd.entities.description')
             }
@@ -26,12 +27,6 @@
       }
     }
   }
-
-  if_p('vcd.entities.vapp_storage_profile') do |storage_profile|
-    params["cloud"]["properties"]["vcds"].each do |vcd|
-      vcd["entities"]["vapp_storage_profile"] = storage_profile
-    end
-  end 
 
   if_p('vcd.control.wait_max') do |wait_max|
     params["cloud"]["properties"]["vcds"].each do |vcd|
