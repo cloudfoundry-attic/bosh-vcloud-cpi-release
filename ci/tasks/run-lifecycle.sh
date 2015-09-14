@@ -57,6 +57,6 @@ popd
 echo "installed mkisofs at `which mkisofs`"
 
 pushd bosh-cpi-release/src/bosh_vcloud_cpi
-  ./scripts/bundle_from_local_cache
+  bundle install
   bundle exec rake spec:lifecycle
 popd
