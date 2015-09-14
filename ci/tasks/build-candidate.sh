@@ -12,7 +12,7 @@ cd bosh-cpi-release
 
 echo "running unit tests"
 pushd src/bosh_vcloud_cpi
-  bundle install
+  ./scripts/bundle_from_local_cache
   bundle exec rake spec:unit
 popd
 
