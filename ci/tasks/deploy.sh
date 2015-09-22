@@ -71,6 +71,7 @@ jobs:
       - {name: blobstore, release: bosh}
       - {name: director, release: bosh}
       - {name: health_monitor, release: bosh}
+      - {name: powerdns, release: bosh}
       - {name: cpi, release: bosh-vcloud-cpi}
 
     resource_pool: vms
@@ -128,6 +129,10 @@ jobs:
         http: {user: hm, password: hm-password}
         director_account: {user: admin, password: admin}
         resurrector_enabled: true
+
+      dns:
+        address: 127.0.0.1
+        db: *db
 
       agent: {mbus: "nats://nats:nats-password@${BATS_DIRECTOR_IP}:4222"}
 
