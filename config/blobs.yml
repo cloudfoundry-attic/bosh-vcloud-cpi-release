@@ -1,8 +1,4 @@
 ---
-ruby_vcloud_cpi/ruby-1.9.3-p545.tar.gz:
-  object_id: c566b935-f287-4c46-8bda-5a85c3369246
-  sha: 03455364740914e8d2dfd6421f681b3fb68a4313
-  size: 12582277
 ruby_vcloud_cpi/yaml-0.1.5.tar.gz:
   object_id: 3cac255b-88e0-4f9f-ac09-80a5e0c8d65d
   sha: 8b78cb9f759c7d80db8a7328c0ebecfe34fde737
@@ -27,3 +23,7 @@ bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2:
   object_id: 056ebc10-d546-4797-bd2d-0cd1fe195ac1
   sha: 677af2a1b768d5dfd3bd71dc46f81992e798191b
   size: 426050
+ruby_vcloud_cpi/ruby-2.1.7.tar.gz:
+  object_id: 22cab1ef-5547-4fb6-8ceb-b47e2ebff396
+  sha: e2e195a4a58133e3ad33b955c829bb536fa3c075
+  size: 15151458
