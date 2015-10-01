@@ -62,6 +62,10 @@ properties:
   blobstore.s3_force_path_style:
     description: Whether s3 blobstore plugin will always use path style for bucket access
     default: false
+  blobstore.ssl_verify_peer:
+    description: Whether the simple blobstore plugin should verify its peer when using SSL
+  blobstore.s3_multipart_threshold:
+    description: Simple blobstore threshold for multipart uploads
   blobstore.path:
     description: TODO
   blobstore.agent.user:
@@ -85,6 +89,18 @@ properties:
     description: Address for agent to connect to blobstore server used by simple blobstore plugin
   agent.nats.address:
     description: Address of the nats server
+  agent.blobstore.use_ssl:
+    description: Whether the agent blobstore plugin should use SSL to connect to the blobstore server
+  agent.blobstore.s3_port:
+    description: Port of agent blobstore server used by s3 blobstore plugin
+  agent.blobstore.host:
+    description: Host of agent blobstore server used by simple blobstore plugin
+  agent.blobstore.s3_force_path_style:
+    description: Whether the agent blobstore plugin will always use path style for bucket access
+  agent.blobstore.ssl_verify_peer:
+    description: Whether the agent blobstore plugin should verify its peer when using SSL
+  agent.blobstore.s3_multipart_threshold:
+    description: Agent blobstore threshold for multipart uploads
 
   nats.user:
     description: Username to connect to nats with
