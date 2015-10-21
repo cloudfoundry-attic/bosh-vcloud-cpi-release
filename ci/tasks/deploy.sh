@@ -72,7 +72,7 @@ jobs:
       - {name: director, release: bosh}
       - {name: health_monitor, release: bosh}
       - {name: powerdns, release: bosh}
-      - {name: cpi, release: bosh-vcloud-cpi}
+      - {name: vcloud_cpi, release: bosh-vcloud-cpi}
 
     resource_pool: vms
     persistent_disk_pool: disks
@@ -109,7 +109,7 @@ jobs:
         address: 127.0.0.1
         name: my-bosh
         db: *db
-        cpi_job: cpi
+        cpi_job: vcloud_cpi
         max_threads: 10
 
       vcd: &vcd # <--- Replace values below
@@ -139,7 +139,7 @@ jobs:
       ntp: &ntp [0.pool.ntp.org, 1.pool.ntp.org]
 
 cloud_provider:
-  template: {name: cpi, release: ${cpi_release_name}}
+  template: {name: vcloud_cpi, release: ${cpi_release_name}}
 
   mbus: "https://mbus:mbus-password@${BATS_DIRECTOR_IP}:6868"
 
