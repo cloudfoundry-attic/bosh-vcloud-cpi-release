@@ -12,79 +12,79 @@ network:
     cloud_properties:
       name: vcd-org-network
     default:
-    - dns
-    - gateway
+      - dns
+      - gateway
     dns:
-    - 192.168.115.1
-    - 192.168.115.2
+      - 192.168.115.1
+      - 192.168.115.2
     gateway: 192.168.130.126
 
 networks:
-- name: default
-  subnets:
-  - reserved:
-    - 192.168.130.90 - 192.168.130.94
-    static:
-    - 192.168.130.95 - 192.168.130.99
-    range: 192.168.130.64/26
-    gateway: 192.168.130.126
-    dns:
-    - 192.168.115.1
-    - 192.168.115.2
-    cloud_properties:
-      name: vcd-org-network
-- name: dmz
-  subnets:
-  - static:
-    - 192.168.130.100 - 192.168.130.104
-    range: 192.168.130.64/26
-    dns:
-    - 192.168.115.1
-    - 192.168.115.2
-    cloud_properties:
-      name: vcd-org-network
+  - name: default
+    subnets:
+      - reserved:
+          - 192.168.130.90 - 192.168.130.94
+        static:
+          - 192.168.130.95 - 192.168.130.99
+        range: 192.168.130.64/26
+        gateway: 192.168.130.126
+        dns:
+          - 192.168.115.1
+          - 192.168.115.2
+        cloud_properties:
+          name: vcd-org-network
+  - name: dmz
+    subnets:
+      - static:
+          - 192.168.130.100 - 192.168.130.104
+        range: 192.168.130.64/26
+        dns:
+          - 192.168.115.1
+          - 192.168.115.2
+        cloud_properties:
+          name: vcd-org-network
 
 resource_pools:
-- name: small
-  stemcell:
-    name: bosh-stemcell
-    version: 0.2.24
-  network: default
-  size: 0
-  cloud_properties:
-    ram: 1024
-    disk: 4096
-    cpu: 1
-- name: medium
-  stemcell:
-    name: bosh-stemcell
-    version: 0.2.24
-  network: default
-  size: 0
-  cloud_properties:
-    ram: 2048
-    disk: 4096
-    cpu: 2
-- name: large
-  stemcell:
-    name: bosh-stemcell
-    version: 0.2.24
-  network: default
-  size: 0
-  cloud_properties:
-    ram: 8192
-    disk: 16384
-    cpu: 4
-- name: deas
-  stemcell:
-    name: bosh-stemcell
-    version: 0.2.24
-  network: default
-  size: 1
-  cloud_properties:
-    ram: 16384
-    disk: 32768
-    cpu: 4
+  - name: small
+    stemcell:
+      name: bosh-stemcell
+      version: 0.2.24
+    network: default
+    size: 0
+    cloud_properties:
+      ram: 1024
+      disk: 4096
+      cpu: 1
+  - name: medium
+    stemcell:
+      name: bosh-stemcell
+      version: 0.2.24
+    network: default
+    size: 0
+    cloud_properties:
+      ram: 2048
+      disk: 4096
+      cpu: 2
+  - name: large
+    stemcell:
+      name: bosh-stemcell
+      version: 0.2.24
+    network: default
+    size: 0
+    cloud_properties:
+      ram: 8192
+      disk: 16384
+      cpu: 4
+  - name: deas
+    stemcell:
+      name: bosh-stemcell
+      version: 0.2.24
+    network: default
+    size: 1
+    cloud_properties:
+      ram: 16384
+      disk: 32768
+      cpu: 4
 
 compilation:
   workers: 1
@@ -102,15 +102,14 @@ update:
   max_errors: 1
 
 jobs:
-
-- name: dea
-  template: dea
-  instances: 1
-  resource_pool: deas
-  update:
-    max_in_flight: 2
-  networks:
-  - name: default
+  - name: dea
+    template: dea
+    instances: 1
+    resource_pool: deas
+    update:
+      max_in_flight: 2
+    networks:
+      - name: default
 
 properties:
   domain: ud-03.eng.vmware.com
@@ -143,7 +142,7 @@ properties:
     token: 67d1269e92783716cc9d63703cf6451287540d60014b457243fedf4e0f68
     local_register_only: false
     admins:
-    - foo@eng.vmware.com
+      - foo@eng.vmware.com
 
   dea:
     max_memory: 8192

@@ -26,7 +26,7 @@ cloud:
   properties:
     agent:
       ntp:
-       - ntp01.las01.emcatmos.com
+         - ntp01.las01.emcatmos.com
       blobstore:
         plugin: simple
         properties:

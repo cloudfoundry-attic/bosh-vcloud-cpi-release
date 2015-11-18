@@ -38,8 +38,8 @@ jobs:
     serial: true
     plan:
       - aggregate:
-          - {trigger: false, get: bosh-cpi-release}
-          - {trigger: false, get: version-semver, params: {bump: patch}}
+        - {trigger: false, get: bosh-cpi-release}
+        - {trigger: false, get: version-semver, params: {bump: patch}}
 
       - put: version-semver
         params: {file: version-semver/number}
@@ -216,23 +216,23 @@ jobs:
   - name: promote-candidate
     serial: true
     plan:
-    - aggregate:
-      - {trigger: false,  passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
-      - {trigger: false, passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-release}
-      - {trigger: false, get: release-version-semver, params: {bump: major}}
+      - aggregate:
+        - {trigger: false,  passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-release}
+        - {trigger: false, get: release-version-semver, params: {bump: major}}
 
-    - task: promote
-      file: bosh-cpi-release/ci/tasks/promote-candidate.yml
-      config:
-        params:
-          aws_access_key_id: {{s3_vcloud_cpi_blobwriter_access_key}}
-          aws_secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
+      - task: promote
+        file: bosh-cpi-release/ci/tasks/promote-candidate.yml
+        config:
+          params:
+            aws_access_key_id: {{s3_vcloud_cpi_blobwriter_access_key}}
+            aws_secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
-    - put: bosh-cpi-release
-      params: {repository: promote/bosh-cpi-release, rebase: true, tag_prefix: "v", tag: promote/integer_version}
+      - put: bosh-cpi-release
+        params: {repository: promote/bosh-cpi-release, rebase: true, tag_prefix: "v", tag: promote/integer_version}
 
-    - put: release-version-semver
-      params: {file: release-version-semver/number}
+      - put: release-version-semver
+        params: {file: release-version-semver/number}
 
 resources:
   - name: bosh-cpi-dev-artifacts

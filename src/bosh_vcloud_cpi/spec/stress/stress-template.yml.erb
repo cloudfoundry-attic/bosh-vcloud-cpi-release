@@ -22,77 +22,74 @@ update:
   max_errors: 1
 
 networks:
-
-- name: default
-  subnets:
-  <%- for @subnet in find("networks.default.subnets") -%>
-  - range: <%= find_in("range", @subnet) %>
-    <%- if @subnet['reserved'] -%>
-    reserved:
-      <%- for @reserved in find_in("reserved", @subnet) -%>
-    - <%=   @reserved %>
+  - name: default
+    subnets:
+      <%- for @subnet in find("networks.default.subnets") -%>
+      - range: <%= find_in("range", @subnet) %>
+        <%- if @subnet['reserved'] -%>
+        reserved:
+            <%- for @reserved in find_in("reserved", @subnet) -%>
+          - <%=   @reserved %>
+            <%- end -%>
+        <%- end -%>
+        static:
+          <%- for @static in find_in("static", @subnet) -%>
+          - <%= @static %>
+          <%- end -%>
+        gateway: <%= find_in("gateway", @subnet) %>
+        dns:
+          <%- for @dns in find_in("dns", @subnet) -%>
+          - <%= @dns %>
+          <%- end -%>
+        cloud_properties:
+          name: <%= find_in("cloud_properties.name", @subnet) %>
       <%- end -%>
-    <%- end -%>
-    static:
-    <%- for @static in find_in("static", @subnet) -%>
-    - <%= @static %>
-    <%- end -%>
-    gateway: <%= find_in("gateway", @subnet) %>
-    dns:
-    <%- for @dns in find_in("dns", @subnet) -%>
-    - <%= @dns %>
-    <%- end -%>
-    cloud_properties:
-      name: <%= find_in("cloud_properties.name", @subnet) %>
-  <%- end -%>
 
 resource_pools:
+  - name: redis
+    network: default
+    size: 1
+    stemcell:
+      name: bosh-stemcell
+      version: 1.5.0.pre.3
+    cloud_properties:
+      ram: 4096
+      disk: 1024
+      cpu: 4
+    env:
+      vapp: stress
 
-- name: redis
-  network: default
-  size: 1
-  stemcell:
-    name: bosh-stemcell
-    version: 1.5.0.pre.3
-  cloud_properties:
-    ram: 4096
-    disk: 1024
-    cpu: 4
-  env:
-    vapp: stress
-
-- name: stress
-  network: default
-  size: 1
-  stemcell:
-    name: bosh-stemcell
-    version: 1.5.0.pre.3
-  cloud_properties:
-    ram: 1024
-    disk: 1024
-    cpu: 1
-  env:
-    vapp: stress
+  - name: stress
+    network: default
+    size: 1
+    stemcell:
+      name: bosh-stemcell
+      version: 1.5.0.pre.3
+    cloud_properties:
+      ram: 1024
+      disk: 1024
+      cpu: 1
+    env:
+      vapp: stress
 
 jobs:
+  - name: redis
+    template: redis
+    instances: 1
+    resource_pool: redis
+    networks:
+      - name: default
+        static_ips:
+          - <%= ip(0, "default.static") %>
 
-- name: redis
-  template: redis
-  instances: 1
-  resource_pool: redis
-  networks:
-  - name: default
-    static_ips:
-    - <%= ip(0, "default.static") %>
-
-- name: stress
-  template: stress
-  instances: 1
-  resource_pool: stress
-  networks:
-  - name: default
-    static_ips:
-    - <%= ip(1, "default.static") %>
+  - name: stress
+    template: stress
+    instances: 1
+    resource_pool: stress
+    networks:
+      - name: default
+        static_ips:
+          - <%= ip(1, "default.static") %>
 
 properties:
   redis:
