@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name         = "bosh_vcloud_cpi"
-  s.version      = '0.12.0'
+  s.version      = '0.12.1'
   s.platform     = Gem::Platform::RUBY
   s.summary      = "BOSH vCloud CPI"
   s.description  = "BOSH vCloud CPI"
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.add_dependency "bosh_cpi"
   s.add_dependency "yajl-ruby", ">=0.8.2"
   s.add_dependency "builder","~>3.1.4"
-  s.add_dependency "httpclient", "~>2.4.0"
+  s.add_dependency "httpclient", "=2.7.1"
   s.add_dependency "rest-client", "~>1.6.7"
   s.add_dependency "nokogiri", "~>1.6.6"
   s.add_dependency "membrane"
