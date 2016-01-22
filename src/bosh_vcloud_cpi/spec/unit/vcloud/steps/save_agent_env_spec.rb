@@ -64,7 +64,7 @@ module VCloudCloud
 
           step = described_class.new state, client
           client.should_receive(:reload).once.ordered.with(vm)
-          allow(stub).to receive(:create_iso_cmd).and_return('myIsoCreationUtil')
+          allow(step).to receive(:create_iso_cmd).and_return('myIsoCreationUtil')
           allow(Open3).to receive(:popen3).and_return([nil, empty_response, empty_response])
           allow_message_expectations_on_nil
 
