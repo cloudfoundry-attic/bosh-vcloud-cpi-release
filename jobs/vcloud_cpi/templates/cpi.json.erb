@@ -44,7 +44,8 @@
       params["cloud"]["properties"]["agent"]["blobstore"]["options"] = {
         "bucket_name" => p('blobstore.bucket_name'),
         "access_key_id" => p(['agent.blobstore.access_key_id', 'blobstore.access_key_id']),
-        "secret_access_key" => p(['agent.blobstore.secret_access_key', 'blobstore.secret_access_key'])
+        "secret_access_key" => p(['agent.blobstore.secret_access_key', 'blobstore.secret_access_key']),
+        "region" => p(['agent.blobstore.s3_region', 'blobstore.s3_region'])
       }
 
       blobstore_options = params['cloud']['properties']['agent']['blobstore']['options']
@@ -60,6 +61,7 @@
       update_blobstore_options(blobstore_options, 's3_force_path_style')
       update_blobstore_options(blobstore_options, 'ssl_verify_peer')
       update_blobstore_options(blobstore_options, 's3_multipart_threshold')
+      update_blobstore_options(blobstore_options, 's3_signature_version', 'signature_version')
 
     elsif p('blobstore.provider') == 'local'
       params["cloud"]["properties"]["agent"]["blobstore"]["options"] = {
