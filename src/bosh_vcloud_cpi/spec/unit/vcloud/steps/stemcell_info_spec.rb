@@ -28,7 +28,7 @@ module VCloudCloud
             s.next described_class, stemcell
             s.state[:stemcell_ovf].should be_nil
           end
-        }.to raise_error /Invalid stemcell/
+        }.to raise_error /Invalid stemcell image: .*#{stemcell}.*/
       end
     end
   end

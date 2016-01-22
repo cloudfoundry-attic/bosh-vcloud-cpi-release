@@ -4,8 +4,10 @@ module VCloudCloud
       def perform(image, &block)
         tmpdir = state[:stemcell_dir] = Dir.mktmpdir
         # examine files in the tarball
-        `tar -C #{tmpdir} -xzf #{File.absolute_path(image)}`
-        raise 'Invalid stemcell image' unless $?.success?
+        _, stderr, status = Open3.capture3("tar -C #{tmpdir} -xzf #{File.absolute_path(image)}")
+
+        raise "Invalid stemcell image: #{stderr}" unless status.success?
+
         files = Dir.glob File.join(tmpdir, '*.ovf')
         # stemcell should only include one .ovf file
         raise "Invalid stemcell image: having #{files.length} .ovf files" if files.length != 1
