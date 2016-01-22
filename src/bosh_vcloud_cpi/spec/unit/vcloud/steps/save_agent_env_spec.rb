@@ -69,7 +69,7 @@ module VCloudCloud
           allow_message_expectations_on_nil
 
           #execute the test
-          expect{step.perform}.to raise_exception RuntimeError
+          expect{step.perform}.to raise_error /command `myIsoCreationUtil.*`: output `\[\]`/
           expect(state[:iso]).to be_nil
         end
       end
