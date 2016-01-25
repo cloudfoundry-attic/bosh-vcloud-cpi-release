@@ -17,22 +17,20 @@ jobs:
   - name: create-jumpbox-v5.5
     plan:
       - aggregate:
-        - {trigger: false,  get: bosh-cpi-release}
+        - {trigger: false,  get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
 
       - task: sleep
         file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
-        config:
-          tags: ["vcloud-v5.5"]
+        tags: ["vcloud-v5.5"]
 
   - name: create-jumpbox-v5.6
     plan:
       - aggregate:
-        - {trigger: false,  get: bosh-cpi-release}
+        - {trigger: false,  get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
 
       - task: sleep
         file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
-        config:
-          tags: ["vcloud-v5.6"]
+        tags: ["vcloud-v5.6"]
 
   - name: build-candidate
     serial: true
@@ -54,18 +52,18 @@ jobs:
     serial_groups: [vcloud-v5.5-serial-group]
     plan:
       - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [build-candidate], get: version-semver}
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-5}
-        - {trigger: false,                            get: bosh-init}
-        - {trigger: false,                            get: bosh-release}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]}
+        - {trigger: false, passed: [build-candidate], get: version-semver, tags: ["vcloud-v5.5"]}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-5, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                            get: bosh-init, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                            get: bosh-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
 
       - task: deploy
         file: bosh-cpi-release/ci/tasks/deploy.yml
+        tags: ["vcloud-v5.5"]
         config:
-          tags: ["vcloud-v5.5"]
           params:
             base_os:              ubuntu
             network_type_to_test: manual
@@ -79,24 +77,25 @@ jobs:
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
         ensure:
           put: ubuntu-manual-director-state-file-v5-5
+          tags: ["vcloud-v5.5"]
           params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
 
   - name: deploy-ubuntu-v5.6
     serial_groups: [vcloud-v5.6-serial-group]
     plan:
       - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [build-candidate], get: version-semver}
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-6}
-        - {trigger: false,                            get: bosh-init}
-        - {trigger: false,                            get: bosh-release}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]}
+        - {trigger: false, passed: [build-candidate], get: version-semver, tags: ["vcloud-v5.6"]}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-6, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                            get: bosh-init, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                            get: bosh-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
 
       - task: deploy
         file: bosh-cpi-release/ci/tasks/deploy.yml
+        tags: ["vcloud-v5.6"]
         config:
-          tags: ["vcloud-v5.6"]
           params:
             base_os:              ubuntu
             network_type_to_test: manual
@@ -110,21 +109,22 @@ jobs:
             BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
         ensure:
           put: ubuntu-manual-director-state-file-v5-6
+          tags: ["vcloud-v5.6"]
           params: {from: deploy/director-state-file/ubuntu-manual-director-manifest-state.json}
 
   - name: bats-ubuntu-v5.5
     serial_groups: [vcloud-v5.5-serial-group] # can't run while deploying
     plan:
       - aggregate:
-        - {trigger: true,  passed: [deploy-ubuntu-v5.5], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: bosh-cpi-release}
-        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: stemcell, resource: vcloud-ubuntu-stemcell}
-        - {trigger: false,                                 get: bats}
+        - {trigger: true,  passed: [deploy-ubuntu-v5.5], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]}
+        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                               get: bats, tags: ["vcloud-v5.5"]}
 
       - task: test
         file: bosh-cpi-release/ci/tasks/run-bats.yml
+        tags: ["vcloud-v5.5"]
         config:
-          tags: ["vcloud-v5.5"]
           params:
             base_os:              ubuntu
             BAT_NETWORKING:       manual
@@ -143,15 +143,15 @@ jobs:
     serial_groups: [vcloud-v5.6-serial-group] # can't run while deploying
     plan:
       - aggregate:
-        - {trigger: true,  passed: [deploy-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: bosh-cpi-release}
-        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: stemcell, resource: vcloud-ubuntu-stemcell}
-        - {trigger: false,                                 get: bats}
+        - {trigger: true,  passed: [deploy-ubuntu-v5.6], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]}
+        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                               get: bats, tags: ["vcloud-v5.6"]}
 
       - task: test
         file: bosh-cpi-release/ci/tasks/run-bats.yml
+        tags: ["vcloud-v5.6"]
         config:
-          tags: ["vcloud-v5.6"]
           params:
             base_os:              ubuntu
             BAT_NETWORKING:       manual
@@ -170,12 +170,13 @@ jobs:
     serial: true
     plan:
       - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]} # used for job chaining only not for tasks
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
 
       - task: test
         file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        tags: ["vcloud-v5.5"]
         config:
           params:
             VCLOUD_HOST:     {{VCLOUD_HOST_V5_5}}
@@ -193,12 +194,13 @@ jobs:
     serial: true
     plan:
       - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts} # used for job chaining only not for tasks
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell}
+        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]} # used for job chaining only not for tasks
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
 
       - task: test
         file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        tags: ["vcloud-v5.6"]
         config:
           params:
             VCLOUD_HOST:     {{VCLOUD_HOST_V5_6}}
