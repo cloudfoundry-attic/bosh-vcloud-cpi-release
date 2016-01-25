@@ -11,6 +11,7 @@ params:
   VCLOUD_USER:     replace-me
   VCLOUD_PASSWORD: replace-me
   VCLOUD_VLAN:     replace-me
+  VCLOUD_ORG:      replace-me
   VCLOUD_VDC:      replace-me
   NETWORK_NETMASK: replace-me
   NETWORK_DNS:     replace-me

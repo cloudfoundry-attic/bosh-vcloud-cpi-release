@@ -8,6 +8,7 @@ check_param VCLOUD_HOST
 check_param VCLOUD_USER
 check_param VCLOUD_PASSWORD
 check_param VCLOUD_VLAN
+check_param VCLOUD_ORG
 check_param VCLOUD_VDC
 check_param NETWORK_NETMASK
 check_param NETWORK_DNS
@@ -20,7 +21,7 @@ export BOSH_VCLOUD_CPI_URL=${VCLOUD_HOST}
 export BOSH_VCLOUD_CPI_USER=${VCLOUD_USER}
 export BOSH_VCLOUD_CPI_PASSWORD=${VCLOUD_PASSWORD}
 export BOSH_VCLOUD_CPI_NET_ID=${VCLOUD_VLAN}
-export BOSH_VCLOUD_CPI_ORG=${VCLOUD_VDC}
+export BOSH_VCLOUD_CPI_ORG=${VCLOUD_ORG}
 export BOSH_VCLOUD_CPI_VDC=${VCLOUD_VDC}
 export BOSH_VCLOUD_CPI_VAPP_CATALOG=bosh-concourse-lifecycle-catalog
 export BOSH_VCLOUD_CPI_VAPP_NAME=bosh-concourse-lifecycle-vapp

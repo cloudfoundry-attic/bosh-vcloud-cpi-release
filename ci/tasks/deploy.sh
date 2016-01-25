@@ -10,6 +10,7 @@ check_param VCLOUD_VLAN
 check_param VCLOUD_HOST
 check_param VCLOUD_USER
 check_param VCLOUD_PASSWORD
+check_param VCLOUD_ORG
 check_param VCLOUD_VDC
 check_param NETWORK_CIDR
 check_param NETWORK_GATEWAY
@@ -117,7 +118,7 @@ jobs:
         user: ${VCLOUD_USER}
         password: ${VCLOUD_PASSWORD}
         entities:
-          organization: ${VCLOUD_VDC}
+          organization: ${VCLOUD_ORG}
           virtual_datacenter: ${VCLOUD_VDC}
           vapp_catalog: bosh-concourse-director-${base_os}-catalog
           media_catalog: bosh-concourse-director-${base_os}-catalog

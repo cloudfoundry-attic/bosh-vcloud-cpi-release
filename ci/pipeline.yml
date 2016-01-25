@@ -71,6 +71,7 @@ jobs:
             VCLOUD_USER:          {{VCLOUD_USER_V5_5}}
             VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_5}}
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            VCLOUD_ORG:           {{VCLOUD_ORG_V5_5}}
             VCLOUD_VDC:           {{VCLOUD_VDC_V5_5}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
@@ -103,6 +104,7 @@ jobs:
             VCLOUD_USER:          {{VCLOUD_USER_V5_6}}
             VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_6}}
             VCLOUD_VLAN:          {{VCLOUD_VLAN}}
+            VCLOUD_ORG:           {{VCLOUD_ORG_V5_6}}
             VCLOUD_VDC:           {{VCLOUD_VDC_V5_6}}
             NETWORK_CIDR:         {{NETWORK_CIDR}}
             NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
@@ -183,6 +185,7 @@ jobs:
             VCLOUD_USER:     {{VCLOUD_USER_V5_5}}
             VCLOUD_PASSWORD: {{VCLOUD_PASSWORD_V5_5}}
             VCLOUD_VLAN:     {{VCLOUD_VLAN}}
+            VCLOUD_ORG:      {{VCLOUD_ORG_V5_5}}
             VCLOUD_VDC:      {{VCLOUD_VDC_V5_5}}
             NETWORK_NETMASK: {{NETWORK_NETMASK}}
             NETWORK_DNS:     {{NETWORK_DNS}}
@@ -207,6 +210,7 @@ jobs:
             VCLOUD_USER:     {{VCLOUD_USER_V5_6}}
             VCLOUD_PASSWORD: {{VCLOUD_PASSWORD_V5_6}}
             VCLOUD_VLAN:     {{VCLOUD_VLAN}}
+            VCLOUD_ORG:      {{VCLOUD_ORG_V5_6}}
             VCLOUD_VDC:      {{VCLOUD_VDC_V5_6}}
             NETWORK_NETMASK: {{NETWORK_NETMASK}}
             NETWORK_DNS:     {{NETWORK_DNS}}

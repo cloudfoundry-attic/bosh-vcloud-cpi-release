@@ -18,6 +18,7 @@ params:
   VCLOUD_HOST:          replace-me
   VCLOUD_USER:          replace-me
   VCLOUD_PASSWORD:      replace-me
+  VCLOUD_ORG:           replace-me
   VCLOUD_VDC:           replace-me
   NETWORK_CIDR:         replace-me
   NETWORK_GATEWAY:      replace-me
