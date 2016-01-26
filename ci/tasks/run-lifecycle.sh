@@ -59,5 +59,5 @@ echo "installed mkisofs at `which mkisofs`"
 
 pushd bosh-cpi-release/src/bosh_vcloud_cpi
   bundle install
-  bundle exec rake spec:lifecycle
+  bundle exec rake spec:lifecycle SPEC_OPTS="--format ProfilingFormatter"
 popd
