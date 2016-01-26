@@ -5,8 +5,8 @@ module VCloudCloud
     describe DeleteUnusedNetworks do
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) { |arg| arg}
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) { |arg| arg}
         client
       end
 
@@ -19,7 +19,7 @@ module VCloudCloud
       let(:network_in_use) do
         name = network_in_use_name
         network = double(name)
-        network.stub(:network_name) { name }
+        allow(network).to receive(:network_name) { name }
         network
       end
 
@@ -27,7 +27,7 @@ module VCloudCloud
       let(:network_not_used) do
         name = network_not_used_name
         network = double(name)
-        network.stub(:network_name) { name }
+        allow(network).to receive(:network_name) { name }
         network
       end
 
@@ -39,17 +39,17 @@ module VCloudCloud
 
       describe ".perform" do
         it "deletes unused networks" do
-          network_config_section.should_receive(:network_configs) {
+          expect(network_config_section).to receive(:network_configs) {
             [ network_not_used, network_in_use ]
           }
-          network_config_section.should_receive(:delete_network_config).with(
+          expect(network_config_section).to receive(:delete_network_config).with(
             network_not_used_name
           )
-          vapp.stub(:network_config_section) { network_config_section }
+          allow(vapp).to receive(:network_config_section) { network_config_section }
 
           state = { vapp: vapp }
           networks_in_use = [ network_in_use ]
-          client.should_receive(:invoke_and_wait).with(
+          expect(client).to receive(:invoke_and_wait).with(
             :put, network_config_section, anything
           )
 

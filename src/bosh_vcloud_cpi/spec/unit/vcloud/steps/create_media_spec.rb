@@ -13,34 +13,34 @@ module VCloudCloud
       let(:media_file_size) { "1000" }
       let(:media_file) do
         file = double("media_file")
-        file.stub_chain(:stat, :size) { media_file_size }
+        allow(file).to receive_message_chain(:stat, :size) { media_file_size }
         file
       end
 
       let(:media_delete_link) {"http://media/delete"}
       let(:media) do
         media = double("media")
-        media.stub(:delete_link) {media_delete_link}
+        allow(media).to receive(:delete_link) {media_delete_link}
         media
       end
 
       let(:upload_media_link) { "http://upload_media_link" }
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) do |arg|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) do |arg|
           arg
         end
-        client.stub_chain(:vdc, :upload_media_link) { upload_media_link }
-        client.stub(:invoke) do |method, href, params|
+        allow(client).to receive_message_chain(:vdc, :upload_media_link) { upload_media_link }
+        allow(client).to receive(:invoke) do |method, href, params|
           media if href == upload_media_link
         end
-        client.stub(:timed_loop) do |&block|
+        allow(client).to receive(:timed_loop) do |&block|
           while true do
             block.call
           end
         end
-        client.stub(:wait_entity) do |arg|
+        allow(client).to receive(:wait_entity) do |arg|
           arg
         end
         client
@@ -52,10 +52,10 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          File.should_receive(:new).once.ordered.with(iso, 'rb') { media_file }
-          media_file.should_receive(:stat).once.ordered
-          client.should_receive(:vdc).once.ordered
-          client.should_receive(:invoke).once.ordered.with(:post, upload_media_link, kind_of(Hash))
+          expect(File).to receive(:new).once.ordered.with(iso, 'rb') { media_file }
+          expect(media_file).to receive(:stat).once.ordered
+          expect(client).to receive(:vdc).once.ordered
+          expect(client).to receive(:invoke).once.ordered.with(:post, upload_media_link, kind_of(Hash))
 
           # run the test
           described_class.new(state, client).perform name, iso, type, storage_profile
@@ -69,18 +69,18 @@ module VCloudCloud
           state = {:media => media}
 
           # configure mock expectations
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {["task 1"]}
-          client.should_receive(:wait_entity).once.ordered.with(media)
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {[]}
-          media.should_receive(:delete_link).once.ordered
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {["task 1"]}
+          expect(client).to receive(:wait_entity).once.ordered.with(media)
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {[]}
+          expect(media).to receive(:delete_link).once.ordered
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:media)).to be_false
+          expect(state.key?(:media)).to be false
         end
 
         it "rolls back media without running tasks" do
@@ -88,15 +88,15 @@ module VCloudCloud
           state = {:media => media}
 
           # configure mock expectations
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {[]}
-          media.should_receive(:delete_link).once.ordered
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {[]}
+          expect(media).to receive(:delete_link).once.ordered
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:media)).to be_false
+          expect(state.key?(:media)).to be false
         end
       end
     end

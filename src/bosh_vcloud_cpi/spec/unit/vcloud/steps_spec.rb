@@ -5,7 +5,7 @@ module VCloudCloud
     describe ".perform" do
       let(:client) do
         client = double("mock client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
         client
       end
 
@@ -30,8 +30,8 @@ module VCloudCloud
           t.next S2, :records => @records
         end
 
-        @records[:steps].should == 2
-        @records[:value].should == 2
+        expect(@records[:steps]).to be 2
+        expect(@records[:value]).to be 2
       end
 
       it "should execute rollback" do
@@ -54,7 +54,7 @@ module VCloudCloud
           end
         end.to raise_error(StandardError, /err/)
 
-        @records[:value].should == 0
+        expect(@records[:value]).to be 0
       end
     end
   end

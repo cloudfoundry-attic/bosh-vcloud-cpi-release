@@ -21,20 +21,20 @@ module VCloudCloud
 
       let(:catalog_item) do
         item = double("catalog item")
-        item.stub(:entity) {template}
+        allow(item).to receive(:entity) {template}
         item
       end
 
       let(:template) do
         template = double("vapp template")
-        template.stub(:[]) {"value"}
-        template.stub(:vms) {[vm]}
+        allow(template).to receive(:[]) {"value"}
+        allow(template).to receive(:vms) {[vm]}
         template
       end
 
       let(:vapp) do
         vapp = double("vapp")
-        vapp.stub(:name) {'testVapp'}
+        allow(vapp).to receive(:name) {'testVapp'}
         vapp
       end
 
@@ -43,18 +43,18 @@ module VCloudCloud
       let(:instantiate_vapp_template_link_value) {"http://vdc/instantiate/vapp/template"}
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:resolve_entity) do |arg|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:resolve_entity) do |arg|
           catalog_item if arg == template_id
         end
-        client.stub(:resolve_link) do |arg|
+        allow(client).to receive(:resolve_link) do |arg|
           arg
         end
-        client.stub(:invoke) do |method,link,params|
+        allow(client).to receive(:invoke) do |method,link,params|
           vapp if method == :post && link == instantiate_vapp_template_link_value
         end
-        client.stub_chain(:vdc, :instantiate_vapp_template_link) {instantiate_vapp_template_link_value}
-        client.stub(:wait_entity) do |arg|
+        allow(client).to receive_message_chain(:vdc, :instantiate_vapp_template_link) {instantiate_vapp_template_link_value}
+        allow(client).to receive(:wait_entity) do |arg|
           arg
         end
         client
@@ -67,13 +67,13 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:resolve_entity).once.ordered.with(template_id)
-          catalog_item.should_receive(:entity).once.ordered
-          client.should_receive(:resolve_link).once.ordered.with(template)
-          template.should_receive(:vms).twice.ordered
-          client.should_receive(:vdc).once.ordered
-          client.should_receive(:invoke).once.ordered.with(:post, instantiate_vapp_template_link_value, kind_of(Hash))
-          client.should_receive(:wait_entity).once.ordered.with(vapp)
+          expect(client).to receive(:resolve_entity).once.ordered.with(template_id)
+          expect(catalog_item).to receive(:entity).once.ordered
+          expect(client).to receive(:resolve_link).once.ordered.with(template)
+          expect(template).to receive(:vms).twice.ordered
+          expect(client).to receive(:vdc).once.ordered
+          expect(client).to receive(:invoke).once.ordered.with(:post, instantiate_vapp_template_link_value, kind_of(Hash))
+          expect(client).to receive(:wait_entity).once.ordered.with(vapp)
 
           # run the test
           step = described_class.new state, client
@@ -88,7 +88,7 @@ module VCloudCloud
           state = {}
 
           # config mock expectations
-          client.should_receive(:resolve_entity).once.ordered.with(tid)
+          expect(client).to receive(:resolve_entity).once.ordered.with(tid)
 
           # run the test
           step = described_class.new state, client
@@ -103,8 +103,8 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          vapp.should_not_receive(:remove_link)
-          client.should_not_receive(:invoke_and_wait)
+          expect(vapp).to_not receive(:remove_link)
+          expect(client).to_not receive(:invoke_and_wait)
 
           # run test
           step = described_class.new state, client
@@ -117,14 +117,14 @@ module VCloudCloud
           remove_link = "http://vapp/remove"
 
           # configure mock expectations
-          client.should_receive(:flush_cache).once.ordered
-          client.should_receive(:vapp_by_name).once.ordered.with(vapp_name).and_return(vapp)
-          vapp.should_receive(:remove_link).once.ordered { remove_link }
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+          expect(client).to receive(:flush_cache).once.ordered
+          expect(client).to receive(:vapp_by_name).once.ordered.with(vapp_name).and_return(vapp)
+          expect(vapp).to receive(:remove_link).once.ordered { remove_link }
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:instantiate_vapp_name)).to be_false
+          expect(state.key?(:instantiate_vapp_name)).to be false
         end
       end
     end

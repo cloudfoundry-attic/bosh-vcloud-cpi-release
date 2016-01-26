@@ -145,7 +145,7 @@ describe VCloudCloud::Cloud do
     it "should retry if get Timeout::Error while uploading files" do
       should_timeout = true
       original_upload = VCloudCloud::FileUploader.method(:upload)
-      VCloudCloud::FileUploader.any_instance.stub(:upload) do |*args, &block|
+      allow(VCloudCloud::FileUploader.any_instance).to receive(:upload) do |*args, &block|
         if should_timeout
           should_timeout = false
           raise Timeout::Error
@@ -166,10 +166,10 @@ describe VCloudCloud::Cloud do
 
       # create a vm to ensure that the stemcell is valid
       vm_id = @cpi.create_vm random_vm_name, @retried_stemcell_id, resource_pool, @network_specs[0], [], vm_env
-      vm_id.should_not be_nil
+      expect(vm_id).to_not be_nil
       @vm_ids << vm_id
       has_vm = @cpi.has_vm? vm_id
-      has_vm.should be_true
+      expect(has_vm).to be true
 
       expect { @cpi.delete_stemcell(@retried_stemcell_id) }.to_not raise_error
     end
@@ -178,14 +178,14 @@ describe VCloudCloud::Cloud do
   context "when there is no error in create_vm" do
     it 'should create vm and reconfigure network' do
       vm_id = @cpi.create_vm random_vm_name, @stemcell_id, resource_pool, @network_specs[0], [], vm_env
-      vm_id.should_not be_nil
+      expect(vm_id).to_not be_nil
       @vm_ids << vm_id
       has_vm = @cpi.has_vm? vm_id
-      has_vm.should be_true
+      expect(has_vm).to be true
 
       expect {@cpi.configure_networks vm_id, @network_specs[1]}.to raise_error Bosh::Clouds::NotSupported
       disk_id = @cpi.create_disk(2048, {}, vm_id)
-      disk_id.should_not be_nil
+      expect(disk_id).to_not be_nil
       @disk_ids << disk_id
 
       @cpi.attach_disk vm_id, disk_id
@@ -208,7 +208,7 @@ describe VCloudCloud::Cloud do
 
       it 'should clean up the media when create_vm fail to PowerOn' do
         exceptionMsg = 'PowerOn Failed!'
-        VCloudCloud::Steps::PowerOn.any_instance.stub(:perform).and_raise(exceptionMsg)
+        allow(VCloudCloud::Steps::PowerOn.any_instance).to receive(:perform).and_raise(exceptionMsg)
         begin
           @cpi.create_vm random_vm_name, @stemcell_id, resource_pool, @network_specs[0], [], vm_env
           fail 'create_vm should fail'

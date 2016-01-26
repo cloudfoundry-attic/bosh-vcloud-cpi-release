@@ -14,24 +14,24 @@ module VCloudCloud
       let(:catalog_add_item_link) {"add_item_link"}
       let(:catalog) do
         catalog = double("vcloud catalog")
-        catalog.stub(:add_item_link) { catalog_add_item_link }
+        allow(catalog).to receive(:add_item_link) { catalog_add_item_link }
         catalog
       end
 
       let(:resource_name) {"vcloud resource name"}
       let(:resource_item) do
         res = double("vcloud resource").as_null_object
-        res.stub(:name) { resource_name }
+        allow(res).to receive(:name) { resource_name }
         res
       end
 
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:catalog) do |param|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:catalog) do |param|
           catalog if param == catalog_type
         end
-        client.stub(:invoke) do |method, link, params|
+        allow(client).to receive(:invoke) do |method, link, params|
           catalog_item if :post == method && catalog_add_item_link == link
         end
         client
@@ -43,10 +43,10 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:catalog).once.ordered.with(catalog_type)
-          resource_item.should_receive(:name).twice.ordered
-          catalog.should_receive(:add_item_link).once.ordered
-          client.should_receive(:invoke).once.ordered.with(:post, catalog_add_item_link, kind_of(Hash))
+          expect(client).to receive(:catalog).once.ordered.with(catalog_type)
+          expect(resource_item).to receive(:name).twice.ordered
+          expect(catalog).to receive(:add_item_link).once.ordered
+          expect(client).to receive(:invoke).once.ordered.with(:post, catalog_add_item_link, kind_of(Hash))
 
           # run test
           described_class.new(state, client).perform catalog_type, resource_item
@@ -60,7 +60,7 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_not_receive(:invoke)
+          expect(client).to_not receive(:invoke)
 
           # run test
           step = described_class.new state, client
@@ -72,11 +72,11 @@ module VCloudCloud
           state = {:catalog_item => catalog_item}
 
           # configure mock expectations
-          client.should_receive(:invoke).once.ordered.with(:delete, catalog_item)
+          expect(client).to receive(:invoke).once.ordered.with(:delete, catalog_item)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:catalog_item)).to be_false
+          expect(state.key?(:catalog_item)).to be false
         end
       end
     end

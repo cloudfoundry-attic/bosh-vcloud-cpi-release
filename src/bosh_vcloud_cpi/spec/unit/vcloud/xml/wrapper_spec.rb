@@ -15,19 +15,19 @@ module VCloudSdk
       describe :wrap_document do
         it "successfully creates a admin catalog wrapper" do
           wrapper = WrapperFactory.wrap_document @valid_xml
-          wrapper.should be_an_instance_of AdminCatalog
+          expect(wrapper).to be_an_instance_of AdminCatalog
         end
 
         it "successfully creates an error wrapper" do
           error_xml = "<Error/>"
           wrapper = WrapperFactory.wrap_document error_xml
-          wrapper.should be_an_instance_of Error
+          expect(wrapper).to be_an_instance_of Error
         end
 
         it "returns the error number and the error message" do
           error_xml = '<Error majorErrorCode="400" message="[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named &quot;18369d52-151a-4fa3-87ee-c5dad9288f9f&quot;." minorErrorCode="BAD_REQUEST"></Error>'
           wrapper = WrapperFactory.wrap_document error_xml
-          wrapper.should be_an_instance_of Error
+          expect(wrapper).to be_an_instance_of Error
           expect(wrapper.major_error).to eq('400')
           expect(wrapper.minor_error).to eq('BAD_REQUEST')
           expect(wrapper.error_msg).to eq('[ 5bdd3f05-8130-43f3-8941-58009bd0ea10 ] There is already a VM named "18369d52-151a-4fa3-87ee-c5dad9288f9f".')
@@ -35,7 +35,7 @@ module VCloudSdk
 
         it "fails to create specialized wrapper and creates a generic wrapper instead" do
           wrapper = WrapperFactory.wrap_document @invalid_xml
-          wrapper.should be_an_instance_of Wrapper
+          expect(wrapper).to be_an_instance_of Wrapper
         end
       end
 
@@ -43,13 +43,13 @@ module VCloudSdk
         it "successfully creates a specialized wrapper" do
           doc = Nokogiri::XML @valid_xml
           wrapper = WrapperFactory.wrap_node doc.root, nil
-          wrapper.should be_an_instance_of AdminCatalog
+          expect(wrapper).to be_an_instance_of AdminCatalog
         end
 
         it "fails to create specialized wrapper and creates a generic wrapper instead" do
           doc = Nokogiri::XML @invalid_xml
           wrapper = WrapperFactory.wrap_node doc.root, nil
-          wrapper.should be_an_instance_of Wrapper
+          expect(wrapper).to be_an_instance_of Wrapper
         end
       end
 
@@ -57,26 +57,26 @@ module VCloudSdk
         it "creates a list of specialized and generic nodes" do
           nodes = [Nokogiri::XML(@valid_xml).root, Nokogiri::XML(@invalid_xml).root]
           wrappers = WrapperFactory.wrap_nodes nodes, nil, nil
-          wrappers.map() {|w| w.class}.should match_array [AdminCatalog, Wrapper]
+          expect(wrappers.map {|w| w.class}).to match_array [AdminCatalog, Wrapper]
         end
       end
 
       describe :find_wrapper_class do
         it "successfully returns specialized wrapper class" do
           wrapper_class = WrapperFactory.find_wrapper_class @valid_type_name
-          wrapper_class.should equal AdminCatalog
+          expect(wrapper_class).to equal AdminCatalog
         end
 
         it "fails to find a specialized wrapper class and returns the generic" do
           wrapper_class = WrapperFactory.find_wrapper_class @invalid_type_name
-          wrapper_class.should equal Wrapper
+          expect(wrapper_class).to equal Wrapper
         end
       end
 
       describe :create_instance do
         it "successfully creates object" do
           wrapper = WrapperFactory.create_instance @valid_type_name
-          wrapper.should be_an_instance_of AdminCatalog
+          expect(wrapper).to be_an_instance_of AdminCatalog
         end
 
         it "fails to create object" do
@@ -110,12 +110,12 @@ module VCloudSdk
       describe :initialize do
         it "creates wrapper from document" do
           wrapper = Wrapper.new Nokogiri::XML(@incomplete_doc)
-          wrapper.should be_an_instance_of Wrapper
+          expect(wrapper).to be_an_instance_of Wrapper
         end
 
         it "creates wrapper from node" do
           wrapper = Wrapper.new Nokogiri::XML(@incomplete_doc).root
-          wrapper.should be_an_instance_of Wrapper
+          expect(wrapper).to be_an_instance_of Wrapper
         end
 
         it "fails to create object when called with invalid param" do
@@ -467,11 +467,11 @@ module VCloudSdk
         context "complete wrapper no namespace with content" do
           it "returns true comparing a clone of the same object" do
             other = @complete_wrapper_no_ns.clone
-            expect(@complete_wrapper_no_ns == other).to be_true
+            expect(@complete_wrapper_no_ns == other).to be true
           end
 
           it "returns false comparing a different object" do
-            expect(@complete_wrapper_no_ns == @complete_wrapper_with_ns).to be_false
+            expect(@complete_wrapper_no_ns == @complete_wrapper_with_ns).to be false
           end
         end
       end

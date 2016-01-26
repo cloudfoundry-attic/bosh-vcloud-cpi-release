@@ -5,14 +5,14 @@ module VCloudCloud
     describe DiscardSuspendedState do
       let(:client) do
         client = double("client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) { |arg| arg}
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) { |arg| arg}
         client
       end
 
       let(:vm) do
         vm = double("vm")
-        vm.stub(:name) { "vm_name" }
+        allow(vm).to receive(:name) { "vm_name" }
         vm
       end
 
@@ -20,11 +20,11 @@ module VCloudCloud
 
       describe ".perform" do
         it "discards suspended state" do
-          vm.should_receive("[]").with("status") {
+          expect(vm).to receive("[]").with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           }
-          vm.should_receive(:discard_state) { discard_state_link }
-          client.should_receive(:invoke_and_wait).with(
+          expect(vm).to receive(:discard_state) { discard_state_link }
+          expect(client).to receive(:invoke_and_wait).with(
             :post, discard_state_link
           )
           state = { vm: vm}
@@ -33,7 +33,7 @@ module VCloudCloud
         end
 
         it "should return when power state is not suspended" do
-          vm.should_receive("[]").with("status") {
+          expect(vm).to receive("[]").with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
           }
           state = { vm: vm}

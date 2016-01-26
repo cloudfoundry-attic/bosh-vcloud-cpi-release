@@ -7,21 +7,21 @@ module VCloudCloud
 
       let(:client) do
         client = double("client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) { |arg| arg }
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) { |arg| arg }
         client
       end
 
       let(:vm) do
         vm = double("vm")
-        vm.stub(:name) { "vm_name" }
+        allow(vm).to receive(:name) { "vm_name" }
         vm
       end
 
       describe ".perform" do
         it "delete entity" do
-          vm.should_receive(:remove_link).with(false) { remove_link }
-          client.should_receive(:invoke_and_wait).with(
+          expect(vm).to receive(:remove_link).with(false) { remove_link }
+          expect(client).to receive(:invoke_and_wait).with(
             :delete, remove_link
           )
           state = { vm: vm }
@@ -30,8 +30,8 @@ module VCloudCloud
         end
 
         it "force delete entity" do
-          vm.should_receive(:remove_link).with(true) { remove_link }
-          client.should_receive(:invoke_and_wait).with(
+          expect(vm).to receive(:remove_link).with(true) { remove_link }
+          expect(client).to receive(:invoke_and_wait).with(
             :delete, remove_link
           )
           state = { vm: vm }
@@ -40,7 +40,7 @@ module VCloudCloud
         end
 
         it "raises error when can't delete entity" do
-          vm.should_receive(:remove_link).with(false) { nil }
+          expect(vm).to receive(:remove_link).with(false) { nil }
           state = { vm: vm }
 
           expect {

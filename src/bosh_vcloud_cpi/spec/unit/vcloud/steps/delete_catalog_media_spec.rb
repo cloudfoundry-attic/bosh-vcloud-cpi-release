@@ -9,35 +9,35 @@ module VCloudCloud
       let(:media_delete_link) {"http://media/delete"}
       let(:media) do
         media = double("media")
-        media.stub(:name) {media_name}
-        media.stub(:delete_link) {media_delete_link}
+        allow(media).to receive(:name) {media_name}
+        allow(media).to receive(:delete_link) {media_delete_link}
         media
       end
 
       let(:catalog_item) do
         item = double("catalog item")
-        item.stub(:entity) {media}
+        allow(item).to receive(:entity) {media}
         item
       end
 
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:catalog_item) do |tag, name, type |
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:catalog_item) do |tag, name, type |
           catalog_item if tag == :media && name == media_name && type == VCloudSdk::Xml::MEDIA_TYPE[:MEDIA]
         end
-        client.stub(:resolve_link) do |arg|
+        allow(client).to receive(:resolve_link) do |arg|
           arg
         end
-        client.stub(:timed_loop) do |&block|
+        allow(client).to receive(:timed_loop) do |&block|
           while true do
             block.call
           end
         end
-        client.stub(:reload) do |arg|
+        allow(client).to receive(:reload) do |arg|
           arg
         end
-        client.stub(:wait_entity) do |arg|
+        allow(client).to receive(:wait_entity) do |arg|
           arg
         end
         client
@@ -49,18 +49,18 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:catalog_item).once.ordered.with(:media, media_name, anything)
-          catalog_item.should_receive(:entity).once.ordered
-          client.should_receive(:resolve_link).once.ordered.with(media)
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {["task1"]}
-          client.should_receive(:wait_entity).once.ordered.with(media)
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {[]}
-          media.should_receive(:delete_link).once.ordered
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
-          client.should_receive(:invoke).once.ordered.with(:delete, catalog_item)
+          expect(client).to receive(:catalog_item).once.ordered.with(:media, media_name, anything)
+          expect(catalog_item).to receive(:entity).once.ordered
+          expect(client).to receive(:resolve_link).once.ordered.with(media)
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {["task1"]}
+          expect(client).to receive(:wait_entity).once.ordered.with(media)
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {[]}
+          expect(media).to receive(:delete_link).once.ordered
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
+          expect(client).to receive(:invoke).once.ordered.with(:delete, catalog_item)
 
           # run test
           described_class.new(state, client).perform media_name
@@ -71,15 +71,15 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:catalog_item).once.ordered.with(:media, media_name, anything)
-          catalog_item.should_receive(:entity).once.ordered
-          client.should_receive(:resolve_link).once.ordered.with(media)
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          media.should_receive(:running_tasks).once.ordered {[]}
-          media.should_receive(:delete_link).once.ordered
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
-          client.should_receive(:invoke).once.ordered.with(:delete, catalog_item)
+          expect(client).to receive(:catalog_item).once.ordered.with(:media, media_name, anything)
+          expect(catalog_item).to receive(:entity).once.ordered
+          expect(client).to receive(:resolve_link).once.ordered.with(media)
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(media).to receive(:running_tasks).once.ordered {[]}
+          expect(media).to receive(:delete_link).once.ordered
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, media_delete_link)
+          expect(client).to receive(:invoke).once.ordered.with(:delete, catalog_item)
 
           # run test
           described_class.new(state, client).perform media_name
@@ -91,9 +91,9 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:catalog_item).once.ordered.with(:media, missing_media, anything)
-          catalog_item.should_not_receive(:entity)
-          client.should_not_receive(:resolve_link)
+          expect(client).to receive(:catalog_item).once.ordered.with(:media, missing_media, anything)
+          expect(catalog_item).to_not receive(:entity)
+          expect(client).to_not receive(:resolve_link)
 
           # run test
           described_class.new(state, client).perform missing_media

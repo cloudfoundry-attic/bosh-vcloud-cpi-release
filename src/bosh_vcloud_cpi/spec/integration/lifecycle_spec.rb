@@ -120,12 +120,12 @@ describe VCloudCloud::Cloud do
       {'vapp' => @vapp_name}
     )
 
-    vm_id.should_not be_nil
+    expect(vm_id).to_not be_nil
     @vm_ids << vm_id
-    cpi.has_vm?(vm_id).should be(true)
+    expect(cpi.has_vm?(vm_id)).to be true
 
     disk_id = cpi.create_disk(2048, {}, vm_id)
-    disk_id.should_not be_nil
+    expect(disk_id).to_not be_nil
     @disk_ids << disk_id
 
     cpi.attach_disk(vm_id, disk_id)

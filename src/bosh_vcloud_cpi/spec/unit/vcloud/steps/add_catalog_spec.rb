@@ -8,7 +8,7 @@ module VCloudCloud
 
       let(:catalog) do
         catalog = double("vcloud catalog")
-        catalog.stub(:name) {"a_bosh_fake_catalog"}
+        allow(catalog).to receive(:name) {"a_bosh_fake_catalog"}
         catalog
       end
 
@@ -16,35 +16,35 @@ module VCloudCloud
       let(:catalog_add_link) { VCloudSdk::Xml::AdminCatalog.new(Nokogiri::XML('<Link rel="add" href="https://myvcloud/api/admin/org/uuid/catalogs" type="application/vnd.vmware.admin.catalog+xml"/>')) }
       let(:org) do
         org = double("vcloud catalog")
-        org.stub(:add_catalog_link) { catalog_add_link }
-        org.stub(:catalog_link) { catalog_link }
+        allow(org).to receive(:add_catalog_link) { catalog_add_link }
+        allow(org).to receive(:catalog_link) { catalog_link }
         org
       end
 
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:org) { org }
-        client.stub(:invoke) do |method, link, params|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:org) { org }
+        allow(client).to receive(:invoke) do |method, link, params|
           catalog if :post == method && catalog_add_link == link
         end
-        client.stub(:wait_entity) { catalog }
-        client.stub(:flush_cache)
-        client.stub(:resolve_link).with(catalog_link) { catalog }
+        allow(client).to receive(:wait_entity) { catalog }
+        allow(client).to receive(:flush_cache)
+        allow(client).to receive(:resolve_link).with(catalog_link) { catalog }
         client
       end
 
       describe ".perform" do
         it 'can create a catalog' do
-          client.should_receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash))
-          client.should_receive(:wait_entity).with(catalog)
+          expect(client).to receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash))
+          expect(client).to receive(:wait_entity).with(catalog)
 
           described_class.new({}, client).perform catalog.name
         end
 
         it 'does not fail when the requested catalog already exists' do
-          client.should_receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash)) { raise RestClient::BadRequest, '400' }
-          client.should_receive(:flush_cache).once.ordered
+          expect(client).to receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash)) { raise RestClient::BadRequest, '400' }
+          expect(client).to receive(:flush_cache).once.ordered
 
           result = described_class.new({}, client).perform catalog.name
           expect(result).to_not be_nil
@@ -52,10 +52,10 @@ module VCloudCloud
         end
 
         it 'should fail when creating the folder gives an unexpected error' do
-          org.stub(:catalog_link) { nil }
+          allow(org).to receive(:catalog_link) { nil }
 
-          client.should_receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash)) { raise RestClient::BadRequest, '400' }
-          client.should_receive(:flush_cache).once.ordered
+          expect(client).to receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash)) { raise RestClient::BadRequest, '400' }
+          expect(client).to receive(:flush_cache).once.ordered
 
           expect { described_class.new({}, client).perform catalog.name }.to raise_error RestClient::BadRequest
         end
@@ -63,8 +63,8 @@ module VCloudCloud
         it 'does not affect state' do
           state = {}
 
-          client.should_receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash))
-          client.should_receive(:wait_entity).with(catalog)
+          expect(client).to receive(:invoke).once.ordered.with(:post, catalog_add_link, kind_of(Hash))
+          expect(client).to receive(:wait_entity).with(catalog)
 
           described_class.new(state, client).perform catalog.name
           expect(state).to eq({})
@@ -73,7 +73,7 @@ module VCloudCloud
 
       describe ".rollback" do
         it 'does nothing' do
-          client.should_not_receive(:invoke)
+          expect(client).to_not receive(:invoke)
           described_class.new({}, client).rollback
         end
       end

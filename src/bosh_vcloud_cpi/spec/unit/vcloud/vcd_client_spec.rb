@@ -25,7 +25,7 @@ module VCloudCloud
       def verify_control_settings(control_settings)
         control_settings.each do |instance_variable_name, target_numeric_value|
           instance_variable = client.instance_variable_get(instance_variable_name)
-          instance_variable.should eql target_numeric_value
+          expect(instance_variable).to eql target_numeric_value
         end
       end
     end
@@ -34,37 +34,37 @@ module VCloudCloud
       it 'fetches auth header' do
         version_response = double('version_response')
         url_node = double('login url node')
-        url_node.stub_chain('login_url.content').and_return '/api/sessions'
-        client.should_receive(:wrap_response).with(version_response).and_return url_node
+        allow(url_node).to receive_message_chain('login_url.content').and_return '/api/sessions'
+        expect(client).to receive(:wrap_response).with(version_response).and_return url_node
 
         login_response = double('login_response')
         cookies = "cookies string"
         auth_token = {:x_vcloud_authorization => auth_token }
-        login_response.should_receive(:headers).and_return auth_token
-        login_response.should_receive(:cookies).and_return cookies
+        expect(login_response).to receive(:headers).and_return auth_token
+        expect(login_response).to receive(:cookies).and_return cookies
         base_url = URI.parse(settings['url'])
 
         session = double("session")
-        session.should_receive(:entity_resolver)
-        session.should_receive(:org_link)
-        client.should_receive(:wrap_response).with(login_response).and_return session
+        expect(session).to receive(:entity_resolver)
+        expect(session).to receive(:org_link)
+        expect(client).to receive(:wrap_response).with(login_response).and_return session
 
         info_response = double("info response")
-        info_response.should_receive(:code).and_return 204
+        expect(info_response).to receive(:code).and_return 204
         # version
-        RestClient::Request.should_receive(:execute) do |arg|
-          arg[:url].should == base_url.merge('/api/versions').to_s
-          arg[:cookies].should be_nil
+        expect(RestClient::Request).to receive(:execute) do |arg|
+          expect(arg[:url]).to eq base_url.merge('/api/versions').to_s
+          expect(arg[:cookies]).to be_nil
         end.and_return version_response
         # login
-        RestClient::Request.should_receive(:execute) do |arg|
-          arg[:url].should == base_url.merge("/api/sessions").to_s
-          arg[:cookies].should be_nil
+        expect(RestClient::Request).to receive(:execute) do |arg|
+          expect(arg[:url]).to eq base_url.merge("/api/sessions").to_s
+          expect(arg[:cookies]).to be_nil
         end.and_return login_response
         # /info
-        RestClient::Request.should_receive(:execute) do |arg|
-          arg[:url].should == base_url.merge("/info").to_s
-          arg[:cookies].should == cookies
+        expect(RestClient::Request).to receive(:execute) do |arg|
+          expect(arg[:url]).to eq base_url.merge("/info").to_s
+          expect(arg[:cookies]).to be cookies
         end.and_return info_response
 
         client.invoke :get, "/info"
@@ -83,8 +83,8 @@ module VCloudCloud
         allow(client).to receive(:wrap_response).and_return(wrapped_entity_double)
         prevous_request_id = nil
         expect(RestClient::Request).to receive(:execute).at_least(:once) do |args|
-          args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID'].should_not be_nil
-          args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID'].should_not eq(prevous_request_id)
+          expect(args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID']).to_not be_nil
+          expect(args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID']).to_not eq(prevous_request_id)
           prevous_request_id = args[:headers]['X-VMWARE-VCLOUD-CLIENT-REQUEST-ID']
         end.and_return(double(RestClient::Response, code: 204, headers: {x_vcloud_authorization: 'fake token'}, cookies: nil))
         client.invoke :get, '/info', no_wrap: true
@@ -138,14 +138,14 @@ module VCloudCloud
           [:media_catalog_name, :media_catalog],
         ].each do |props|
           method, prop = props
-          client.send(method).should == settings['entities'][prop.to_s]
+          expect(client.send(method)).to eq settings['entities'][prop.to_s]
         end
       end
     end
 
     describe ".org" do
       it "reads cache" do
-        client.cache.should_receive(:get).with(:org)
+        expect(client.cache).to receive(:get).with(:org)
 
         client.org
       end
@@ -154,8 +154,8 @@ module VCloudCloud
         client.cache.clear
         org_link = "org_link"
         client.org_link = org_link
-        client.should_receive(:session)
-        client.should_receive(:resolve_link).with(org_link)
+        expect(client).to receive(:session)
+        expect(client).to receive(:resolve_link).with(org_link)
 
         client.org
       end
@@ -163,7 +163,7 @@ module VCloudCloud
 
     describe ".vdc" do
       it "reads cache" do
-        client.cache.should_receive(:get).with(:vdc)
+        expect(client.cache).to receive(:get).with(:vdc)
 
         client.vdc
       end
@@ -172,10 +172,10 @@ module VCloudCloud
         client.cache.clear
         vdc_link = "vdc_link"
         org = double("org")
-        org.should_receive(:vdc_link).with(client.vdc_name).
+        expect(org).to receive(:vdc_link).with(client.vdc_name).
           and_return(vdc_link)
-        client.should_receive(:org).and_return(org)
-        client.should_receive(:resolve_link).with(vdc_link)
+        expect(client).to receive(:org).and_return(org)
+        expect(client).to receive(:resolve_link).with(vdc_link)
 
         client.vdc
       end
@@ -184,9 +184,9 @@ module VCloudCloud
         client.cache.clear
         vdc_link = "vdc_link"
         org = double("org")
-        org.should_receive(:vdc_link).with(client.vdc_name).
+        expect(org).to receive(:vdc_link).with(client.vdc_name).
           and_return(nil)
-        client.should_receive(:org).and_return(org)
+        expect(client).to receive(:org).and_return(org)
 
         expect{client.vdc}.to raise_error(
           ObjectNotFoundError, /#{client.vdc_name}/)
@@ -200,12 +200,12 @@ module VCloudCloud
         type = VCloudSdk::Xml::MEDIA_TYPE[:MEDIA]
         items = [ "i1", "i2" ]
         object1 = double("o1")
-        object1.should_receive(:entity).and_return({'type' => type})
-        client.should_receive(:resolve_link).and_return object1
+        expect(object1).to receive(:entity).and_return({'type' => type})
+        expect(client).to receive(:resolve_link).and_return object1
         catalog = double("catalog")
-        catalog.should_receive(:catalog_items).with(catalog_name).
+        expect(catalog).to receive(:catalog_items).with(catalog_name).
           and_return(items)
-        client.should_receive(:catalog).with(catalog_type).
+        expect(client).to receive(:catalog).with(catalog_type).
           and_return(catalog)
 
         client.catalog_item(catalog_type, catalog_name,type)
@@ -216,10 +216,10 @@ module VCloudCloud
       it "reload object from link" do
         object = double("o1")
         link = "obj_link"
-        object.should_receive(:href).and_return(link)
-        client.should_receive(:invoke).and_return object
+        expect(object).to receive(:href).and_return(link)
+        expect(client).to receive(:invoke).and_return object
 
-        client.reload(object).should == object
+        expect(client.reload(object)).to eq object
       end
     end
 
@@ -231,34 +231,34 @@ module VCloudCloud
 
       it "wait for running tasks" do
         entity = double("entity")
-        client.stub(:reload) do |args|
+        allow(client).to receive(:reload) do |args|
           args
         end
         task = double("task")
-        task.should_receive(:urn).and_return "urn"
-        task.should_receive(:operation).and_return "update"
-        task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
-        entity.stub(:running_tasks) {[task]}
-        entity.stub(:prerunning_tasks) {[]}
-        entity.stub(:tasks) {[task]}
+        expect(task).to receive(:urn).and_return "urn"
+        expect(task).to receive(:operation).and_return "update"
+        allow(task).to receive(:status).and_return VCloudSdk::Xml::TASK_STATUS[:SUCCESS]
+        allow(entity).to receive(:running_tasks) {[task]}
+        allow(entity).to receive(:prerunning_tasks) {[]}
+        allow(entity).to receive(:tasks) {[task]}
 
         client.wait_entity(entity)
       end
 
       it "raise error when running task failed" do
         entity = double("entity")
-        client.stub(:reload) do |args|
+        allow(client).to receive(:reload) do |args|
           args
         end
         task = double("task")
-        task.stub(:urn).and_return(task_id)
-        task.stub(:operation).and_return(task_operation)
-        task.stub(:details).and_return(task_details)
-        task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
+        allow(task).to receive(:urn).and_return(task_id)
+        allow(task).to receive(:operation).and_return(task_operation)
+        allow(task).to receive(:details).and_return(task_details)
+        allow(task).to receive(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
 
-        entity.stub(:running_tasks) {[task]}
-        entity.stub(:prerunning_tasks) {[]}
-        entity.stub(:tasks) {[task]}
+        allow(entity).to receive(:running_tasks) {[task]}
+        allow(entity).to receive(:prerunning_tasks) {[]}
+        allow(entity).to receive(:tasks) {[task]}
 
         raise_error_info =Regexp.new("Task #{task_id} #{task_operation} completed unsuccessfully, Details:#{task_details}")
         expect{client.wait_entity(entity)}.to raise_error raise_error_info
@@ -266,18 +266,18 @@ module VCloudCloud
 
       it "raise error when completed task failed" do
         entity = double("entity")
-        client.stub(:reload) do |args|
+        allow(client).to receive(:reload) do |args|
           args
         end
         task = double("task")
-        task.stub(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
-        task.stub(:urn).and_return(task_id)
-        task.stub(:operation).and_return(task_operation)
-        task.stub(:details).and_return(task_details)
+        allow(task).to receive(:status).and_return VCloudSdk::Xml::TASK_STATUS[:ERROR]
+        allow(task).to receive(:urn).and_return(task_id)
+        allow(task).to receive(:operation).and_return(task_operation)
+        allow(task).to receive(:details).and_return(task_details)
 
-        entity.stub(:running_tasks) {[]}
-        entity.stub(:prerunning_tasks) {[]}
-        entity.stub(:tasks) {[task, task]}
+        allow(entity).to receive(:running_tasks) {[]}
+        allow(entity).to receive(:prerunning_tasks) {[]}
+        allow(entity).to receive(:tasks) {[task, task]}
 
         task_info = "Task #{task_id} #{task_operation}, Details:#{task_details}"
         raise_error_info =Regexp.new("Some tasks failed: #{task_info}; #{task_info}")

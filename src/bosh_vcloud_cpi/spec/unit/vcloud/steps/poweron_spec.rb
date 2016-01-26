@@ -5,15 +5,15 @@ module VCloudCloud
     describe PowerOn do
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) { |arg| arg}
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) { |arg| arg}
         client
       end
 
       let(:vm) do
         vm = double("vm")
-        vm.stub(:power_on_link) { poweron_link }
-        vm.stub(:name) { "name" }
+        allow(vm).to receive(:power_on_link) { poweron_link }
+        allow(vm).to receive(:name) { "name" }
         vm
       end
 
@@ -23,17 +23,17 @@ module VCloudCloud
       let(:poweron_target) { "poweron_target" }
       let(:entity) {
         entity = double("entity")
-        entity.stub(:name) { "name" }
+        allow(entity).to receive(:name) { "name" }
         entity
       }
 
       describe ".perform" do
         it "performs poweron" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
           }
           state = { vm: vm }
-          client.should_receive(:invoke_and_wait).with(
+          expect(client).to receive(:invoke_and_wait).with(
             :post, poweron_link
           )
 
@@ -41,7 +41,7 @@ module VCloudCloud
         end
 
         it "return when vm is already poweron" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
           }
           state = { vm: vm }
@@ -57,8 +57,8 @@ module VCloudCloud
             state = {}
 
             # configure mock expectations
-            client.should_not_receive(:reload)
-            client.should_not_receive(:invoke_and_wait)
+            expect(client).to_not receive(:reload)
+            expect(client).to_not receive(:invoke_and_wait)
 
             # run test
             step = described_class.new state, client
@@ -73,14 +73,14 @@ module VCloudCloud
                 :poweron_target => poweron_target
             }
 
-            entity.stub('[]').with("status") {
+            allow(entity).to receive('[]').with("status") {
               VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
             }
 
             # configure mock expectations
-            client.should_receive(:reload).with(poweron_target).and_return(entity)
-            entity.should_receive(:power_off_link).and_return(poweroff_link)
-            client.should_receive(:invoke_and_wait).once.ordered.with(:post, poweroff_link)
+            expect(client).to receive(:reload).with(poweron_target).and_return(entity)
+            expect(entity).to receive(:power_off_link).and_return(poweroff_link)
+            expect(client).to receive(:invoke_and_wait).once.ordered.with(:post, poweroff_link)
 
             # run the test
             described_class.new(state, client).rollback
@@ -92,14 +92,14 @@ module VCloudCloud
                 :poweron_target => poweron_target
             }
 
-            entity.stub('[]').with("status") {
+            allow(entity).to receive('[]').with("status") {
               VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
             }
 
             # configure mock expectations
-            client.should_receive(:reload).with(poweron_target).and_return(entity)
-            entity.should_not_receive(:power_off_link)
-            client.should_not_receive(:invoke_and_wait)
+            expect(client).to receive(:reload).with(poweron_target).and_return(entity)
+            expect(entity).to_not receive(:power_off_link)
+            expect(client).to_not receive(:invoke_and_wait)
 
             # run the test
             described_class.new(state, client).rollback
@@ -109,13 +109,13 @@ module VCloudCloud
             #setup the test data
             state = {}
 
-            entity.stub('[]').with("status") {
+            allow(entity).to receive('[]').with("status") {
               VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
             }
 
             # configure mock expectations
-            client.should_not_receive(:reload)
-            client.should_not_receive(:invoke_and_wait)
+            expect(client).to_not receive(:reload)
+            expect(client).to_not receive(:invoke_and_wait)
 
             # run the test
             described_class.new(state, client).rollback

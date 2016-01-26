@@ -14,36 +14,36 @@ module VCloudCloud
       let(:media_name) {"media"}
       let(:media) do
         media = double("vcloud media")
-        media.stub(:name) {media_name}
-        media.stub(:href) {media_href_value}
-        media.stub(:running_tasks) {task_list}
-        media.stub(:prerunning_tasks) { [] }
+        allow(media).to receive(:name) {media_name}
+        allow(media).to receive(:href) {media_href_value}
+        allow(media).to receive(:running_tasks) {task_list}
+        allow(media).to receive(:prerunning_tasks) { [] }
         media
       end
 
       let(:insert_media_link_value) {"http://vm/insert_media"}
       let(:vm) do
         vm = double("vcloud vm")
-        vm.stub(:name) {"vcloud vm"}
-        vm.stub(:insert_media_link) {insert_media_link_value}
+        allow(vm).to receive(:name) {"vcloud vm"}
+        allow(vm).to receive(:insert_media_link) {insert_media_link_value}
         vm
       end
 
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) do |arg|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) do |arg|
           arg
         end
-        client.stub(:media) do |arg|
+        allow(client).to receive(:media) do |arg|
           [media, nil] if arg == media_name
         end
-        client.stub(:timed_loop) do |&block|
+        allow(client).to receive(:timed_loop) do |&block|
           while true do
             block.call
           end
         end
-        client.stub(:wait_entity) do |arg|
+        allow(client).to receive(:wait_entity) do |arg|
           arg
         end
         client
@@ -55,21 +55,21 @@ module VCloudCloud
           state = {:vm => vm}
 
           #configure mock expectations
-          client.should_receive(:media).once.ordered.with(media_name)
-          media.should_receive(:href).once.ordered
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          client.should_receive(:reload).once.ordered.with(vm)
-          media.should_receive(:running_tasks).once.ordered
-          task_list.should_receive(:empty?).once.ordered {false}
-          client.should_receive(:wait_entity).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          client.should_receive(:reload).once.ordered.with(vm)
-          media.should_receive(:running_tasks).once.ordered
-          task_list.should_receive(:empty?).once.ordered {true}
-          media.should_receive(:prerunning_tasks).once.ordered
-          client.should_receive(:invoke_and_wait).once.ordered.with(:post, insert_media_link_value, kind_of(Hash))
-          client.should_receive(:reload).once.ordered.with(vm)
+          expect(client).to receive(:media).once.ordered.with(media_name)
+          expect(media).to receive(:href).once.ordered
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(client).to receive(:reload).once.ordered.with(vm)
+          expect(media).to receive(:running_tasks).once.ordered
+          expect(task_list).to receive(:empty?).once.ordered {false}
+          expect(client).to receive(:wait_entity).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(client).to receive(:reload).once.ordered.with(vm)
+          expect(media).to receive(:running_tasks).once.ordered
+          expect(task_list).to receive(:empty?).once.ordered {true}
+          expect(media).to receive(:prerunning_tasks).once.ordered
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:post, insert_media_link_value, kind_of(Hash))
+          expect(client).to receive(:reload).once.ordered.with(vm)
 
           #run the test
           step = described_class.new state, client
@@ -81,15 +81,15 @@ module VCloudCloud
           state = {:vm => vm}
 
           #configure mock expectations
-          client.should_receive(:media).once.ordered.with(media_name)
-          media.should_receive(:href).once.ordered
-          client.should_receive(:timed_loop).once.ordered
-          client.should_receive(:reload).once.ordered.with(media)
-          client.should_receive(:reload).once.ordered.with(vm)
-          media.should_receive(:running_tasks).once.ordered
-          task_list.should_receive(:empty?).once.ordered {true}
-          client.should_receive(:invoke_and_wait).once.ordered.with(:post, insert_media_link_value, kind_of(Hash))
-          client.should_receive(:reload).once.ordered.with(vm)
+          expect(client).to receive(:media).once.ordered.with(media_name)
+          expect(media).to receive(:href).once.ordered
+          expect(client).to receive(:timed_loop).once.ordered
+          expect(client).to receive(:reload).once.ordered.with(media)
+          expect(client).to receive(:reload).once.ordered.with(vm)
+          expect(media).to receive(:running_tasks).once.ordered
+          expect(task_list).to receive(:empty?).once.ordered {true}
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:post, insert_media_link_value, kind_of(Hash))
+          expect(client).to receive(:reload).once.ordered.with(vm)
 
           #run the test
           step = described_class.new state, client
@@ -101,9 +101,9 @@ module VCloudCloud
           state = {:vm => vm}
 
           #configure mock expectations
-          client.should_receive(:media).once.ordered.with(media_name)
-          media.should_receive(:href).once.ordered
-          client.should_receive(:timed_loop).once.ordered {raise TimeoutError}
+          expect(client).to receive(:media).once.ordered.with(media_name)
+          expect(media).to receive(:href).once.ordered
+          expect(client).to receive(:timed_loop).once.ordered {raise TimeoutError}
 
           #run the test
           step = described_class.new state, client

@@ -12,7 +12,7 @@ module VCloudCloud
           catalog: catalog,
           logger: Bosh::Clouds::Config.logger
         )
-        client.stub(:reload) { |arg| arg }
+        allow(client).to receive(:reload) { |arg| arg }
         client
       end
 
@@ -24,13 +24,13 @@ module VCloudCloud
           expected_params = VCloudSdk::Xml::WrapperFactory.create_instance 'UploadVAppTemplateParams'
           expected_params.name = template_name
 
-          client.should_receive(:invoke).with(
+          expect(client).to receive(:invoke).with(
             :post,
             add_vapp_template_link,
             {payload: expected_params, headers: {:content_type => 'my custom type'}}
           ).and_return(catalog_item)
 
-          client.should_receive(:invoke).with(:get, 'http://example.com/catalog_item').and_return(template)
+          expect(client).to receive(:invoke).with(:get, 'http://example.com/catalog_item').and_return(template)
 
           step = described_class.new state, client
           expect {
@@ -48,11 +48,11 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          template.should_not_receive(:cancel_link)
-          template.should_not_receive(:remove_link)
-          client.should_not_receive(:invoke)
-          client.should_not_receive(:reload)
-          client.should_not_receive(:invoke_and_wait)
+          expect(template).to_not receive(:cancel_link)
+          expect(template).to_not receive(:remove_link)
+          expect(client).to_not receive(:invoke)
+          expect(client).to_not receive(:reload)
+          expect(client).to_not receive(:invoke_and_wait)
 
           # run test
           step = described_class.new state, client
@@ -66,11 +66,11 @@ module VCloudCloud
           state = {:vapp_template => template}
 
           # configure mock expectations
-          template.should_receive(:cancel_link).twice.ordered {cancel_link}
-          client.should_receive(:invoke).once.ordered.with(:post, cancel_link)
-          client.should_receive(:reload).once.ordered.with(template)
-          template.should_receive(:remove_link).twice.ordered {remove_link}
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+          expect(template).to receive(:cancel_link).twice.ordered {cancel_link}
+          expect(client).to receive(:invoke).once.ordered.with(:post, cancel_link)
+          expect(client).to receive(:reload).once.ordered.with(template)
+          expect(template).to receive(:remove_link).twice.ordered {remove_link}
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run test
           step = described_class.new state, client
@@ -83,11 +83,11 @@ module VCloudCloud
           state = {:vapp_template => template}
 
           # configure mock expectations
-          template.should_receive(:cancel_link).once.ordered {nil}
-          client.should_not_receive(:invoke)
-          client.should_not_receive(:reload)
-          template.should_receive(:remove_link).twice.ordered {remove_link}
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+          expect(template).to receive(:cancel_link).once.ordered {nil}
+          expect(client).to_not receive(:invoke)
+          expect(client).to_not receive(:reload)
+          expect(template).to receive(:remove_link).twice.ordered {remove_link}
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run test
           step = described_class.new state, client
@@ -100,11 +100,11 @@ module VCloudCloud
           state = {:vapp_template => template}
 
           # configure mock expectations
-          template.should_receive(:cancel_link).twice.ordered {cancel_link}
-          client.should_receive(:invoke).once.ordered.with(:post, cancel_link)
-          client.should_receive(:reload).once.ordered.with(template)
-          template.should_receive(:remove_link).once.ordered
-          client.should_not_receive(:invoke_and_wait)
+          expect(template).to receive(:cancel_link).twice.ordered {cancel_link}
+          expect(client).to receive(:invoke).once.ordered.with(:post, cancel_link)
+          expect(client).to receive(:reload).once.ordered.with(template)
+          expect(template).to receive(:remove_link).once.ordered
+          expect(client).to_not receive(:invoke_and_wait)
 
           # run test
           step = described_class.new state, client

@@ -10,32 +10,32 @@ module VCloudCloud
       let(:media_file_size) { "1000" }
       let(:media_file) do
         file = double("media_file")
-        file.stub_chain(:stat, :size) { media_file_size }
+        allow(file).to receive_message_chain(:stat, :size) { media_file_size }
         file
       end
 
       let(:file_upload_link_href) { "http://upload/file" }
       let(:incomplete_file) do
         file = double("media_incomplete_file")
-        file.stub_chain(:upload_link, :href) { file_upload_link_href }
+        allow(file).to receive_message_chain(:upload_link, :href) { file_upload_link_href }
         file
       end
 
       let(:media) do
         media = double("media")
-        media.stub_chain(:incomplete_files, :pop) { incomplete_file }
+        allow(media).to receive_message_chain(:incomplete_files, :pop) { incomplete_file }
         media
       end
 
       let(:upload_media_link) { "http://upload_media_link" }
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) do |arg|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) do |arg|
           arg
         end
-        client.stub_chain(:vdc, :upload_media_link) { upload_media_link }
-        client.stub(:invoke) do |method, href, params|
+        allow(client).to receive_message_chain(:vdc, :upload_media_link) { upload_media_link }
+        allow(client).to receive(:invoke) do |method, href, params|
           media if href == upload_media_link
         end
         client
@@ -46,12 +46,12 @@ module VCloudCloud
         state = {:media => media}
 
         # configure mock expectations
-        File.should_receive(:new).once.ordered.with(iso, 'rb') { media_file }
-        media.should_receive(:incomplete_files).once.ordered
-        incomplete_file.should_receive(:upload_link).once.ordered
-        media_file.should_receive(:stat).once.ordered
-        client.should_receive(:upload_stream).once.ordered.with(file_upload_link_href, media_file_size, media_file)
-        client.should_receive(:reload).once.ordered.with(media)
+        expect(File).to receive(:new).once.ordered.with(iso, 'rb') { media_file }
+        expect(media).to receive(:incomplete_files).once.ordered
+        expect(incomplete_file).to receive(:upload_link).once.ordered
+        expect(media_file).to receive(:stat).once.ordered
+        expect(client).to receive(:upload_stream).once.ordered.with(file_upload_link_href, media_file_size, media_file)
+        expect(client).to receive(:reload).once.ordered.with(media)
 
         # run test
         described_class.new(state, client).perform iso

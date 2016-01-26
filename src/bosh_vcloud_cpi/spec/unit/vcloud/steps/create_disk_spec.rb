@@ -20,10 +20,10 @@ module VCloudCloud
       let(:vdc_add_disk_link_value) {"http://vdc/add/disk"}
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub_chain(:vdc, :add_disk_link) {vdc_add_disk_link_value}
-        client.stub(:invoke) {disk}
-        client.stub(:wait_entity) do |arg|
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive_message_chain(:vdc, :add_disk_link) {vdc_add_disk_link_value}
+        allow(client).to receive(:invoke) {disk}
+        allow(client).to receive(:wait_entity) do |arg|
           arg
         end
         client
@@ -36,8 +36,8 @@ module VCloudCloud
 
           # configure mock expectations
           vm.as_null_object
-          client.should_receive(:invoke).once.ordered.with(:post, vdc_add_disk_link_value, kind_of(Hash))
-          client.should_receive(:wait_entity).once.ordered.with(disk)
+          expect(client).to receive(:invoke).once.ordered.with(:post, vdc_add_disk_link_value, kind_of(Hash))
+          expect(client).to receive(:wait_entity).once.ordered.with(disk)
 
           # run test
           described_class.new(state, client).perform disk_name, disk_size, vm, nil
@@ -49,8 +49,8 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          client.should_receive(:invoke).once.ordered.with(:post, vdc_add_disk_link_value, kind_of(Hash))
-          client.should_receive(:wait_entity).once.ordered.with(disk)
+          expect(client).to receive(:invoke).once.ordered.with(:post, vdc_add_disk_link_value, kind_of(Hash))
+          expect(client).to receive(:wait_entity).once.ordered.with(disk)
 
           # run test
           described_class.new(state, client).perform disk_name, disk_size, nil, nil
@@ -64,8 +64,8 @@ module VCloudCloud
           state = {}
 
           # configure mock expectations
-          disk.should_not_receive(:remove_link)
-          client.should_not_receive(:invoke_and_wait)
+          expect(disk).to_not receive(:remove_link)
+          expect(client).to_not receive(:invoke_and_wait)
 
           # run test
           step = described_class.new state, client
@@ -78,12 +78,12 @@ module VCloudCloud
           remove_link = "http://disk/remove"
 
           # configure mock expectations
-          disk.should_receive(:remove_link).once.ordered { remove_link }
-          client.should_receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
+          expect(disk).to receive(:remove_link).once.ordered { remove_link }
+          expect(client).to receive(:invoke_and_wait).once.ordered.with(:delete, remove_link)
 
           # run the test
           described_class.new(state, client).rollback
-          expect(state.key?(:disk)).to be_false
+          expect(state.key?(:disk)).to be false
         end
       end
 

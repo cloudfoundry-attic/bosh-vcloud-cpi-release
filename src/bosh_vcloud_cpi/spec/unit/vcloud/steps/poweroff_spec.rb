@@ -5,15 +5,15 @@ module VCloudCloud
     describe PowerOff do
       let(:client) do
         client = double("vcloud client")
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.stub(:reload) { |arg| arg}
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        allow(client).to receive(:reload) { |arg| arg}
         client
       end
 
       let(:vm) do
         vm = double("vm")
-        vm.stub(:power_off_link) { poweroff_link }
-        vm.stub(:name) { "name" }
+        allow(vm).to receive(:power_off_link) { poweroff_link }
+        allow(vm).to receive(:name) { "name" }
         vm
       end
 
@@ -21,11 +21,11 @@ module VCloudCloud
 
       describe ".perform" do
         it "performs poweroff" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_ON].to_s
           }
           state = { vm: vm }
-          client.should_receive(:invoke_and_wait).with(
+          expect(client).to receive(:invoke_and_wait).with(
             :post, poweroff_link
           )
 
@@ -33,7 +33,7 @@ module VCloudCloud
         end
 
         it "return when vm is already poweroff" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:POWERED_OFF].to_s
           }
           state = { vm: vm }
@@ -42,11 +42,11 @@ module VCloudCloud
         end
 
         it "should not discard suspend state" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           }
           state = { vm: vm }
-          client.should_receive(:invoke_and_wait).ordered.with(
+          expect(client).to receive(:invoke_and_wait).ordered.with(
             :post, poweroff_link
           )
 
@@ -54,16 +54,16 @@ module VCloudCloud
         end
 
         it "discards suspend state when required" do
-          vm.stub('[]').with("status") {
+          allow(vm).to receive('[]').with("status") {
             VCloudSdk::Xml::RESOURCE_ENTITY_STATUS[:SUSPENDED].to_s
           }
           discard_state_link = "discard_state_link"
-          vm.should_receive(:discard_state) { discard_state_link }
+          expect(vm).to receive(:discard_state) { discard_state_link }
           state = { vm: vm }
-          client.should_receive(:invoke_and_wait).ordered.with(
+          expect(client).to receive(:invoke_and_wait).ordered.with(
             :post, discard_state_link
           )
-          client.should_receive(:invoke_and_wait).ordered.with(
+          expect(client).to receive(:invoke_and_wait).ordered.with(
             :post, poweroff_link
           )
 

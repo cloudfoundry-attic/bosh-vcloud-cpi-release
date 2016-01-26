@@ -183,12 +183,6 @@ module Kernel
 
 end
 
-RSpec.configure do |c|
-  c.treat_symbols_as_metadata_keys_with_true_values = true  # for RSpec-3
-end
-
-
-
 module Bosh
   module Clouds
     class Config

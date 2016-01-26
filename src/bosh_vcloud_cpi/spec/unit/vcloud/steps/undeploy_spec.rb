@@ -5,17 +5,17 @@ module VCloudCloud
     describe Undeploy do
       let(:client) do
         client = double("vcloud client")
-        client.stub(:reload) { vm }
-        client.stub(:logger) { Bosh::Clouds::Config.logger }
-        client.should_receive(:invoke_and_wait).with(
+        allow(client).to receive(:reload) { vm }
+        allow(client).to receive(:logger) { Bosh::Clouds::Config.logger }
+        expect(client).to receive(:invoke_and_wait).with(
           :post, undeploy_link, anything)
         client
       end
 
       let(:vm) do
         vm = double("vm entity")
-        vm.stub("[]").with("deployed") { 'true' }
-        vm.should_receive(:undeploy_link) { undeploy_link }
+        allow(vm).to receive("[]").with("deployed") { 'true' }
+        expect(vm).to receive(:undeploy_link) { undeploy_link }
         vm
       end
 

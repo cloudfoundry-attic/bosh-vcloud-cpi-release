@@ -3,15 +3,15 @@ require 'spec_helper'
 shared_context "base" do
   let(:client) do
     client = double("vcloud client")
-    client.stub(:logger) { Bosh::Clouds::Config.logger }
-    client.stub(:reload) { |obj| obj }
+    allow(client).to receive(:logger).and_return Bosh::Clouds::Config.logger
+    allow(client).to receive(:reload) { |obj| obj }
     client
   end
 
   let(:vm) do
     vm = double("vm entity")
-    vm.stub(:name) { "vm_name" }
-    vm.stub(:urn) { "vm_urn" }
+    allow(vm).to receive(:name).and_return "vm_name"
+    allow(vm).to receive(:urn).and_return "vm_urn"
     vm
   end
 end
@@ -31,20 +31,20 @@ module VCloudCloud
             }
           }
           nic = double("nic")
-          nic.stub(:network) { network_name }
-          nic.stub(:mac_address) { "mac_address" }
+          expect(nic).to receive(:network).and_return network_name
+          expect(nic).to receive(:mac_address).and_return "mac_address"
           nics = [ nic ]
           networks = { network_name => network }
           system_disk = double("system_disk")
-          system_disk.stub(:disk_id) { "system_disk_id" }
+          expect(system_disk).to receive(:disk_id).and_return "system_disk_id"
           ephemeral_disk = double("disk1")
-          ephemeral_disk.stub(:disk_id) { "disk1_id" }
+          expect(ephemeral_disk).to receive(:disk_id).and_return "disk1_id"
           disks = [ephemeral_disk]
 
           environment = {}
           agent_properties = {}
-          vm.stub_chain("hardware_section.nics") { nics }
-          vm.stub_chain("hardware_section.hard_disks") { [system_disk, ephemeral_disk] }
+          allow(vm).to receive_message_chain("hardware_section.nics").and_return nics
+          allow(vm).to receive_message_chain("hardware_section.hard_disks").and_return [system_disk, ephemeral_disk]
 
           Transaction.perform("create_agent_env", client) do |s|
             s.state[:vm] = vm
@@ -57,17 +57,16 @@ module VCloudCloud
         it "raise error with multiple newly added disks" do
           networks = {}
           system_disk = double("system_disk")
-          system_disk.stub(:disk_id) { "system_disk_id" }
+          allow(system_disk).to receive(:disk_id).and_return "system_disk_id"
           ephemeral_disk = double("disk1")
           ephemeral_disk2 = double("disk2")
-          ephemeral_disk.stub(:disk_id) { "disk1_id" }
+          allow(ephemeral_disk).to receive(:disk_id).and_return "disk1_id"
           disks = [ephemeral_disk]
 
           environment = {}
           agent_properties = {}
-          vm.stub_chain("hardware_section.nics") { [] }
-          vm.stub_chain("hardware_section.hard_disks") {
-            [system_disk, ephemeral_disk, ephemeral_disk2] }
+          allow(vm).to receive_message_chain("hardware_section.nics").and_return []
+          allow(vm).to receive_message_chain("hardware_section.hard_disks").and_return [system_disk, ephemeral_disk, ephemeral_disk2]
 
           expect {
             Transaction.perform("reboot", client) do |s|
@@ -76,14 +75,14 @@ module VCloudCloud
               s.state[:env] = environment
               s.next described_class, networks, environment, agent_properties
             end
-          }.to raise_error
+          }.to raise_error RuntimeError
         end
       end
 
       describe "#update_network_env" do
         it "evoke generate_network_env" do
-          vm.stub_chain("hardware_section.nics") { [] }
-          described_class.should_receive(:generate_network_env)
+          allow(vm).to receive_message_chain("hardware_section.nics").and_return []
+          expect(described_class).to receive(:generate_network_env)
 
           described_class.update_network_env({}, vm, {})
         end
