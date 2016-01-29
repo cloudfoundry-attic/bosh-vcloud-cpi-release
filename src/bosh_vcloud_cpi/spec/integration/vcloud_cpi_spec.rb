@@ -145,7 +145,7 @@ describe VCloudCloud::Cloud do
     it "should retry if get Timeout::Error while uploading files" do
       should_timeout = true
       original_upload = VCloudCloud::FileUploader.method(:upload)
-      allow(VCloudCloud::FileUploader.any_instance).to receive(:upload) do |*args, &block|
+      allow_any_instance_of(VCloudCloud::FileUploader).to receive(:upload) do |*args, &block|
         if should_timeout
           should_timeout = false
           raise Timeout::Error
@@ -208,7 +208,7 @@ describe VCloudCloud::Cloud do
 
       it 'should clean up the media when create_vm fail to PowerOn' do
         exceptionMsg = 'PowerOn Failed!'
-        allow(VCloudCloud::Steps::PowerOn.any_instance).to receive(:perform).and_raise(exceptionMsg)
+        allow_any_instance_of(VCloudCloud::Steps::PowerOn).to receive(:perform).and_raise(exceptionMsg)
         begin
           @cpi.create_vm random_vm_name, @stemcell_id, resource_pool, @network_specs[0], [], vm_env
           fail 'create_vm should fail'
