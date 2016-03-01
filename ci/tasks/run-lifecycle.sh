@@ -35,7 +35,8 @@ export BOSH_VCLOUD_CPI_NETMASK=NETWORK_NETMASK
 export BOSH_VCLOUD_CPI_DNS=NETWORK_DNS
 export BOSH_VCLOUD_CPI_GATEWAY=NETWORK_GATEWAY
 
-source /etc/profile.d/chruby-with-ruby-2.1.2.sh
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
 mkdir /tmp/vcd-cpi-test                                     # So that fly intercepts can tail it without waiting for
 echo "Awaiting first test run..." > /tmp/vcd-cpi-test/debug # the tests to start outputting to it

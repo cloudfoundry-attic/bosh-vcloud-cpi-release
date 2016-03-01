@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -x
-
+set -e
 
 source bosh-cpi-release/ci/tasks/utils.sh
 
@@ -14,9 +13,9 @@ integer_version=`cut -d "." -f1 release-version-semver/number`
 echo $integer_version > integer_version
 
 cd bosh-cpi-release
-source /etc/profile.d/chruby-with-ruby-2.1.2.sh
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
-set +x
 echo creating config/private.yml with blobstore secrets
 cat > config/private.yml << EOF
 ---
@@ -25,7 +24,6 @@ blobstore:
     access_key_id: $aws_access_key_id
     secret_access_key: $aws_secret_access_key
 EOF
-set -x
 
 echo "using bosh CLI version..."
 bosh version

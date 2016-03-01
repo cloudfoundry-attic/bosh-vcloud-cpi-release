@@ -19,7 +19,8 @@ check_param BATS_RESERVED_RANGE1
 check_param BATS_RESERVED_RANGE2
 check_param BATS_STATIC_RANGE
 
-source /etc/profile.d/chruby-with-ruby-2.1.2.sh
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
 echo "using bosh CLI version..."
 bosh version

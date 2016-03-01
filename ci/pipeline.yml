@@ -46,7 +46,7 @@ jobs:
         file: bosh-cpi-release/ci/tasks/build-candidate.yml
 
       - put: bosh-cpi-dev-artifacts
-        params: {from: build/out/.*\.tgz}
+        params: {from: candidate/.*\.tgz}
 
   - name: deploy-ubuntu-v5.5
     serial_groups: [vcloud-v5.5-serial-group]
@@ -217,7 +217,6 @@ jobs:
             NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
             LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
             LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
-
 
   - name: promote-candidate
     serial: true

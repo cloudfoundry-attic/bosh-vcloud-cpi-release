@@ -2,29 +2,28 @@
 
 set -e
 
-source /etc/profile.d/chruby-with-ruby-2.1.2.sh
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
 semver=`cat version-semver/number`
 
-mkdir out
+pushd bosh-cpi-release
+  echo "running unit tests"
+  pushd src/bosh_vcloud_cpi
+    bundle install
+    bundle exec rake spec:unit
+  popd
 
-cd bosh-cpi-release
+  echo "installing the latest bosh_cli"
+  gem install bosh_cli --no-ri --no-rdoc
 
-echo "running unit tests"
-pushd src/bosh_vcloud_cpi
-  bundle install
-  bundle exec rake spec:unit
+  echo "using bosh CLI version..."
+  bosh version
+
+  cpi_release_name="bosh-vcloud-cpi"
+
+  echo "building CPI release..."
+  bosh create release --name $cpi_release_name --version $semver --with-tarball
 popd
 
-echo "installing the latest bosh_cli"
-gem install bosh_cli --no-ri --no-rdoc
-
-echo "using bosh CLI version..."
-bosh version
-
-cpi_release_name="bosh-vcloud-cpi"
-
-echo "building CPI release..."
-bosh create release --name $cpi_release_name --version $semver --with-tarball
-
-mv dev_releases/$cpi_release_name/$cpi_release_name-$semver.tgz ../out/
+mv bosh-cpi-release/dev_releases/$cpi_release_name/$cpi_release_name-$semver.tgz candidate/

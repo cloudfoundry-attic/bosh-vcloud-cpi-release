@@ -16,7 +16,8 @@ check_param NETWORK_CIDR
 check_param NETWORK_GATEWAY
 check_param BATS_DIRECTOR_IP
 
-source /etc/profile.d/chruby-with-ruby-2.1.2.sh
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
 semver=`cat version-semver/number`
 cpi_release_name="bosh-vcloud-cpi"
