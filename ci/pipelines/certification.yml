@@ -1,0 +1,191 @@
+---
+groups:
+  - name: candidate
+    jobs:
+      - create-jumpbox-v5.5
+      - create-jumpbox-v5.6
+      - build-candidate
+      - lifecycle-v5.5
+      - lifecycle-v5.6
+      - promote-candidate
+
+  - name: certification
+    jobs:
+      - deploy-ubuntu-v5.5
+      - deploy-ubuntu-v5.6
+      - deploy-centos-v5.5
+      - deploy-centos-v5.6
+      - bats-ubuntu-v5.5
+      - bats-ubuntu-v5.6
+      - bats-centos-v5.5
+      - bats-centos-v5.6
+      - certify-ubuntu
+      - certify-centos
+
+jobs:
+  # jumpbox...
+  - name: create-jumpbox-v5.5
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.5]
+          trigger: false
+
+      - task: sleep
+        tags: [vcloud-v5.5]
+        file: bosh-cpi-release/ci/tasks/sleep.yml
+
+  - name: create-jumpbox-v5.6
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          trigger: false
+
+      - task: sleep
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/sleep.yml
+
+  # candidate...
+  - name: build-candidate
+    serial: true
+    plan:
+      - aggregate:
+        - get: bosh-cpi-release
+          trigger: false
+
+      - task: succeed
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  # certification...
+  - name: deploy-ubuntu-v5.5
+    serial_groups: [vcloud-v5.5]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.5]
+          trigger: false
+
+      - task: succeed
+        tags: [vcloud-v5.5]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: deploy-ubuntu-v5.6
+    serial_groups: [vcloud-v5.6]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          trigger: false
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: deploy-centos-v5.5
+    serial_groups: [vcloud-v5.5]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.5]
+          trigger: false
+
+      - task: succeed
+        tags: [vcloud-v5.5]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: deploy-centos-v5.6
+    serial_groups: [vcloud-v5.6]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          trigger: false
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: bats-ubuntu-v5.5
+    serial_groups: [vcloud-v5.5]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.5]
+          passed:  [deploy-ubuntu-v5.5]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.5]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: bats-ubuntu-v5.6
+    serial_groups: [vcloud-v5.6]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          passed:  [deploy-ubuntu-v5.6]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: bats-centos-v5.5
+    serial_groups: [vcloud-v5.5]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.5]
+          passed:  [deploy-ubuntu-v5.5]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.5]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: bats-centos-v5.6
+    serial_groups: [vcloud-v5.6]
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          passed:  [deploy-ubuntu-v5.6]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: certify-ubuntu
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          passed:  [bats-ubuntu-v5.5, bats-ubuntu-v5.6]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+  - name: certify-centos
+    plan:
+      - aggregate:
+        - get:     bosh-cpi-release
+          tags:    [vcloud-v5.6]
+          passed:  [bats-centos-v5.5, bats-centos-v5.6]
+          trigger: true
+
+      - task: succeed
+        tags: [vcloud-v5.6]
+        file: bosh-cpi-release/ci/tasks/succeed.yml
+
+resources:
+  - name: bosh-cpi-release
+    type: git
+    source:
+      uri: git@github.com:cloudfoundry-incubator/bosh-vcloud-cpi-release.git
+      branch: master
+      private_key: {{github_deployment_key__bosh-vcloud-cpi-release}}

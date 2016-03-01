@@ -1,0 +1,7 @@
+---
+platform: linux
+image: docker:///boshcpi/vcloud-cpi-release
+inputs:
+  - name: bosh-cpi-release
+run:
+  path: bosh-cpi-release/ci/tasks/succeed.sh
