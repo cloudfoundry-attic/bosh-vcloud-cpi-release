@@ -2,25 +2,32 @@
 
 set -e
 
-source bosh-cpi-release/ci/tasks/utils.sh
+release_dir="$( cd $(dirname $0) && cd ../.. && pwd )"
+workspace_dir="$( cd ${release_dir} && cd .. && pwd )"
 
-print_git_state bosh-cpi-release
+source ${release_dir}/ci/tasks/utils.sh
 
-check_param base_os
-check_param BAT_NETWORKING
-check_param VCLOUD_VLAN
-check_param NETWORK_CIDR
-check_param NETWORK_GATEWAY
-check_param BATS_DIRECTOR_IP
-check_param BATS_STEMCELL_NAME
-check_param BATS_IP1
-check_param BATS_IP2
-check_param BATS_RESERVED_RANGE1
-check_param BATS_RESERVED_RANGE2
-check_param BATS_STATIC_RANGE
+print_git_state ${release_dir}
+
+: ${base_os:?}
+: ${BAT_NETWORKING:?}
+: ${VCLOUD_VLAN:?}
+: ${NETWORK_CIDR:?}
+: ${NETWORK_GATEWAY:?}
+: ${BATS_DIRECTOR_IP:?}
+: ${BATS_STEMCELL_NAME:?}
+: ${BATS_IP1:?}
+: ${BATS_IP2:?}
+: ${BATS_RESERVED_RANGE1:?}
+: ${BATS_RESERVED_RANGE2:?}
+: ${BATS_STATIC_RANGE:?}
 
 source /etc/profile.d/chruby.sh
 chruby 2.1.2
+
+# inputs
+stemcell_dir="${workspace_dir}/stemcell"
+bats_dir="${workspace_dir}/bats"
 
 echo "using bosh CLI version..."
 bosh version
@@ -30,7 +37,7 @@ export BAT_INFRASTRUCTURE=vcloud
 export BAT_VCAP_PASSWORD=c1oudc0w
 export BAT_DNS_HOST=$BATS_DIRECTOR_IP
 export BAT_DIRECTOR=$BATS_DIRECTOR_IP
-export BAT_STEMCELL="${PWD}/stemcell/stemcell.tgz"
+export BAT_STEMCELL="${stemcell_dir}/stemcell.tgz"
 export BAT_DEPLOYMENT_SPEC="${PWD}/${base_os}-${BAT_NETWORKING}-bats-config.yml"
 
 cat > $BAT_DEPLOYMENT_SPEC <<EOF
@@ -62,8 +69,9 @@ ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
 eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa
 
-cd bats
-./write_gemfile
+pushd ${bats_dir}
+  ./write_gemfile
 
-bundle install
-bundle exec rspec spec
+  bundle install
+  bundle exec rspec spec
+popd

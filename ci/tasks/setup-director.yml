@@ -1,0 +1,27 @@
+---
+platform: linux
+image: docker:///boshcpi/vcloud-cpi-release
+inputs:
+  - name: bosh-cpi-src       # --- location of task script to run
+  - name: director-state-file
+  - name: bosh-init
+  - name: bosh-release
+  - name: bosh-cpi-release
+  - name: version-semver
+  - name: stemcell
+outputs:
+  - name: deployment
+run:
+  path: bosh-cpi-src/ci/tasks/setup-director.sh
+params:
+  base_os:              ""
+  network_type_to_test: ""
+  VCLOUD_VLAN:          ""
+  VCLOUD_HOST:          ""
+  VCLOUD_USER:          ""
+  VCLOUD_PASSWORD:      ""
+  VCLOUD_ORG:           ""
+  VCLOUD_VDC:           ""
+  NETWORK_CIDR:         ""
+  NETWORK_GATEWAY:      ""
+  BATS_DIRECTOR_IP:     ""

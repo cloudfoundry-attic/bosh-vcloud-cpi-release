@@ -2,30 +2,41 @@
 
 set -e
 
-source bosh-cpi-release/ci/tasks/utils.sh
+release_dir="$( cd $(dirname $0) && cd ../.. && pwd )"
+workspace_dir="$( cd ${release_dir} && cd .. && pwd )"
 
-check_param base_os
-check_param network_type_to_test
-check_param VCLOUD_VLAN
-check_param VCLOUD_HOST
-check_param VCLOUD_USER
-check_param VCLOUD_PASSWORD
-check_param VCLOUD_ORG
-check_param VCLOUD_VDC
-check_param NETWORK_CIDR
-check_param NETWORK_GATEWAY
-check_param BATS_DIRECTOR_IP
+: ${base_os:?}
+: ${network_type_to_test:?}
+: ${VCLOUD_VLAN:?}
+: ${VCLOUD_HOST:?}
+: ${VCLOUD_USER:?}
+: ${VCLOUD_PASSWORD:?}
+: ${VCLOUD_ORG:?}
+: ${VCLOUD_VDC:?}
+: ${NETWORK_CIDR:?}
+: ${NETWORK_GATEWAY:?}
+: ${BATS_DIRECTOR_IP:?}
 
 source /etc/profile.d/chruby.sh
 chruby 2.1.2
 
-semver=`cat version-semver/number`
 cpi_release_name="bosh-vcloud-cpi"
-working_dir=$PWD
-
 manifest_prefix=${base_os}-${network_type_to_test}-director
-manifest_dir="${working_dir}/director-state-file"
 manifest_filename=${manifest_prefix}-manifest.yml
+
+# inputs
+semver="$(cat ${workspace_dir}/version-semver/number)"
+manifest_dir="${workspace_dir}/director-state-file"
+bosh_release_dir="${workspace_dir}/bosh-release"
+cpi_release_dir="${workspace_dir}/bosh-cpi-release"
+stemcell_dir="${workspace_dir}/stemcell"
+
+initver="$(cat ${workspace_dir}/bosh-init/version)"
+bosh_init="${workspace_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
+chmod +x $bosh_init
+
+# outputs
+output_dir="${workspace_dir}/deployment"
 
 cat > "${manifest_dir}/${manifest_filename}" <<EOF
 ---
@@ -33,15 +44,15 @@ name: bosh
 
 releases:
   - name: bosh
-    url: file://${working_dir}/bosh-release/release.tgz
+    url: file://${bosh_release_dir}/release.tgz
   - name: ${cpi_release_name}
-    url: file://${working_dir}/bosh-cpi-dev-artifacts/${cpi_release_name}-${semver}.tgz
+    url: file://${bosh-cpi-release_dir}/${cpi_release_name}-${semver}.tgz
 
 resource_pools:
   - name: vms
     network: private
     stemcell:
-      url: file://${working_dir}/stemcell/stemcell.tgz
+      url: file://${stemcell_dir}/stemcell.tgz
     cloud_properties:
       cpu: 2
       ram: 4_096
@@ -152,12 +163,10 @@ cloud_provider:
     ntp: *ntp
 EOF
 
-initver=$(cat bosh-init/version)
-bosh_init="${working_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
-chmod +x $bosh_init
-
 echo "deleting existing BOSH Director VM..."
 $bosh_init delete ${manifest_dir}/${manifest_filename}
 
 echo "deploying BOSH..."
 $bosh_init deploy ${manifest_dir}/${manifest_filename}
+
+cp ${manifest_dir}/*.json ${output_dir}
