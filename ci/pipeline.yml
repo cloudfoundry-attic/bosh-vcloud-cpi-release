@@ -5,10 +5,6 @@ groups:
       - create-jumpbox-v5.5
       - create-jumpbox-v5.6
       - build-candidate
-      - deploy-ubuntu-v5.5
-      - deploy-ubuntu-v5.6
-      - bats-ubuntu-v5.5
-      - bats-ubuntu-v5.6
       - lifecycle-v5.5
       - lifecycle-v5.6
       - promote-candidate
@@ -47,126 +43,6 @@ jobs:
 
       - put: bosh-cpi-dev-artifacts
         params: {from: candidate/.*\.tgz}
-
-  - name: deploy-ubuntu-v5.5
-    serial_groups: [vcloud-v5.5-serial-group]
-    plan:
-      - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]}
-        - {trigger: false, passed: [build-candidate], get: version-semver, tags: ["vcloud-v5.5"]}
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
-        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-5, tags: ["vcloud-v5.5"]}
-        - {trigger: false,                            get: bosh-init, tags: ["vcloud-v5.5"]}
-        - {trigger: false,                            get: bosh-release, tags: ["vcloud-v5.5"]}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
-
-      - task: deploy
-        file: bosh-cpi-release/ci/tasks/deploy.yml
-        tags: ["vcloud-v5.5"]
-        config:
-          params:
-            base_os:              ubuntu
-            network_type_to_test: manual
-            VCLOUD_HOST:          {{VCLOUD_HOST_V5_5}}
-            VCLOUD_USER:          {{VCLOUD_USER_V5_5}}
-            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_5}}
-            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
-            VCLOUD_ORG:           {{VCLOUD_ORG_V5_5}}
-            VCLOUD_VDC:           {{VCLOUD_VDC_V5_5}}
-            NETWORK_CIDR:         {{NETWORK_CIDR}}
-            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
-            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-        ensure:
-          put: ubuntu-manual-director-state-file-v5-5
-          tags: ["vcloud-v5.5"]
-          params: {from: director-state-file/ubuntu-manual-director-manifest-state.json}
-
-  - name: deploy-ubuntu-v5.6
-    serial_groups: [vcloud-v5.6-serial-group]
-    plan:
-      - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]}
-        - {trigger: false, passed: [build-candidate], get: version-semver, tags: ["vcloud-v5.6"]}
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                            get: director-state-file, resource: ubuntu-manual-director-state-file-v5-6, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                            get: bosh-init, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                            get: bosh-release, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
-
-      - task: deploy
-        file: bosh-cpi-release/ci/tasks/deploy.yml
-        tags: ["vcloud-v5.6"]
-        config:
-          params:
-            base_os:              ubuntu
-            network_type_to_test: manual
-            VCLOUD_HOST:          {{VCLOUD_HOST_V5_6}}
-            VCLOUD_USER:          {{VCLOUD_USER_V5_6}}
-            VCLOUD_PASSWORD:      {{VCLOUD_PASSWORD_V5_6}}
-            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
-            VCLOUD_ORG:           {{VCLOUD_ORG_V5_6}}
-            VCLOUD_VDC:           {{VCLOUD_VDC_V5_6}}
-            NETWORK_CIDR:         {{NETWORK_CIDR}}
-            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
-            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-        ensure:
-          put: ubuntu-manual-director-state-file-v5-6
-          tags: ["vcloud-v5.6"]
-          params: {from: director-state-file/ubuntu-manual-director-manifest-state.json}
-
-  - name: bats-ubuntu-v5.5
-    serial_groups: [vcloud-v5.5-serial-group] # can't run while deploying
-    plan:
-      - aggregate:
-        - {trigger: true,  passed: [deploy-ubuntu-v5.5], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]}
-        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
-        - {trigger: false, passed: [deploy-ubuntu-v5.5], get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
-        - {trigger: false,                               get: bats, tags: ["vcloud-v5.5"]}
-
-      - task: test
-        file: bosh-cpi-release/ci/tasks/run-bats.yml
-        tags: ["vcloud-v5.5"]
-        config:
-          params:
-            base_os:              ubuntu
-            BAT_NETWORKING:       manual
-            BATS_STEMCELL_NAME:   bosh-vcloud-esxi-ubuntu-trusty-go_agent
-            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
-            NETWORK_CIDR:         {{NETWORK_CIDR}}
-            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
-            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-            BATS_IP1:             {{BATS_IP1_ubuntu}}
-            BATS_IP2:             {{BATS_IP2_ubuntu}}
-            BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
-            BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
-            BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
-
-  - name: bats-ubuntu-v5.6
-    serial_groups: [vcloud-v5.6-serial-group] # can't run while deploying
-    plan:
-      - aggregate:
-        - {trigger: true,  passed: [deploy-ubuntu-v5.6], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]}
-        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
-        - {trigger: false, passed: [deploy-ubuntu-v5.6], get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                               get: bats, tags: ["vcloud-v5.6"]}
-
-      - task: test
-        file: bosh-cpi-release/ci/tasks/run-bats.yml
-        tags: ["vcloud-v5.6"]
-        config:
-          params:
-            base_os:              ubuntu
-            BAT_NETWORKING:       manual
-            BATS_STEMCELL_NAME:   bosh-vcloud-esxi-ubuntu-trusty-go_agent
-            VCLOUD_VLAN:          {{VCLOUD_VLAN}}
-            NETWORK_CIDR:         {{NETWORK_CIDR}}
-            NETWORK_GATEWAY:      {{NETWORK_GATEWAY}}
-            BATS_DIRECTOR_IP:     {{BATS_DIRECTOR_IP_ubuntu}}
-            BATS_IP1:             {{BATS_IP1_ubuntu}}
-            BATS_IP2:             {{BATS_IP2_ubuntu}}
-            BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
-            BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
-            BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
 
   - name: lifecycle-v5.5
     serial: true
@@ -222,8 +98,8 @@ jobs:
     serial: true
     plan:
       - aggregate:
-        - {trigger: false,  passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [lifecycle-v5.5, bats-ubuntu-v5.5, lifecycle-v5.6, bats-ubuntu-v5.6], get: bosh-cpi-release}
+        - {trigger: false,  passed: [lifecycle-v5.5, lifecycle-v5.6], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [lifecycle-v5.5, lifecycle-v5.6], get: bosh-cpi-release}
         - {trigger: false, get: release-version-semver, params: {bump: major}}
 
       - task: promote
@@ -245,24 +121,6 @@ resources:
     source:
       regexp: bosh-vcloud-cpi\.tgz
       bucket: bosh-vcloud-cpi-release
-      region_name: us-east-1
-      access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
-      secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
-
-  - name: ubuntu-manual-director-state-file-v5-5
-    type: s3
-    source:
-      bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-5
-      versioned_file: ubuntu-manual-director-manifest-state.json
-      region_name: us-east-1
-      access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
-      secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
-
-  - name: ubuntu-manual-director-state-file-v5-6
-    type: s3
-    source:
-      bucket: bosh-vcloud-cpi-ubuntu-state-files-v5-6
-      versioned_file: ubuntu-manual-director-manifest-state.json
       region_name: us-east-1
       access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
       secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
@@ -290,25 +148,7 @@ resources:
       access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
       secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
-  - name: bosh-init
-    type: s3
-    source:
-      regexp: bosh-init-([0-9.]+)-linux-amd64
-      bucket: bosh-init-artifacts
-      region_name: us-east-1
-
-  - name: bosh-release
-    type: bosh-io-release
-    source:
-      repository: cloudfoundry/bosh
-
   - name: vcloud-ubuntu-stemcell
     type: bosh-io-stemcell
     source:
       name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
-
-  - name: bats
-    type: git
-    source:
-      uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
-      branch: master
