@@ -1,13 +1,12 @@
 ---
 platform: linux
-image: docker:///boshcpi/vcloud-cpi-release
+image: docker:///boshcpi/cpi-certification
 inputs:
   - name: bosh-cpi-src       # --- location of task script to run
   - name: director-state-file
   - name: bosh-init
   - name: bosh-release
   - name: bosh-cpi-release
-  - name: version-semver
   - name: stemcell
 outputs:
   - name: deployment

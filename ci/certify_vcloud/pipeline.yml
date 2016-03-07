@@ -6,7 +6,6 @@ groups:
       - setup-director-ubuntu-v5.6
       - bats-ubuntu-v5.5
       - bats-ubuntu-v5.6
-      - certify-ubuntu
 
 jobs:
   - name: setup-director-ubuntu-v5.5
@@ -128,26 +127,6 @@ jobs:
             BATS_RESERVED_RANGE1: {{BATS_RESERVED_RANGE1_ubuntu}}
             BATS_RESERVED_RANGE2: {{BATS_RESERVED_RANGE2_ubuntu}}
             BATS_STATIC_RANGE:    {{BATS_STATIC_RANGE_ubuntu}}
-
-  - name: certify-ubuntu
-    plan:
-      - aggregate:
-        - {trigger: false, get: bosh-cpi-src}
-        - {trigger: true,  get: bosh-cpi-release, passed: [bats-ubuntu-v5.5, bats-ubuntu-v5.6]}
-        - {trigger: true,  get: bosh-release,     passed: [bats-ubuntu-v5.5, bats-ubuntu-v5.6]}
-        - {trigger: true,  get: stemcell,         passed: [bats-ubuntu-v5.5, bats-ubuntu-v5.6], resource: ubuntu-stemcell}
-
-      - task: generate-certification
-        file: bosh-cpi-src/ci/tasks/generate-certification.yml
-        config:
-          params:
-            bosh_release_name: bosh
-            cpi_release_name: bosh-vcloud-cpi
-            stemcell_name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
-
-      - put: certification
-        params:
-          file: certification-receipt/*.json
 
 resources:
   - name: bosh-cpi-src

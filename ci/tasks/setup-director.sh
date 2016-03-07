@@ -18,18 +18,17 @@ workspace_dir="$( cd ${release_dir} && cd .. && pwd )"
 : ${BATS_DIRECTOR_IP:?}
 
 source /etc/profile.d/chruby.sh
-chruby 2.1.2
+chruby 2.1.7
 
 cpi_release_name="bosh-vcloud-cpi"
 manifest_prefix=${base_os}-${network_type_to_test}-director
 manifest_filename=${manifest_prefix}-manifest.yml
 
 # inputs
-semver="$(cat ${workspace_dir}/version-semver/number)"
 manifest_dir="${workspace_dir}/director-state-file"
-bosh_release_dir="${workspace_dir}/bosh-release"
-cpi_release_dir="${workspace_dir}/bosh-cpi-release"
-stemcell_dir="${workspace_dir}/stemcell"
+bosh_release_tgz=$(realpath ${workspace_dir}/bosh-release/*.tgz)
+cpi_release_tgz=$(realpath ${workspace_dir}/bosh-cpi-release/*.tgz)
+stemcell_tgz=$(realpath ${workspace_dir}/stemcell/*.tgz)
 
 initver="$(cat ${workspace_dir}/bosh-init/version)"
 bosh_init="${workspace_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
@@ -44,15 +43,15 @@ name: bosh
 
 releases:
   - name: bosh
-    url: file://${bosh_release_dir}/release.tgz
+    url: file://${bosh_release_tgz}
   - name: ${cpi_release_name}
-    url: file://${bosh-cpi-release_dir}/${cpi_release_name}-${semver}.tgz
+    url: file://${cpi_release_tgz}
 
 resource_pools:
   - name: vms
     network: private
     stemcell:
-      url: file://${stemcell_dir}/stemcell.tgz
+      url: file://${stemcell_tgz}
     cloud_properties:
       cpu: 2
       ram: 4_096

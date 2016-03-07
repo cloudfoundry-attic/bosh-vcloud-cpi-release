@@ -1,6 +1,6 @@
 ---
 platform: linux
-image: docker:///boshcpi/vcloud-cpi-release
+image: docker:///boshcpi/cpi-certification
 inputs:
   - name: bosh-cpi-src
   - name: stemcell

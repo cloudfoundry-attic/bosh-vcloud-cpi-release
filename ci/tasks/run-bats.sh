@@ -23,7 +23,7 @@ print_git_state ${release_dir}
 : ${BATS_STATIC_RANGE:?}
 
 source /etc/profile.d/chruby.sh
-chruby 2.1.2
+chruby 2.1.7
 
 # inputs
 stemcell_dir="${workspace_dir}/stemcell"
