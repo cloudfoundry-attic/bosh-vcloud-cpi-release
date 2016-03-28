@@ -58,6 +58,8 @@ pushd iso_image_install
 popd
 echo "installed mkisofs at `which mkisofs`"
 
+trap "cat /tmp/vcd-cpi-test/debug" ERR
+
 pushd bosh-cpi-release/src/bosh_vcloud_cpi
   bundle install
   bundle exec rspec spec/integration --format ProfilingFormatter
