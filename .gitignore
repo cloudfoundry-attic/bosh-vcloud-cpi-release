@@ -1,5 +1,7 @@
 config/dev.yml
 config/private.yml
+src/**/.bundle
+src/**/coverage
 releases/*.tgz
 releases/**/*.tgz
 dev_releases
@@ -10,8 +12,9 @@ blobs
 .DS_Store
 .final_builds/jobs/**/*.tgz
 .final_builds/packages/**/*.tgz
+.vagrant
 *.swp
 *~
 *#
 #*
-.vagrant
+/_*

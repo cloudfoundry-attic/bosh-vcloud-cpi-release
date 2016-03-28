@@ -11,7 +11,7 @@ pushd bosh-cpi-release
   echo "running unit tests"
   pushd src/bosh_vcloud_cpi
     bundle install
-    bundle exec rake spec:unit
+    bundle exec rspec spec/unit
   popd
 
   echo "installing the latest bosh_cli"
