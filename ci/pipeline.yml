@@ -96,8 +96,8 @@ jobs:
     serial: true
     plan:
       - aggregate:
-        - {trigger: false,  passed: [lifecycle-v5.5, lifecycle-v5.6], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [lifecycle-v5.5, lifecycle-v5.6], get: bosh-cpi-release}
+        - {trigger: false, passed: [lifecycle-v5.5], get: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [lifecycle-v5.5], get: bosh-cpi-release}
         - {trigger: false, get: release-version-semver, params: {bump: major}}
 
       - task: promote
