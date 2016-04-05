@@ -7,4 +7,4 @@ files:
   - bosh_vcloud_cpi/Gemfile.lock
   - bosh_vcloud_cpi/bin/**/*
   - bosh_vcloud_cpi/lib/**/*
-  - bosh_vcloud_cpi/vendor/cache/**/*
+  - bosh_vcloud_cpi/vendor/package/**/*

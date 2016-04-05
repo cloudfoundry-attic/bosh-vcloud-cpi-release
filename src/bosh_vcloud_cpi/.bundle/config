@@ -1,3 +1,0 @@
----
-# This should ONLY include `BUNDLE_WITHOUT`
-BUNDLE_WITHOUT: development:test
