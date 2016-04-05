@@ -10,8 +10,13 @@ gem install bundler
 
 #### Execute the vendoring script
 
+> NOTE: This script will vendor *only* the "production" gems, excluding any
+  development/test dependencies by way of the `BUNDLE_WITHOUT` setting in
+  `.bundle/config`.
+
 ```
-./scripts/vendor_gems
+cd src/bosh_vcloud_cpi
+./vendor_gems
 ```
 
 ### Creating a new BOSH release

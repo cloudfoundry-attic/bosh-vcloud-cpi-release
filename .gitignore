@@ -1,6 +1,5 @@
 config/dev.yml
 config/private.yml
-src/**/.bundle
 src/**/coverage
 releases/*.tgz
 releases/**/*.tgz

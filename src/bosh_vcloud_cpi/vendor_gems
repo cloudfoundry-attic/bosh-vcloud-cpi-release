@@ -2,4 +2,5 @@
 
 set -ex
 
-bundle package --all --all-platforms
+export BUNDLE_WITHOUT="development:test"
+bundle package

@@ -3,4 +3,8 @@ name: bosh_vcloud_cpi
 dependencies:
   - ruby_vcloud_cpi
 files:
-  - bosh_vcloud_cpi/**/*
+  - bosh_vcloud_cpi/Gemfile
+  - bosh_vcloud_cpi/Gemfile.lock
+  - bosh_vcloud_cpi/bin/**/*
+  - bosh_vcloud_cpi/lib/**/*
+  - bosh_vcloud_cpi/vendor/cache/**/*
