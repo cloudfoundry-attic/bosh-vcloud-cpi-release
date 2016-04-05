@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
 require 'yaml'
 require 'ostruct'
 require 'cloud'
 require 'bosh/cpi'
-require 'bundler'
 
-Bundler.setup(:default)
 require 'cloud/vcloud'
 
 cpi_config = YAML.load_file(ARGV.shift)
