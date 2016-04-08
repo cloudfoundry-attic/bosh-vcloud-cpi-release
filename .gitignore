@@ -1,6 +1,7 @@
 config/dev.yml
 config/private.yml
 src/**/coverage
+src/bosh_vcloud_cpi/vendor/cache
 releases/*.tgz
 releases/**/*.tgz
 dev_releases
