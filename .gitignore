@@ -5,8 +5,9 @@ src/bosh_vcloud_cpi/vendor/cache
 releases/*.tgz
 releases/**/*.tgz
 dev_releases
-.blobs
 blobs
+.blobs
+.bundle
 .dev_builds
 .idea
 .DS_Store

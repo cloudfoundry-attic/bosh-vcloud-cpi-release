@@ -7,10 +7,6 @@ ruby_vcloud_cpi/rubygems-2.1.11.tgz:
   object_id: 6a67e4cc-0188-47de-a372-e9a9e52e9cfb
   sha: ca3033432cae28deb7ced79cda271cb292b70e59
   size: 367166
-ruby_vcloud_cpi/bundler-1.8.2.gem:
-  object_id: 38a7cc89-bc22-4e59-b458-d05cefe9a4b3
-  sha: e9b810268eea94ac5e825b5ae8a2d5fd19fb5905
-  size: 235008
 bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2:
   object_id: 36bed5e2-aa29-4a27-98a0-f21954d5089b
   sha: 6464844d6b936d4f43ee98a04d637cd91131de4e
@@ -27,3 +23,7 @@ ruby_vcloud_cpi/ruby-2.1.7.tar.gz:
   object_id: 22cab1ef-5547-4fb6-8ceb-b47e2ebff396
   sha: e2e195a4a58133e3ad33b955c829bb536fa3c075
   size: 15151458
+ruby_vcloud_cpi/bundler-1.11.2.gem:
+  object_id: 176d938f-45aa-4294-b0ad-a9f649f2d425
+  sha: 8eb956dec72da753d3d2a2126c78508b17af434e
+  size: 263168

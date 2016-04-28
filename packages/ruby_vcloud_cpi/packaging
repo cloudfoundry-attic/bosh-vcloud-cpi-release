@@ -39,4 +39,4 @@ tar zxvf ruby_vcloud_cpi/rubygems-2.1.11.tgz
   fi
 )
 
-${BOSH_INSTALL_TARGET}/bin/gem install ruby_vcloud_cpi/bundler-1.8.2.gem --local --no-ri --no-rdoc
+${BOSH_INSTALL_TARGET}/bin/gem install ruby_vcloud_cpi/bundler-1.11.2.gem --local --no-ri --no-rdoc
