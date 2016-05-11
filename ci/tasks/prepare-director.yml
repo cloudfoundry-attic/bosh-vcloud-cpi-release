@@ -1,0 +1,30 @@
+---
+platform: linux
+image: docker:///boshcpi/cpi-certification
+
+inputs:
+  - name: bosh-cpi-src
+  - name: bosh-release
+  - name: cpi-release
+  - name: stemcell
+
+outputs:
+  - name: director-config
+
+run:
+  path: bosh-cpi-src/ci/tasks/prepare-director.sh
+
+params:
+  VCLOUD_HOST:            ""
+  VCLOUD_USER:            ""
+  VCLOUD_PASSWORD:        ""
+  VCLOUD_VLAN:            ""
+  VCLOUD_ORG:             ""
+  VCLOUD_VDC:             ""
+  VCLOUD_VAPP:            ""
+  VCLOUD_CATALOG:         ""
+  NETWORK_CIDR:           ""
+  NETWORK_GATEWAY:        ""
+  BATS_DIRECTOR_IP:       ""
+  BOSH_DIRECTOR_USERNAME: ""
+  BOSH_DIRECTOR_PASSWORD: ""

@@ -7,6 +7,7 @@ groups:
       - build-candidate
       - lifecycle-v5.5
       - lifecycle-v5.6
+      - bats-v5.5
       - promote-candidate
 
 jobs:
@@ -92,6 +93,68 @@ jobs:
           LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
           LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
 
+  - name: bats-v5.5
+    serial_groups: [group-v5.5]
+    plan:
+      - aggregate:
+        - {get: cpi-release,      tags: [vcloud-v5.5], trigger: true,  passed: [build-candidate], resource: bosh-cpi-dev-artifacts}
+        - {get: bosh-cpi-src,     tags: [vcloud-v5.5], trigger: false, passed: [build-candidate], resource: bosh-cpi-release}
+        - {get: bosh-release,     tags: [vcloud-v5.5], trigger: false, resource: old-bosh-release}
+        - {get: stemcell,         tags: [vcloud-v5.5], trigger: false, resource: old-stemcell}
+        - {get: pipelines,        tags: [vcloud-v5.5], trigger: false, resource: certification}
+        - {get: bats,             tags: [vcloud-v5.5], trigger: false}
+        - {get: bosh-init,        tags: [vcloud-v5.5], trigger: false}
+
+      - task: prepare-director
+        file: bosh-cpi-src/vcloud/tasks/prepare-director.yml
+        tags: [vcloud-v5.5]
+        params:
+          VCLOUD_HOST:            {{VCLOUD_HOST_V5_5}}
+          VCLOUD_USER:            {{VCLOUD_USER_V5_5}}
+          VCLOUD_PASSWORD:        {{VCLOUD_PASSWORD_V5_5}}
+          VCLOUD_VLAN:            {{VCLOUD_VLAN}}
+          VCLOUD_ORG:             {{VCLOUD_ORG_V5_5}}
+          VCLOUD_VDC:             {{VCLOUD_VDC_V5_5}}
+          VCLOUD_VAPP:            {{VCLOUD_VAPP}}
+          VCLOUD_CATALOG:         {{VCLOUD_CATALOG}}
+          NETWORK_CIDR:           {{NETWORK_CIDR}}
+          NETWORK_GATEWAY:        {{NETWORK_GATEWAY}}
+          BATS_DIRECTOR_IP:       {{BATS_DIRECTOR_IP_ubuntu}}
+          BOSH_DIRECTOR_USERNAME: {{BOSH_DIRECTOR_USERNAME}}
+          BOSH_DIRECTOR_PASSWORD: {{BOSH_DIRECTOR_PASSWORD}}
+
+      - do:
+        - task: deploy-director
+          tags: [vcloud-v5.5]
+          file: pipelines/shared/tasks/deploy-director.yml
+
+        - task: prepare-bats
+          tags: [vcloud-v5.5]
+          file: pipelines/vcloud/tasks/prepare-bats.yml
+          params:
+            STEMCELL_NAME:          bosh-vcloud-esxi-ubuntu-trusty-go_agent
+            VCLOUD_VLAN:            {{VCLOUD_VLAN}}
+            VCLOUD_VAPP:            {{VCLOUD_VAPP}}
+            NETWORK_CIDR:           {{NETWORK_CIDR}}
+            NETWORK_GATEWAY:        {{NETWORK_GATEWAY}}
+            BATS_DIRECTOR_IP:       {{BATS_DIRECTOR_IP_ubuntu}}
+            BATS_IP1:               {{BATS_IP1_ubuntu}}
+            BATS_IP2:               {{BATS_IP2_ubuntu}}
+            BATS_RESERVED_RANGE1:   {{BATS_RESERVED_RANGE1_ubuntu}}
+            BATS_RESERVED_RANGE2:   {{BATS_RESERVED_RANGE2_ubuntu}}
+            BATS_STATIC_RANGE:      {{BATS_STATIC_RANGE_ubuntu}}
+            BOSH_DIRECTOR_USERNAME: {{BOSH_DIRECTOR_USERNAME}}
+            BOSH_DIRECTOR_PASSWORD: {{BOSH_DIRECTOR_PASSWORD}}
+
+        - task: run-bats
+          file: pipelines/shared/tasks/run-bats.yml
+          tags: [vcloud-v5.5]
+
+        ensure:
+          task: teardown
+          file: pipelines/shared/tasks/teardown.yml
+          tags: [vcloud-v5.5]
+
   - name: promote-candidate
     serial: true
     plan:
@@ -149,3 +212,37 @@ resources:
     type: bosh-io-stemcell
     source:
       name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
+
+  - name: bosh-init
+    type: s3
+    source:
+      regexp: bosh-init-([0-9.]+)-linux-amd64
+      bucket: bosh-init-artifacts
+      region_name: us-east-1
+
+  - name: certification
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry-incubator/bosh-cpi-certification
+      branch: master
+
+    # upgrade resources
+  - name: old-bosh-release
+    type: s3
+    source:
+      bucket: bosh-cpi-certification-fixtures
+      regexp: precompiled-bosh-(255.8)-on-ubuntu-3232.3.tgz
+      region_name: us-east-1
+
+  - name: old-stemcell
+    type: s3
+    source:
+      bucket: bosh-cpi-certification-fixtures
+      regexp: bosh-stemcell-(3232.3)-vcloud-esxi-ubuntu-trusty-go_agent.tgz
+      region_name: us-east-1
+
+  - name: bats
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
+      branch: master

@@ -2,62 +2,60 @@
 
 set -e
 
-release_dir="$( cd $(dirname $0) && cd ../.. && pwd )"
-workspace_dir="$( cd ${release_dir} && cd .. && pwd )"
-
-: ${base_os:?}
-: ${network_type_to_test:?}
 : ${VCLOUD_VLAN:?}
 : ${VCLOUD_HOST:?}
 : ${VCLOUD_USER:?}
 : ${VCLOUD_PASSWORD:?}
 : ${VCLOUD_ORG:?}
 : ${VCLOUD_VDC:?}
+: ${VCLOUD_VAPP:?}
+: ${VCLOUD_CATALOG:?}
 : ${NETWORK_CIDR:?}
 : ${NETWORK_GATEWAY:?}
 : ${BATS_DIRECTOR_IP:?}
-
-source /etc/profile.d/chruby.sh
-chruby 2.1.7
-
-cpi_release_name="bosh-vcloud-cpi"
-manifest_prefix=${base_os}-${network_type_to_test}-director
-manifest_filename=${manifest_prefix}-manifest.yml
+: ${BOSH_DIRECTOR_USERNAME:?}
+: ${BOSH_DIRECTOR_PASSWORD:?}
 
 # inputs
-manifest_dir="${workspace_dir}/director-state-file"
-bosh_release_tgz=$(realpath ${workspace_dir}/bosh-release/*.tgz)
-cpi_release_tgz=$(realpath ${workspace_dir}/bosh-cpi-release/*.tgz)
-stemcell_tgz=$(realpath ${workspace_dir}/stemcell/*.tgz)
-
-initver="$(cat ${workspace_dir}/bosh-init/version)"
-bosh_init="${workspace_dir}/bosh-init/bosh-init-${initver}-linux-amd64"
-chmod +x $bosh_init
+# paths will be resolved in a separate task so use relative paths
+BOSH_RELEASE_URI="file://$(echo bosh-release/*.tgz)"
+CPI_RELEASE_URI="file://$(echo cpi-release/*.tgz)"
+STEMCELL_URI="file://$(echo stemcell/*.tgz)"
 
 # outputs
-output_dir="${workspace_dir}/deployment"
+output_dir="$(realpath director-config)"
 
-cat > "${manifest_dir}/${manifest_filename}" <<EOF
+# env file generation
+cat > "${output_dir}/director.env" <<EOF
+#!/usr/bin/env bash
+
+export BOSH_DIRECTOR_IP=${BATS_DIRECTOR_IP}
+export BOSH_DIRECTOR_USERNAME=${BOSH_DIRECTOR_USERNAME}
+export BOSH_DIRECTOR_PASSWORD=${BOSH_DIRECTOR_PASSWORD}
+EOF
+
+cat > "${output_dir}/director.yml" <<EOF
 ---
-name: bosh
+name: certification-director
 
 releases:
   - name: bosh
-    url: file://${bosh_release_tgz}
-  - name: ${cpi_release_name}
-    url: file://${cpi_release_tgz}
+    url: ${BOSH_RELEASE_URI}
+    sha1: ${BOSH_RELEASE_SHA1}
+  - name: bosh-vcloud-cpi
+    url: ${CPI_RELEASE_URI}
 
 resource_pools:
   - name: vms
     network: private
     stemcell:
-      url: file://${stemcell_tgz}
+      url: ${STEMCELL_URI}
     cloud_properties:
       cpu: 2
       ram: 4_096
       disk: 20_000
     env:
-      vapp: bosh-concourse-deploy-${base_os}-vapp
+      vapp: ${VCLOUD_VAPP}
 
 disk_pools:
   - name: disks
@@ -119,20 +117,20 @@ jobs:
 
       director:
         address: 127.0.0.1
-        name: my-bosh
+        name: certification-director
         db: *db
         cpi_job: vcloud_cpi
         max_threads: 10
 
-      vcd: &vcd # <--- Replace values below
+      vcd: &vcd
         url: ${VCLOUD_HOST}
         user: ${VCLOUD_USER}
         password: ${VCLOUD_PASSWORD}
         entities:
           organization: ${VCLOUD_ORG}
           virtual_datacenter: ${VCLOUD_VDC}
-          vapp_catalog: bosh-concourse-deploy-${base_os}-catalog
-          media_catalog: bosh-concourse-deploy-${base_os}-catalog
+          vapp_catalog: ${VCLOUD_CATALOG}
+          media_catalog: ${VCLOUD_CATALOG}
           media_storage_profile: '*'
           vm_metadata_key: vm-metadata-key
         control: {wait_max: 900}
@@ -151,7 +149,7 @@ jobs:
       ntp: &ntp [0.pool.ntp.org, 1.pool.ntp.org]
 
 cloud_provider:
-  template: {name: vcloud_cpi, release: ${cpi_release_name}}
+  template: {name: vcloud_cpi, release: bosh-vcloud-cpi}
 
   mbus: "https://mbus:mbus-password@${BATS_DIRECTOR_IP}:6868"
 
@@ -161,11 +159,3 @@ cloud_provider:
     blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
     ntp: *ntp
 EOF
-
-echo "deleting existing BOSH Director VM..."
-$bosh_init delete ${manifest_dir}/${manifest_filename}
-
-echo "deploying BOSH..."
-$bosh_init deploy ${manifest_dir}/${manifest_filename}
-
-cp ${manifest_dir}/*.json ${output_dir}
