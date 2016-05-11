@@ -112,7 +112,7 @@ jobs:
         address: ${BATS_DIRECTOR_IP}
         port: 25250
         provider: dav
-        director: {user: director, password: director-password}
+        director: {user: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
         agent: {user: agent, password: agent-password}
 
       director:
@@ -137,7 +137,7 @@ jobs:
 
       hm:
         http: {user: hm, password: hm-password}
-        director_account: {user: admin, password: admin}
+        director_account: {user: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
         resurrector_enabled: true
 
       dns:
