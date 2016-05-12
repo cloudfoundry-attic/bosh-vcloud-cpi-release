@@ -121,6 +121,11 @@ jobs:
         db: *db
         cpi_job: vcloud_cpi
         max_threads: 10
+        user_management:
+          provider: local
+          local:
+            users:
+              - {name: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
 
       vcd: &vcd
         url: ${VCLOUD_HOST}
