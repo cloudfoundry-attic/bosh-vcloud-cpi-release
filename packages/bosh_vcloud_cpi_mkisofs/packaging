@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# abort script on any command that exit with a non zero value
-set -e
 
-bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
-tar xvf bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar
 (
+  set -e
+  bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
+  tar xvf bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar
   cd smake-1.2.4
   make
 )
@@ -13,16 +12,12 @@ if [[ $? != 0 ]] ; then
   exit 1
 fi
 
-
-bunzip2 bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2
-tar xvf bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar
 (
+  set -e
+  bunzip2 bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2
+  tar xvf bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar
   cd cdrtools-3.00
   patch -g 0 -f -p0 -i ../bosh_vcloud_cpi_mkisofs/patch-include_schily_sha2.h
-  if [[ $? != 0 ]] ; then
-    echo "Cannot patch cdrtools"
-    exit 1
-  fi
 
   ../smake-1.2.4/psmake/smake
   mkdir -p $BOSH_INSTALL_TARGET/bin
