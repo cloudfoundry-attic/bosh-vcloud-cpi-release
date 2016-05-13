@@ -32,6 +32,10 @@ module VCloudSdk
         return task_progress.content unless task_progress.nil?
         nil
       end
+      
+      def start_time
+        Time.parse(self["startTime"])
+      end
     end
 
   end

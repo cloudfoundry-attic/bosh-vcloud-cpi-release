@@ -51,6 +51,7 @@ cloud:
             cookie_timeout: 1200 # timeout in seconds after which session must be re-created
             retry_max: 5 # maximum attempts
             retry_delay: 500 # delay of first retry, the next is * 2
+            old_task_threshold: 600 # ignore failed tasks older than this (minutes)
         control:
           retries:
             default: 5
