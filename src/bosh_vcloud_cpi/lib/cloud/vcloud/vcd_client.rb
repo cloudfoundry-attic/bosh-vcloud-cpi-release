@@ -22,11 +22,12 @@ module VCloudCloud
       @entities = vcd_settings['entities']
 
       control = @entities['control'] || {}
-      @wait_max       = control['wait_max'] || WAIT_MAX
-      @wait_delay     = control['wait_delay'] || WAIT_DELAY
-      @retry_max      = control['retry_max'] || RETRY_MAX
-      @retry_delay    = control['retry_delay'] || RETRY_DELAY
-      @cookie_timeout = control['cookie_timeout'] || COOKIE_TIMEOUT
+      @wait_max           = control['wait_max'] || WAIT_MAX
+      @wait_delay         = control['wait_delay'] || WAIT_DELAY
+      @retry_max          = control['retry_max'] || RETRY_MAX
+      @retry_delay        = control['retry_delay'] || RETRY_DELAY
+      @cookie_timeout     = control['cookie_timeout'] || COOKIE_TIMEOUT
+      @old_task_threshold = control['old_task_threshold'] || OLD_TASK_THRESHOLD
 
       @cache = Cache.new
     end
@@ -164,7 +165,7 @@ module VCloudCloud
 
       # verify all tasks succeeded
       unless entity.tasks.nil? || entity.tasks.empty?
-        failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] }
+        failed_tasks = get_failed_tasks(entity)
         unless failed_tasks.empty?
           @logger.debug "Failed tasks: #{failed_tasks}"
           unless accept_failure
@@ -176,7 +177,21 @@ module VCloudCloud
 
       entity
     end
+  
+    def get_failed_tasks(entity)
+      failed_tasks = entity.tasks.find_all { |task| task.status.downcase != VCloudSdk::Xml::TASK_STATUS[:SUCCESS] && old_task?(task) == false}
+    end
+    
+    def old_task?(task)
+      hour_ago = Time.now - @old_task_threshold
 
+      if task.start_time < hour_ago then
+        return true
+      else
+        return false
+      end
+    end
+    
     def timed_loop(raise_exception = true)
       start_time = Time.now
       while Time.now - start_time < @wait_max
@@ -192,11 +207,12 @@ module VCloudCloud
 
     private
 
-    WAIT_MAX       = 300    # maximum wait seconds for a single task
-    WAIT_DELAY     = 5      # delay in seconds for pooling next task status
-    COOKIE_TIMEOUT = 600    # default timeout in seconds, if not specified in configuration file, after which session must be re-created
-    RETRY_MAX      = 3      # maximum attempts
-    RETRY_DELAY    = 0.1    # wait time before retrying
+    WAIT_MAX           = 300    # maximum wait seconds for a single task
+    WAIT_DELAY         = 5      # delay in seconds for pooling next task status
+    COOKIE_TIMEOUT     = 600    # default timeout in seconds, if not specified in configuration file, after which session must be re-created
+    RETRY_MAX          = 3      # maximum attempts
+    RETRY_DELAY        = 0.1    # wait time before retrying
+    OLD_TASK_THRESHOLD = 600    # ignore failed tasks older than this (minutes)
 
     def cookie_available?
       @cookie && Time.now < @cookie_expiration

@@ -12,13 +12,13 @@ module VCloudCloud
 
     describe '.initialize' do
       it 'read control settings from configuration file' do
-        verify_control_settings :@wait_max => 400, :@wait_delay => 10, :@retry_max => 5, :@retry_delay => 500, :@cookie_timeout => 1200
+        verify_control_settings :@wait_max => 400, :@wait_delay => 10, :@retry_max => 5, :@retry_delay => 500, :@cookie_timeout => 1200, :@old_task_threshold => 600
       end
 
       it 'use default control settings if not specified in configuration file' do
         settings['entities']['control'] = nil
         verify_control_settings :@wait_max => VCloudClient::WAIT_MAX, :@wait_delay => VCloudClient::WAIT_DELAY, \
-          :@retry_max => VCloudClient::RETRY_MAX, :@retry_delay => VCloudClient::RETRY_DELAY, :@cookie_timeout => VCloudClient::COOKIE_TIMEOUT
+          :@retry_max => VCloudClient::RETRY_MAX, :@retry_delay => VCloudClient::RETRY_DELAY, :@cookie_timeout => VCloudClient::COOKIE_TIMEOUT, :@old_task_threshold => VCloudClient::OLD_TASK_THRESHOLD
       end
 
       private
@@ -274,6 +274,7 @@ module VCloudCloud
         allow(task).to receive(:urn).and_return(task_id)
         allow(task).to receive(:operation).and_return(task_operation)
         allow(task).to receive(:details).and_return(task_details)
+        allow(task).to receive(:start_time).and_return(Time.now)
 
         allow(entity).to receive(:running_tasks) {[]}
         allow(entity).to receive(:prerunning_tasks) {[]}
@@ -283,6 +284,41 @@ module VCloudCloud
         raise_error_info =Regexp.new("Some tasks failed: #{task_info}; #{task_info}")
         expect{client.wait_entity(entity)}.to raise_error raise_error_info
       end
+      
+      it "idenitifies an old task" do
+        task = double("task")
+        allow(task).to receive(:start_time).and_return(Time.parse("2016-05-11T10:08:17.880+01:00"))
+        expect(client.old_task?(task)).to eq true
+      end
+      
+      it "ignores newer tasks" do
+        task = double("task")
+        allow(task).to receive(:start_time).and_return Time.now - 60
+        expect(client.old_task?(task)).to eq false
+      end
+      
+      it "filters old tasks appropriately" do
+        task1 = double("task")
+        allow(task1).to receive(:status).and_return "failed"
+        allow(task1).to receive(:start_time).and_return Time.parse("2016-05-11T10:08:17.880+01:00")
+        
+        task2 = double("task")
+        allow(task2).to receive(:status).and_return "failed"
+        allow(task2).to receive(:start_time).and_return Time.parse("2016-05-11T10:08:17.880+01:00")
+        
+        task3 = double("task")
+        allow(task3).to receive(:status).and_return "failed"
+        allow(task3).to receive(:start_time).and_return Time.now
+        
+        entity = double("entity")
+        allow(entity).to receive(:tasks) {[task1,task2,task3]}
+        
+        failed_tasks = client.get_failed_tasks(entity)
+        
+        expect(failed_tasks.length).to be 1
+        expect(failed_tasks[0].start_time).to eq task3.start_time
+      end
+      
     end
   end
 end
