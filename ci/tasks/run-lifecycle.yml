@@ -7,14 +7,14 @@ inputs:
 run:
   path: bosh-cpi-src/ci/tasks/run-lifecycle.sh
 params:
-  VCLOUD_HOST:     replace-me
-  VCLOUD_USER:     replace-me
-  VCLOUD_PASSWORD: replace-me
-  VCLOUD_VLAN:     replace-me
-  VCLOUD_ORG:      replace-me
-  VCLOUD_VDC:      replace-me
-  NETWORK_NETMASK: replace-me
-  NETWORK_DNS:     replace-me
-  NETWORK_GATEWAY: replace-me
-  LIFECYCLE_IP1:   replace-me
-  LIFECYCLE_IP2:   replace-me
+  VCLOUD_HOST:     ""
+  VCLOUD_USER:     ""
+  VCLOUD_PASSWORD: ""
+  VCLOUD_VLAN:     ""
+  VCLOUD_ORG:      ""
+  VCLOUD_VDC:      ""
+  NETWORK_NETMASK: ""
+  NETWORK_DNS:     ""
+  NETWORK_GATEWAY: ""
+  LIFECYCLE_IP1:   ""
+  LIFECYCLE_IP2:   ""

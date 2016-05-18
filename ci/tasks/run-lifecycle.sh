@@ -2,19 +2,17 @@
 
 set -e
 
-source bosh-cpi-src/ci/tasks/utils.sh
-
-check_param VCLOUD_HOST
-check_param VCLOUD_USER
-check_param VCLOUD_PASSWORD
-check_param VCLOUD_VLAN
-check_param VCLOUD_ORG
-check_param VCLOUD_VDC
-check_param NETWORK_NETMASK
-check_param NETWORK_DNS
-check_param NETWORK_GATEWAY
-check_param LIFECYCLE_IP1
-check_param LIFECYCLE_IP2
+: ${VCLOUD_HOST:?}
+: ${VCLOUD_USER:?}
+: ${VCLOUD_PASSWORD:?}
+: ${VCLOUD_VLAN:?}
+: ${VCLOUD_ORG:?}
+: ${VCLOUD_VDC:?}
+: ${NETWORK_NETMASK:?}
+: ${NETWORK_DNS:?}
+: ${NETWORK_GATEWAY:?}
+: ${LIFECYCLE_IP1:?}
+: ${LIFECYCLE_IP2:?}
 
 export BOSH_VCLOUD_CPI_STEMCELL=$PWD/stemcell/stemcell.tgz
 export BOSH_VCLOUD_CPI_URL=${VCLOUD_HOST}
