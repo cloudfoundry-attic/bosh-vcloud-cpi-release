@@ -2,7 +2,7 @@
 
 set -e
 
-source bosh-cpi-release/ci/tasks/utils.sh
+source bosh-cpi-src/ci/tasks/utils.sh
 
 check_param VCLOUD_HOST
 check_param VCLOUD_USER
@@ -41,7 +41,7 @@ chruby 2.1.2
 mkdir /tmp/vcd-cpi-test                                     # So that fly intercepts can tail it without waiting for
 echo "Awaiting first test run..." > /tmp/vcd-cpi-test/debug # the tests to start outputting to it
 
-pushd bosh-cpi-release
+pushd bosh-cpi-src
   echo "using bosh CLI version..."
   bosh version
   bosh create release --name local --version 0.0.0 --with-tarball --force
@@ -50,7 +50,7 @@ popd
 echo "compiling mkisofs"
 mkdir iso_image_install
 pushd iso_image_install
-  tar -xvzf ../bosh-cpi-release/dev_releases/local/local-0.0.0.tgz
+  tar -xvzf ../bosh-cpi-src/dev_releases/local/local-0.0.0.tgz
   tar -xvzf packages/bosh_vcloud_cpi_mkisofs.tgz
   chmod +x packaging
   BOSH_INSTALL_TARGET=$PWD ./packaging &> mkisofs_compilation.log
@@ -60,7 +60,7 @@ echo "installed mkisofs at `which mkisofs`"
 
 trap "cat /tmp/vcd-cpi-test/debug" ERR
 
-pushd bosh-cpi-release/src/bosh_vcloud_cpi
+pushd bosh-cpi-src/src/bosh_vcloud_cpi
   bundle install
   bundle exec rspec spec/integration --format ProfilingFormatter
 popd

@@ -7,7 +7,7 @@ chruby 2.1.2
 
 semver=`cat version-semver/number`
 
-pushd bosh-cpi-release
+pushd bosh-cpi-src
   echo "running unit tests"
   pushd src/bosh_vcloud_cpi
     bundle install
@@ -26,4 +26,4 @@ pushd bosh-cpi-release
   bosh create release --name $cpi_release_name --version $semver --with-tarball
 popd
 
-mv bosh-cpi-release/dev_releases/$cpi_release_name/$cpi_release_name-$semver.tgz candidate/
+mv bosh-cpi-src/dev_releases/$cpi_release_name/$cpi_release_name-$semver.tgz candidate/

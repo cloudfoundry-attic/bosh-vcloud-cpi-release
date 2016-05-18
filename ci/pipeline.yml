@@ -164,7 +164,7 @@ jobs:
         - {trigger: false, get: release-version-semver, params: {bump: major}}
 
       - task: promote
-        file: bosh-cpi-release/ci/tasks/promote-candidate.yml
+        file: bosh-cpi-src/ci/tasks/promote-candidate.yml
         params:
           AWS_ACCESS_KEY_ID: {{s3_vcloud_cpi_blobwriter_access_key}}
           AWS_SECRET_ACCESS_KEY: {{s3_vcloud_cpi_blobwriter_secret_key}}
