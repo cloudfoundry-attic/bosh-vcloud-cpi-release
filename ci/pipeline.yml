@@ -14,33 +14,33 @@ jobs:
   - name: create-jumpbox-v5.5
     plan:
       - aggregate:
-        - {trigger: false,  get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false,  get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.5"]}
 
       - task: sleep
-        file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+        file: bosh-cpi-src/ci/tasks/create-jumpbox.yml
         tags: ["vcloud-v5.5"]
 
   - name: create-jumpbox-v5.6
     plan:
       - aggregate:
-        - {trigger: false,  get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false,  get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.6"]}
 
       - task: sleep
-        file: bosh-cpi-release/ci/tasks/create-jumpbox.yml
+        file: bosh-cpi-src/ci/tasks/create-jumpbox.yml
         tags: ["vcloud-v5.6"]
 
   - name: build-candidate
     serial: true
     plan:
       - aggregate:
-        - {trigger: true, get: bosh-cpi-release}
+        - {trigger: true, get: bosh-cpi-src, resource: bosh-cpi-src-in}
         - {trigger: false, get: version-semver, params: {bump: patch}}
 
       - put: version-semver
         params: {file: version-semver/number}
 
       - task: build
-        file: bosh-cpi-release/ci/tasks/build-candidate.yml
+        file: bosh-cpi-src/ci/tasks/build-candidate.yml
 
       - put: bosh-cpi-dev-artifacts
         params: {from: candidate/.*\.tgz}
@@ -50,11 +50,11 @@ jobs:
     plan:
       - aggregate:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.5"]} # used for job chaining only not for tasks
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.5"]}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.5"]}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.5"]}
 
       - task: test
-        file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        file: bosh-cpi-src/ci/tasks/run-lifecycle.yml
         tags: ["vcloud-v5.5"]
         params:
           VCLOUD_HOST:     {{VCLOUD_HOST_V5_5}}
@@ -74,11 +74,11 @@ jobs:
     plan:
       - aggregate:
         - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]} # used for job chaining only not for tasks
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, tags: ["vcloud-v5.6"]}
+        - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.6"]}
         - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
 
       - task: test
-        file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
+        file: bosh-cpi-src/ci/tasks/run-lifecycle.yml
         tags: ["vcloud-v5.6"]
         params:
           VCLOUD_HOST:     {{VCLOUD_HOST_V5_6}}
@@ -98,7 +98,7 @@ jobs:
     plan:
       - aggregate:
         - {get: cpi-release,      tags: [vcloud-v5.5], trigger: true,  passed: [build-candidate], resource: bosh-cpi-dev-artifacts}
-        - {get: bosh-cpi-src,     tags: [vcloud-v5.5], trigger: false, passed: [build-candidate], resource: bosh-cpi-release}
+        - {get: bosh-cpi-src,     tags: [vcloud-v5.5], trigger: false, passed: [build-candidate], resource: bosh-cpi-src-in}
         - {get: bosh-release,     tags: [vcloud-v5.5], trigger: false, resource: old-bosh-release}
         - {get: stemcell,         tags: [vcloud-v5.5], trigger: false, resource: old-stemcell}
         - {get: pipelines,        tags: [vcloud-v5.5], trigger: false, resource: certification}
@@ -159,18 +159,18 @@ jobs:
     serial: true
     plan:
       - aggregate:
-        - {trigger: false, passed: [lifecycle-v5.5, bats-v5.5], get: bosh-cpi-dev-artifacts}
-        - {trigger: false, passed: [lifecycle-v5.5, bats-v5.5], get: bosh-cpi-release}
+        - {trigger: false, passed: [lifecycle-v5.5, bats-v5.5], get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts}
+        - {trigger: false, passed: [lifecycle-v5.5, bats-v5.5], get: bosh-cpi-src, resource: bosh-cpi-src-in}
         - {trigger: false, get: release-version-semver, params: {bump: major}}
 
       - task: promote
         file: bosh-cpi-release/ci/tasks/promote-candidate.yml
         params:
-          aws_access_key_id: {{s3_vcloud_cpi_blobwriter_access_key}}
-          aws_secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
+          AWS_ACCESS_KEY_ID: {{s3_vcloud_cpi_blobwriter_access_key}}
+          AWS_SECRET_ACCESS_KEY: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
-      - put: bosh-cpi-release
-        params: {repository: promote/bosh-cpi-release, rebase: true, tag_prefix: "v", tag: promote/integer_version}
+      - put: bosh-cpi-src-out
+        params: {repository: promoted/repo, rebase: true, tag_prefix: "v", tag: promoted/integer_version}
 
       - put: release-version-semver
         params: {file: release-version-semver/number}
@@ -185,7 +185,16 @@ resources:
       access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
       secret_access_key: {{s3_vcloud_cpi_blobwriter_secret_key}}
 
-  - name: bosh-cpi-release
+  - name: bosh-cpi-src-in
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry-incubator/bosh-vcloud-cpi-release.git
+      branch: master
+      ignore_paths:
+        - .final_builds/**/*.yml
+        - releases/**/*.yml
+
+  - name: bosh-cpi-src-out
     type: git
     source:
       uri: git@github.com:cloudfoundry-incubator/bosh-vcloud-cpi-release.git

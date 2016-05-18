@@ -2,11 +2,13 @@
 platform: linux
 image: docker:///boshcpi/vcloud-cpi-release
 inputs:
+  - name: bosh-cpi-src
   - name: bosh-cpi-release
-  - name: bosh-cpi-dev-artifacts
   - name: release-version-semver
+output:
+  - name: promoted
 run:
   path: bosh-cpi-release/ci/tasks/promote-candidate.sh
 params:
-  aws_access_key_id:     replace-me
-  aws_secret_access_key: replace-me
+  AWS_ACCESS_KEY_ID:     ""
+  AWS_SECRET_ACCESS_KEY: ""
