@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
 
-(
-  set -e
-  bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
-  tar xvf bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar
-  cd smake-1.2.4
-  make
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install smake"
-  exit 1
-fi
+set -e -x
 
-(
-  set -e
-  bunzip2 bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2
-  tar xvf bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar
-  cd cdrtools-3.00
+echo "Installing smake"
+bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
+tar xvf bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar
+pushd smake-1.2.4 > /dev/null
+  make
+popd > /dev/null
+
+
+echo "Installing mkisofs"
+bunzip2 bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar.bz2
+tar xvf bosh_vcloud_cpi_mkisofs/cdrtools-3.00.tar
+pushd cdrtools-3.00 > /dev/null
   patch -g 0 -f -p0 -i ../bosh_vcloud_cpi_mkisofs/patch-include_schily_sha2.h
 
   ../smake-1.2.4/psmake/smake
   mkdir -p $BOSH_INSTALL_TARGET/bin
   cp -a mkisofs/OBJ/*/mkisofs $BOSH_INSTALL_TARGET/bin/
-)
-if [[ $? != 0 ]] ; then
-  echo "Cannot install mkisofs"
-  exit 1
-fi
+popd > /dev/null
