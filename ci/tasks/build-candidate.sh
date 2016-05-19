@@ -2,9 +2,6 @@
 
 set -e
 
-source /etc/profile.d/chruby.sh
-chruby 2.1.2
-
 semver=`cat version-semver/number`
 
 pushd bosh-cpi-src
