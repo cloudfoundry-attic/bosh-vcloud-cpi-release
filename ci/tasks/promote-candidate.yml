@@ -5,7 +5,7 @@ inputs:
   - name: bosh-cpi-src
   - name: bosh-cpi-release
   - name: release-version-semver
-output:
+outputs:
   - name: promoted
 run:
   path: bosh-cpi-src/ci/tasks/promote-candidate.sh
