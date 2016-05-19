@@ -2,6 +2,6 @@
 name: ruby_vcloud_cpi
 files:
 - ruby_vcloud_cpi/yaml-0.1.5.tar.gz
-- ruby_vcloud_cpi/ruby-2.1.7.tar.gz
-- ruby_vcloud_cpi/rubygems-2.1.11.tgz
-- ruby_vcloud_cpi/bundler-1.11.2.gem
+- ruby_vcloud_cpi/ruby-2.3.1.tar.gz # https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.1.tar.gz
+- ruby_vcloud_cpi/rubygems-2.6.4.tgz # https://rubygems.org/rubygems/rubygems-2.6.4.tgz
+- ruby_vcloud_cpi/bundler-1.12.4.gem # https://rubygems.org/downloads/bundler-1.12.4.gem
