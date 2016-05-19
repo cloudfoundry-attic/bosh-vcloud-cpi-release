@@ -26,7 +26,5 @@ export BUNDLE_GEMFILE=$BOSH_PACKAGES_DIR/bosh_vcloud_cpi/Gemfile
 
 bundle_cmd="$BOSH_PACKAGES_DIR/ruby_vcloud_cpi/bin/bundle"
 
-echo $INPUT | $bundle_cmd exec $BOSH_PACKAGES_DIR/bosh_vcloud_cpi/bin/vcloud_cpi \
-$BOSH_JOBS_DIR/vcloud_cpi/config/cpi.json
-
-exit 0
+exec $bundle_cmd exec $BOSH_PACKAGES_DIR/bosh_vcloud_cpi/bin/vcloud_cpi \
+  $BOSH_JOBS_DIR/vcloud_cpi/config/cpi.json < <(echo $INPUT)
