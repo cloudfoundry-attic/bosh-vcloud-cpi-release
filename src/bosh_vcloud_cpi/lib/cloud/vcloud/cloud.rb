@@ -343,6 +343,13 @@ module VCloudCloud
     end
 
     def calculate_vm_cloud_properties(vm_properties)
+      required_keys = ['ram', 'cpu', 'ephemeral_disk_size']
+      missing_keys = required_keys.reject { |key| vm_properties[key] }
+      unless missing_keys.empty?
+        missing_keys.map! { |k| "'#{k}'" }
+        raise "Missing VM cloud properties: #{missing_keys.join(', ')}"
+      end
+
       vm_properties["disk"] = vm_properties.delete("ephemeral_disk_size")
       vm_properties
     end

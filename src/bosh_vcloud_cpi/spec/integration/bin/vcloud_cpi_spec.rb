@@ -23,9 +23,9 @@ describe "the vcloud_cpi executable" do
     expect(result['result']).to be_nil
 
     expect(result['error']).to eq({
-    'type' => 'Unknown',
-    'message' => 'Could not find cloud properties in the configuration',
-    'ok_to_retry' => false
+      'type' => 'Unknown',
+      'message' => 'Could not find cloud properties in the configuration',
+      'ok_to_retry' => false
     })
 
     expect(result['log']).to include('backtrace')

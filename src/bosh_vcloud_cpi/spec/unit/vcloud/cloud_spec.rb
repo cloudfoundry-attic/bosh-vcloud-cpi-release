@@ -582,6 +582,16 @@ module VCloudCloud
           'disk' => 1
         })
       end
+
+      it 'returns an error if any fields are missing' do
+        input = {}
+        expect{ subject.calculate_vm_cloud_properties(input) }.to raise_error("Missing VM cloud properties: 'ram', 'cpu', 'ephemeral_disk_size'")
+      end
+
+      it 'returns an error if a single field is missing' do
+        input = {'ram' => 123, 'cpu' => 1}
+        expect{ subject.calculate_vm_cloud_properties(input) }.to raise_error("Missing VM cloud properties: 'ephemeral_disk_size'")
+      end
     end
 
     describe "methods that raise NotImplemented" do
