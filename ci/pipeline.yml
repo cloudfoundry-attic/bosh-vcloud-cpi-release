@@ -159,7 +159,7 @@ resources:
   - name: bosh-cpi-dev-artifacts
     type: s3
     source:
-      regexp: bosh-vcloud-cpi\.tgz
+      regexp: bosh-vcloud-cpi-(\d+\.\d+\.\d+)\.tgz
       bucket: bosh-vcloud-cpi-release
       region_name: us-east-1
       access_key_id:     {{s3_vcloud_cpi_blobwriter_access_key}}
