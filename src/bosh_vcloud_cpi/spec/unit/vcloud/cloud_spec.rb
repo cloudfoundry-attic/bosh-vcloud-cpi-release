@@ -571,6 +571,19 @@ module VCloudCloud
       end
     end
 
+    describe '.calculate_vm_cloud_properties' do
+      include_context "base"
+
+      it 'maps cloud agnostic properties to vcloud specific properties' do
+        input = {'ram'=> 123, 'cpu'=> 1, 'ephemeral_disk_size'=> 1}
+        expect(subject.calculate_vm_cloud_properties(input)).to eq({
+          'ram' => 123,
+          'cpu' => 1,
+          'disk' => 1
+        })
+      end
+    end
+
     describe "methods that raise NotImplemented" do
       describe ".current_vm_id" do
         include_context "base"

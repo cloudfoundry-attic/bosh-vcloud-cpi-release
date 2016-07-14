@@ -342,6 +342,11 @@ module VCloudCloud
       end
     end
 
+    def calculate_vm_cloud_properties(vm_properties)
+      vm_properties["disk"] = vm_properties.delete("ephemeral_disk_size")
+      vm_properties
+    end
+
     def get_disk_size_mb(disk_id)
       client.resolve_entity(disk_id).size_mb
     end
