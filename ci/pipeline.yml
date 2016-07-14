@@ -2,8 +2,6 @@
 groups:
   - name: bosh-vcloud-cpi-release
     jobs:
-      - create-jumpbox-v5.5
-      - create-jumpbox-v5.6
       - build-candidate
       - lifecycle-v5.5
       - lifecycle-v5.6
@@ -11,24 +9,6 @@ groups:
       - promote-candidate
 
 jobs:
-  - name: create-jumpbox-v5.5
-    plan:
-      - aggregate:
-        - {trigger: false,  get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.5"]}
-
-      - task: sleep
-        file: bosh-cpi-src/ci/tasks/create-jumpbox.yml
-        tags: ["vcloud-v5.5"]
-
-  - name: create-jumpbox-v5.6
-    plan:
-      - aggregate:
-        - {trigger: false,  get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.6"]}
-
-      - task: sleep
-        file: bosh-cpi-src/ci/tasks/create-jumpbox.yml
-        tags: ["vcloud-v5.6"]
-
   - name: build-candidate
     serial: true
     plan:
