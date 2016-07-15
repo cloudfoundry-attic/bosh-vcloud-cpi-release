@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+git config --global user.name "$(git config duet.env.git-committer-name)"
+git config --global user.email "$(git config duet.env.git-committer-email)"
+

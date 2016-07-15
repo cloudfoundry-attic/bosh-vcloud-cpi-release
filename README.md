@@ -3,7 +3,7 @@
 * Documentation: [bosh.io/docs](https://bosh.io/docs)
 * IRC: [`#bosh` on freenode](https://webchat.freenode.net/?channels=bosh)
 * Mailing list: [cf-bosh](https://lists.cloudfoundry.org/pipermail/cf-bosh)
-* CI: <https://main.bosh-ci.cf-app.com/pipelines/bosh-vcloud-cpi>
+* CI: <https://bosh-cpi.ci.cf-app.com/pipelines/bosh-vcloud-cpi>
 * Roadmap: [Pivotal Tracker](https://www.pivotaltracker.com/n/projects/1133984) (label:vcloud)
 
 This is a BOSH release for the [vCloud CPI](https://github.com/vchs/bosh_vcloud_cpi/).
