@@ -83,7 +83,7 @@ jobs:
         - {get: stemcell,         tags: [vcloud-v5.5], trigger: false, resource: old-stemcell}
         - {get: pipelines,        tags: [vcloud-v5.5], trigger: false, resource: certification}
         - {get: bats,             tags: [vcloud-v5.5], trigger: false}
-        - {get: bosh-init,        tags: [vcloud-v5.5], trigger: false}
+        - {get: bosh-cli,         tags: [vcloud-v5.5], trigger: false}
 
       - task: prepare-director
         file: bosh-cpi-src/ci/tasks/prepare-director.yml
@@ -202,11 +202,11 @@ resources:
     source:
       name: bosh-vcloud-esxi-ubuntu-trusty-go_agent
 
-  - name: bosh-init
+  - name: bosh-cli
     type: s3
     source:
-      regexp: bosh-init-([0-9.]+)-linux-amd64
-      bucket: bosh-init-artifacts
+      regexp: bosh-cli-([0-9.]+)-linux-amd64
+      bucket: bosh-cli-artifacts
       region_name: us-east-1
 
   - name: certification
