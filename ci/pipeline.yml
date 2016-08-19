@@ -102,6 +102,7 @@ jobs:
           BATS_DIRECTOR_IP:       {{BATS_DIRECTOR_IP_ubuntu}}
           BOSH_DIRECTOR_USERNAME: {{BOSH_DIRECTOR_USERNAME}}
           BOSH_DIRECTOR_PASSWORD: {{BOSH_DIRECTOR_PASSWORD}}
+          SSLIP_IO_KEY:           {{sslip_io_key}}
 
       - do:
         - task: deploy-director
