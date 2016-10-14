@@ -100,8 +100,8 @@ jobs:
           NETWORK_CIDR:           {{NETWORK_CIDR}}
           NETWORK_GATEWAY:        {{NETWORK_GATEWAY}}
           BATS_DIRECTOR_IP:       {{BATS_DIRECTOR_IP_ubuntu}}
-          BOSH_DIRECTOR_USERNAME: {{BOSH_DIRECTOR_USERNAME}}
-          BOSH_DIRECTOR_PASSWORD: {{BOSH_DIRECTOR_PASSWORD}}
+          BOSH_USER:              {{BOSH_USER}}
+          BOSH_PASSWORD:          {{BOSH_PASSWORD}}
           SSLIP_IO_KEY:           {{sslip_io_key}}
 
       - do:
@@ -124,8 +124,8 @@ jobs:
             BATS_RESERVED_RANGE1:   {{BATS_RESERVED_RANGE1_ubuntu}}
             BATS_RESERVED_RANGE2:   {{BATS_RESERVED_RANGE2_ubuntu}}
             BATS_STATIC_RANGE:      {{BATS_STATIC_RANGE_ubuntu}}
-            BOSH_DIRECTOR_USERNAME: {{BOSH_DIRECTOR_USERNAME}}
-            BOSH_DIRECTOR_PASSWORD: {{BOSH_DIRECTOR_PASSWORD}}
+            BOSH_USER:              {{BOSH_USER}}
+            BOSH_PASSWORD:          {{BOSH_PASSWORD}}
 
         - task: run-bats
           file: pipelines/shared/tasks/run-bats.yml

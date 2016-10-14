@@ -13,8 +13,8 @@ set -e
 : ${NETWORK_CIDR:?}
 : ${NETWORK_GATEWAY:?}
 : ${BATS_DIRECTOR_IP:?}
-: ${BOSH_DIRECTOR_USERNAME:?}
-: ${BOSH_DIRECTOR_PASSWORD:?}
+: ${BOSH_USER:?}
+: ${BOSH_PASSWORD:?}
 
 # inputs
 # paths will be resolved in a separate task so use relative paths
@@ -30,8 +30,8 @@ cat > "${output_dir}/director.env" <<EOF
 #!/usr/bin/env bash
 
 export BOSH_DIRECTOR_IP=${BATS_DIRECTOR_IP}
-export BOSH_DIRECTOR_USERNAME=${BOSH_DIRECTOR_USERNAME}
-export BOSH_DIRECTOR_PASSWORD=${BOSH_DIRECTOR_PASSWORD}
+export BOSH_USER=${BOSH_USER}
+export BOSH_PASSWORD=${BOSH_PASSWORD}
 EOF
 
 cat > "${output_dir}/director.yml" <<EOF
@@ -112,7 +112,7 @@ jobs:
         address: ${BATS_DIRECTOR_IP}
         port: 25250
         provider: dav
-        director: {user: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
+        director: {user: ${BOSH_USER}, password: ${BOSH_PASSWORD}}
         agent: {user: agent, password: agent-password}
 
       director:
@@ -125,7 +125,7 @@ jobs:
           provider: local
           local:
             users:
-              - {name: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
+              - {name: ${BOSH_USER}, password: ${BOSH_PASSWORD}}
 
       vcd: &vcd
         url: ${VCLOUD_HOST}
@@ -142,7 +142,7 @@ jobs:
 
       hm:
         http: {user: hm, password: hm-password}
-        director_account: {user: ${BOSH_DIRECTOR_USERNAME}, password: ${BOSH_DIRECTOR_PASSWORD}}
+        director_account: {user: ${BOSH_USER}, password: ${BOSH_PASSWORD}}
         resurrector_enabled: true
 
       dns:
