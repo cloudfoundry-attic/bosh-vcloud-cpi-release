@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -x
+set -e
 
 echo "Installing smake"
 bunzip2 bosh_vcloud_cpi_mkisofs/smake-1.2.4.tar.bz2
