@@ -86,7 +86,7 @@ jobs:
         - {get: bosh-cli,         tags: [vcloud-v5.5], trigger: false}
 
       - task: prepare-director
-        file: bosh-cpi-src/ci/tasks/prepare-director.yml
+        file: pipelines/vcloud/tasks/prepare-director.yml
         tags: [vcloud-v5.5]
         params:
           VCLOUD_HOST:            {{VCLOUD_HOST_V5_5}}
