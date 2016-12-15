@@ -54,11 +54,11 @@ jobs:
       - aggregate:
         - {get: cpi-release,      tags: [vcloud-v5.5], trigger: true,  passed: [build-candidate], resource: bosh-cpi-dev-artifacts}
         - {get: bosh-cpi-src,     tags: [vcloud-v5.5], trigger: false, passed: [build-candidate], resource: bosh-cpi-src-in}
-        - {get: bosh-release,     tags: [vcloud-v5.5], trigger: false, resource: old-bosh-release}
-        - {get: stemcell,         tags: [vcloud-v5.5], trigger: false, resource: old-stemcell}
+        - {get: bosh-release,     tags: [vcloud-v5.5], trigger: false}
         - {get: pipelines,        tags: [vcloud-v5.5], trigger: false, resource: certification}
         - {get: bats,             tags: [vcloud-v5.5], trigger: false}
         - {get: bosh-cli,         tags: [vcloud-v5.5], trigger: false}
+        - {get: stemcell, resource: vcloud-ubuntu-stemcell, tags: [vcloud-v5.5], trigger: false, version: {version: "3263.14"}}
 
       - task: prepare-director
         file: pipelines/vcloud/tasks/prepare-director.yml
@@ -191,19 +191,11 @@ resources:
       uri: https://github.com/cloudfoundry-incubator/bosh-cpi-certification
       branch: master
 
-    # upgrade resources
-  - name: old-bosh-release
+  - name: bosh-release
     type: s3
     source:
-      bucket: bosh-cpi-certification-fixtures
-      regexp: precompiled-bosh-(255.8)-on-ubuntu-3232.3.tgz
-      region_name: us-east-1
-
-  - name: old-stemcell
-    type: s3
-    source:
-      bucket: bosh-cpi-certification-fixtures
-      regexp: bosh-stemcell-(3232.3)-vcloud-esxi-ubuntu-trusty-go_agent.tgz
+      bucket: bosh-compiled-release-tarballs
+      regexp: release-bosh-(257.23)-on-ubuntu-trusty-stemcell-3263.14-20161215060841.tgz
       region_name: us-east-1
 
   - name: bats
