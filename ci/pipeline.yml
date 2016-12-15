@@ -4,7 +4,6 @@ groups:
     jobs:
       - build-candidate
       - lifecycle-v5.5
-      - lifecycle-v5.6
       - bats-v5.5
       - promote-candidate
 
@@ -43,30 +42,6 @@ jobs:
           VCLOUD_VLAN:     {{VCLOUD_VLAN}}
           VCLOUD_ORG:      {{VCLOUD_ORG_V5_5}}
           VCLOUD_VDC:      {{VCLOUD_VDC_V5_5}}
-          NETWORK_NETMASK: {{NETWORK_NETMASK}}
-          NETWORK_DNS:     {{NETWORK_DNS}}
-          NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
-          LIFECYCLE_IP1:   {{LIFECYCLE_IP1}}
-          LIFECYCLE_IP2:   {{LIFECYCLE_IP2}}
-
-  - name: lifecycle-v5.6
-    serial: true
-    plan:
-      - aggregate:
-        - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts, tags: ["vcloud-v5.6"]} # used for job chaining only not for tasks
-        - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in, tags: ["vcloud-v5.6"]}
-        - {trigger: false,                            get: stemcell, resource: vcloud-ubuntu-stemcell, tags: ["vcloud-v5.6"]}
-
-      - task: test
-        file: bosh-cpi-src/ci/tasks/run-lifecycle.yml
-        tags: ["vcloud-v5.6"]
-        params:
-          VCLOUD_HOST:     {{VCLOUD_HOST_V5_6}}
-          VCLOUD_USER:     {{VCLOUD_USER_V5_6}}
-          VCLOUD_PASSWORD: {{VCLOUD_PASSWORD_V5_6}}
-          VCLOUD_VLAN:     {{VCLOUD_VLAN}}
-          VCLOUD_ORG:      {{VCLOUD_ORG_V5_6}}
-          VCLOUD_VDC:      {{VCLOUD_VDC_V5_6}}
           NETWORK_NETMASK: {{NETWORK_NETMASK}}
           NETWORK_DNS:     {{NETWORK_DNS}}
           NETWORK_GATEWAY: {{NETWORK_GATEWAY}}
